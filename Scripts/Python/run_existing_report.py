@@ -149,8 +149,7 @@ class OMEReportExecutor(object):
 
             column_names = [x['Name'] for x in column_info_arr]
             print ",".join(column_names)
-            result_url_part = report_details_url + "/ReportResults/ResultRows"
-            result_url = result_url_part + "?$top=20&$skip=0"
+            result_url = report_details_url + "/ReportResults/ResultRows"
             report_result = requests.get(result_url,
                                          headers=headers,
                                          verify=False)

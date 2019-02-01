@@ -90,7 +90,7 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
         $DeetsInfo = $DeetsResp.Content | ConvertFrom-Json
         $ColumnNames = $DeetsInfo.ColumnNames.Name
         Write-Verbose "Extracting results for report ($($ReportId))"
-        $ResultUrl = "https://$($IpAddress)/api/ReportService/ReportDefs($($ReportId))/ReportResults/ResultRows?`$top=20&`$skip=0"
+        $ResultUrl = "https://$($IpAddress)/api/ReportService/ReportDefs($($ReportId))/ReportResults/ResultRows"
         
         $RepResult = Invoke-WebRequest -Uri $ResultUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($RepResult.StatusCode -eq 200) {
