@@ -78,19 +78,19 @@ def get_device_inventory(ip_address, user_name, password, filter_by, field):
                     inven_resp = requests.get(inventory_url, headers=headers,
                                               verify=False)
                     if inven_resp.status_code == 200:
-                        print "\n*** Inventory for device (%s) ***" % (field)
-                        print json.dumps(inven_resp.json(), indent=4,
-                                         sort_keys=True)
+                        print ("\n*** Inventory for device (%s) ***" % (field))
+                        print (json.dumps(inven_resp.json(), indent=4,
+                                         sort_keys=True))
                     else:
-                        print "Unable to retrieve inventory for device (%s)" % (field)
+                        print ("Unable to retrieve inventory for device (%s)" % (field))
                 else:
-                    print "Unable to retrieve details for device (%s) from %s" % (field, ip_address)
+                    print ("Unable to retrieve details for device (%s) from %s" % (field, ip_address))
             else:
-                print "No device data retrieved from %s" % (ip_address)
+                print ("No device data retrieved from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()
+        print ("Unexpected error:", sys.exc_info())
 
 
 if __name__ == '__main__':

@@ -64,16 +64,16 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
                 json_data = response.json()
                 if json_data['@odata.count'] > 0:
                     # Technically there should be only one result in the filter
-                    print "\n*** Alerts for device (%s) ***" % (field)
-                    print json.dumps(json_data, indent=4, sort_keys=True)
+                    print ("\n*** Alerts for device (%s) ***" % (field))
+                    print (json.dumps(json_data, indent=4, sort_keys=True))
                 else:
-                    print "No alerts for device (%s) from %s" % (field, ip_address)
+                    print ("No alerts for device (%s) from %s" % (field, ip_address))
             else:
-                print "No alert data retrieved from %s" % (ip_address)
+                print ("No alert data retrieved from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 
 if __name__ == '__main__':

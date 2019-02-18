@@ -93,7 +93,7 @@ class OMEReportExecutor(object):
             auth_success = True
         else:
             error_msg = "Failed create of session with {0} - Status code = {1}"
-            print error_msg.format(ip_address, session_info.status_code)
+            print (error_msg.format(ip_address, session_info.status_code))
         return (auth_success, headers)
 
     def execute_report(self, headers):
@@ -105,18 +105,18 @@ class OMEReportExecutor(object):
         job_done_status = ["completed", "failed", "warning",
                            "aborted", "canceled"]
         max_retry_count = 90
-        print "Executing report", self.report_id
+        print ("Executing report", self.report_id)
         report_exec_resp = requests.post(report_exec_url,
                                          headers=headers,
                                          data=json.dumps(report_body),
                                          verify=False)
         if report_exec_resp.status_code == 200:
-            print "Executed report %s successfully ..." % self.report_id
+            print ("Executed report %s successfully ..." % self.report_id)
             job_id = report_exec_resp.json()
             job_url = self.base_url + "JobService/Jobs(%s)" % (job_id)
             curr_job_status = ""
             counter = 0
-            print "Tracking job id %s for report execution ... " % (job_id)
+            print ("Tracking job id %s for report execution ... " % (job_id))
             while counter < max_retry_count and \
                     curr_job_status not in job_done_status:
                 counter += 1
@@ -127,14 +127,14 @@ class OMEReportExecutor(object):
                 if job_response.status_code == 200:
                     job_info = job_response.json()
                     curr_job_status = job_info['LastRunStatus']['Name'].lower()
-                    print "Job status : ", curr_job_status
+                    print ("Job status : ", curr_job_status)
                 else:
-                    print "Unable to get status for job ", job_id
+                    print ("Unable to get status for job ", job_id)
             if curr_job_status == "completed":
-                print "Job %s completed successfully ... " % (job_id)
+                print ("Job %s completed successfully ... " % (job_id))
                 self.format_output_report(headers)
         else:
-            print "Unable to execute report ", self.report_id
+            print ("Unable to execute report ", self.report_id)
 
     def format_output_report(self, headers):
         """ Pretty print report and associated column names """
@@ -148,7 +148,7 @@ class OMEReportExecutor(object):
             column_info_arr = report_details_info['ColumnNames']
 
             column_names = [x['Name'] for x in column_info_arr]
-            print ",".join(column_names)
+            print (",".join(column_names))
             result_url = report_details_url + "/ReportResults/ResultRows"
             report_result = requests.get(result_url,
                                          headers=headers,
@@ -157,13 +157,13 @@ class OMEReportExecutor(object):
                 report_info = report_result.json()
                 if report_info['@odata.count'] > 0:
                     for result in report_info['value']:
-                        print ",".join(result['Values'])
+                        print (",".join(result['Values']))
                 else:
-                    print "No report data found for %s" % (self.report_id)
+                    print ("No report data found for %s" % (self.report_id))
             else:
-                print "No result data for report %s", self.report_id
+                print ("No result data for report %s", self.report_id)
         else:
-            print "Unable to extract report definitions from ", self.ip_address
+            print ("Unable to extract report definitions from ", self.ip_address)
 
 if __name__ == '__main__':
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -191,4 +191,4 @@ if __name__ == '__main__':
         if AUTH_STATUS:
             REPORT_EXEC.execute_report(SESS_HEADERS)
     except:
-        print "Unexpected error:", sys.exc_info()
+        print ("Unexpected error:", sys.exc_info())

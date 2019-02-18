@@ -54,16 +54,16 @@ def get_group_list(ip_address, user_name, password):
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            print headers['X-Auth-Token']
+            print (headers['X-Auth-Token'])
             response = requests.get(group_url, headers=headers, verify=False)
             if response.status_code == 200:
-                print json.dumps(response.json(), indent=4, sort_keys=True)
+                print (json.dumps(response.json(), indent=4, sort_keys=True))
             else:
-                print "Unable to retrieve group list from %s" % (ip_address)
+                print ("Unable to retrieve group list from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 
 if __name__ == '__main__':

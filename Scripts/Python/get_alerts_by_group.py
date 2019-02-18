@@ -70,19 +70,19 @@ def get_alerts_by_group(ip_address, user_name, password, filter_by, field):
                     alert_resp = requests.get(alert_url, headers=headers,
                                               verify=False)
                     if alert_resp.status_code == 200:
-                        print "\n*** Alerts for group (%s) ***" % (field)
-                        print json.dumps(alert_resp.json(), indent=4,
-                                         sort_keys=True)
+                        print ("\n*** Alerts for group (%s) ***" % (field))
+                        print (json.dumps(alert_resp.json(), indent=4,
+                                         sort_keys=True))
                     else:
-                        print "Unable to retrieve alerts for group (%s) from %s" % (field, ip_address)
+                        print ("Unable to retrieve alerts for group (%s) from %s" % (field, ip_address))
                 else:
-                    print "No group matching field (%s) retrieved from %s" % (field, ip_address)
+                    print ("No group matching field (%s) retrieved from %s" % (field, ip_address))
             else:
-                print "No group data retrieved from %s" % (ip_address)
+                print ("No group data retrieved from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

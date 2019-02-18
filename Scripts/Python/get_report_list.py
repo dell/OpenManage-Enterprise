@@ -57,16 +57,16 @@ def get_report_list(ip_address, user_name, password):
             if response.status_code == 200:
                 json_data = response.json()
                 if json_data['@odata.count'] > 0:
-                    print "*** List of pre-defined reports ***"
-                    print json.dumps(json_data, indent=4, sort_keys=True)
+                    print ("*** List of pre-defined reports ***")
+                    print (json.dumps(json_data, indent=4, sort_keys=True))
                 else:
-                    print "No pre-defined reports found on %s" % (ip_address)
+                    print ("No pre-defined reports found on %s" % (ip_address))
             else:
-                print "Unable to retrieve reports from %s" % (ip_address)
+                print ("Unable to retrieve reports from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

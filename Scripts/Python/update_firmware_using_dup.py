@@ -85,7 +85,7 @@ def authenticate_with_ome(ip_address, user_name, password):
         auth_success = True
     else:
         error_msg = "Failed create of session with {0} - Status code = {1}"
-        print error_msg.format(ip_address, session_info.status_code)
+        print (error_msg.format(ip_address, session_info.status_code))
     return (auth_success, headers)
 
 
@@ -99,9 +99,9 @@ def get_group_list(ip_address, headers):
         if group_response['@odata.count'] > 0:
             group_list = [x['Id'] for x in group_response['value']]
         else:
-            print "No groups found at ", ip_address
+            print ("No groups found at ", ip_address)
     else:
-        print "No groups found at ", ip_address
+        print ("No groups found at ", ip_address)
     return group_list
 
 
@@ -115,9 +115,9 @@ def get_device_list(ip_address, headers):
         if dev_response['@odata.count'] > 0:
             device_list = [x['Id'] for x in dev_response['value']]
         else:
-            print "No devices found at ", ip_address
+            print ("No devices found at ", ip_address)
     else:
-        print "No devices found at ", ip_address
+        print ("No devices found at ", ip_address)
     return device_list
 
 
@@ -131,21 +131,21 @@ def upload_dup_file(ip_address, headers, file_path):
     if os.path.isfile(file_path):
         if os.path.getsize(file_path) > 0:
             with open(file_path, 'rb') as payload:
-                print "Uploading %s .. This may take a while" % file_path
+                print ("Uploading %s .. This may take a while" % file_path)
                 response = requests.post(url, data=payload, verify=False,
                                          headers=curr_headers)
                 if response.status_code == 200:
                     upload_success = True
                     token = str(response.text)
-                    print "Successfully uploaded ", file_path
+                    print ("Successfully uploaded ", file_path)
                 else:
-                    print "Unable to upload %s to %s" % (file_path, ip_address)
-                    print "Request Status Code = %s" % response.status_code
+                    print ("Unable to upload %s to %s" % (file_path, ip_address))
+                    print ("Request Status Code = %s" % response.status_code)
         else:
-            print "File %s seems to be empty ... Exiting" % file_path
+            print ("File %s seems to be empty ... Exiting" % file_path)
 
     else:
-        print "File not found ... Retry"
+        print ("File not found ... Retry")
     return (upload_success, token)
 
 
@@ -188,15 +188,15 @@ def get_applicable_components(ip_address, headers, dup_payload):
                 update_crit = str(component['ComponentCriticality'])
                 reboot_req = str(component['ComponentRebootRequired'])
                 comp_name = str(component['ComponentName'])
-                print "\n---------------------------------------------------"
-                print "Device =", device_name
-                print "IPAddress =", device_ip
-                print "Current Ver =", curr_ver
-                print "Avail Ver =", avail_ver
-                print "Action =", upd_action
-                print "Criticality =", update_crit
-                print "Reboot Req =", reboot_req
-                print "Component Name =", comp_name
+                print ("\n---------------------------------------------------")
+                print ("Device =", device_name)
+                print ("IPAddress =", device_ip)
+                print ("Current Ver =", curr_ver)
+                print ("Avail Ver =", avail_ver)
+                print ("Action =", upd_action)
+                print ("Criticality =", update_crit)
+                print ("Reboot Req =", reboot_req)
+                print ("Component Name =", comp_name)
 
                 if avail_ver > curr_ver:
                     temp_map = {}
@@ -208,7 +208,7 @@ def get_applicable_components(ip_address, headers, dup_payload):
                     target_data.append(temp_map)
                     #print "%s : Adding component %s to upgrade list" % (device_ip, comp_name)
     else:
-        print "Unable to get components DUP applies to .. Exiting"
+        print ("Unable to get components DUP applies to .. Exiting")
     return target_data
 
 
@@ -261,9 +261,9 @@ def spawn_update_job(ip_address, headers, job_payload):
                              verify=False)
     if job_resp.status_code == 201:
         job_id = (job_resp.json())['Id']
-        print "Successfully spawned update job", job_id
+        print ("Successfully spawned update job", job_id)
     else:
-        print "Unable to spawn update job .. Exiting"
+        print ("Unable to spawn update job .. Exiting")
     return job_id
 
 
@@ -290,21 +290,21 @@ def track_job_to_completion(ip_address, headers, job_id):
     job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, job_id)
     loop_ctr = 0
     job_incomplete = True
-    print "Polling %s to completion ..." % job_id
+    print ("Polling %s to completion ..." % job_id)
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
         job_resp = requests.get(job_url, headers=headers, verify=False)
         if job_resp.status_code == 200:
             job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            print "Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status])
+            print ("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
             if int(job_status) == 2060:
                 job_incomplete = False
-                print "Completed updating firmware successfully ... Exiting"
+                print ("Completed updating firmware successfully ... Exiting")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
-                print "Update job failed ... "
+                print ("Update job failed ... ")
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
                 if job_hist_resp.status_code == 200:
@@ -314,14 +314,14 @@ def track_job_to_completion(ip_address, headers, job_id):
                                                      headers=headers,
                                                      verify=False)
                     if job_hist_det_resp.status_code == 200:
-                        print job_hist_det_resp.text
+                        print (job_hist_det_resp.text)
                     else:
-                        print "Unable to parse job execution history .. Exiting"
+                        print ("Unable to parse job execution history .. Exiting")
                 break
         else:
-            print "Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr)
+            print ("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
     if job_incomplete:
-        print "Job %s incomplete after polling %s times...Check status" % (job_id, max_retries)
+        print ("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -378,12 +378,12 @@ if __name__ == '__main__':
             if UPLOAD_SUCCESS:
                 REPORT_PAYLOAD = get_dup_applicability_payload(FILE_TOKEN, PARAM_MAP)
                 if REPORT_PAYLOAD:
-                    print "Determining which components the DUP file applies to ... "
+                    print ("Determining which components the DUP file applies to ... ")
                     TARGET_DATA = get_applicable_components(IP_ADDRESS,
                                                             HEADERS,
                                                             REPORT_PAYLOAD)
                     if TARGET_DATA:
-                        print "Forming job payload for update ... "
+                        print ("Forming job payload for update ... ")
                         JOB_PAYLOAD = form_job_payload_for_update(TARGET_DATA)
                         JOB_ID = spawn_update_job(IP_ADDRESS,
                                                   HEADERS,
@@ -392,8 +392,8 @@ if __name__ == '__main__':
                             track_job_to_completion(IP_ADDRESS, HEADERS,
                                                     JOB_ID)
                     else:
-                        print "No components available for update ... Exiting"
+                        print ("No components available for update ... Exiting")
         else:
-            print "Unable to authenticate with OME .. Check IP/Username/Pwd"
+            print ("Unable to authenticate with OME .. Check IP/Username/Pwd")
     except:
-        print "Unexpected error:", sys.exc_info()
+        print ("Unexpected error:", sys.exc_info())

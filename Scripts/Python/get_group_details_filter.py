@@ -62,27 +62,27 @@ def get_group_details(ip_address, user_name, password, filter_by, field):
             if response.status_code == 200:
                 json_data = response.json()
                 if json_data['@odata.count'] > 0:
-                    print "*** Group Details ***"
-                    print json.dumps(json_data, indent=4, sort_keys=True)
+                    print ("*** Group Details ***")
+                    print (json.dumps(json_data, indent=4, sort_keys=True))
                     # Technically there should be only one result in the filter
                     group_id = json_data['value'][0]['Id']
-                    print "\n*** Group Device Details ***"
+                    print ("\n*** Group Device Details ***")
                     dev_url = base_grp + "(" + str(group_id) + ")/Devices"
                     dev_resp = requests.get(dev_url, headers=headers,
                                             verify=False)
                     if dev_resp.status_code == 200:
-                        print json.dumps(dev_resp.json(), indent=4,
-                                         sort_keys=True)
+                        print (json.dumps(dev_resp.json(), indent=4,
+                                         sort_keys=True))
                     else:
-                        print "Unable to retrieve devices for group (%s) from %s" % (field, ip_address)
+                        print ("Unable to retrieve devices for group (%s) from %s" % (field, ip_address))
                 else:
-                    print "No group matching field (%s) retrieved from %s" % (field, ip_address)
+                    print ("No group matching field (%s) retrieved from %s" % (field, ip_address))
             else:
-                print "No group data retrieved from %s" % (ip_address)
+                print ("No group data retrieved from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()
+        print ("Unexpected error:", sys.exc_info())
 
 
 if __name__ == '__main__':

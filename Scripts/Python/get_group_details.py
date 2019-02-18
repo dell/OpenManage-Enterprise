@@ -66,29 +66,29 @@ def get_group_details(ip_address, user_name, password, group_info):
                                 str(group['Description']).lower() ==
                                 group_info.lower()):
                             found_group = True
-                            print "*** Group Details ***"
-                            print json.dumps(group, indent=4, sort_keys=True)
+                            print ("*** Group Details ***")
+                            print (json.dumps(group, indent=4, sort_keys=True))
                             dev_url = group_url + "(" + str(group['Id']) + ")/Devices"
                             dev_response = requests.get(dev_url,
                                                         headers=headers,
                                                         verify=False)
                             if dev_response.status_code == 200:
-                                print "\n*** Group Device Details ***"
-                                print json.dumps(dev_response.json(), indent=4,
-                                                 sort_keys=True)
+                                print ("\n*** Group Device Details ***")
+                                print (json.dumps(dev_response.json(), indent=4,
+                                                 sort_keys=True))
                             else:
-                                print "Unable to get devices for (%s)" % (group_info)
+                                print ("Unable to get devices for (%s)" % (group_info))
                             break
                     if not found_group:
-                        print "No group matching (%s) found" % (group_info)
+                        print ("No group matching (%s) found" % (group_info))
                 else:
-                    print "No group data retrieved from %s" % (ip_address)
+                    print ("No group data retrieved from %s" % (ip_address))
             else:
-                print "Unable to retrieve group list from %s" % (ip_address)
+                print ("Unable to retrieve group list from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()
+        print ("Unexpected error:", sys.exc_info())
 
 
 if __name__ == '__main__':

@@ -73,17 +73,17 @@ def create_static_group(ip_address, user_name, password, group_name):
                                                 verify=False,
                                                 data=json.dumps(group_payload))
                     if create_resp.status_code == 200:
-                        print "New group created : ID =", create_resp.text
+                        print ("New group created : ID =", create_resp.text)
                     elif create_resp.status_code == 400:
-                        print "Failed group creation ...See error info below"
-                        print json.dumps(create_resp.json(), indent=4,
-                                         sort_keys=False)
+                        print ("Failed group creation ...See error info below")
+                        print (json.dumps(create_resp.json(), indent=4,
+                                         sort_keys=False))
             else:
-                print "Unable to retrieve group list from %s" % (ip_address)
+                print ("Unable to retrieve group list from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 
 if __name__ == '__main__':

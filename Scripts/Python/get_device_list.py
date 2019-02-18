@@ -40,7 +40,8 @@ from argparse import RawTextHelpFormatter
 import json
 import requests
 import urllib3
-
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning) 
 
 def get_device_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate devices """
@@ -58,18 +59,16 @@ def get_device_list(ip_address, user_name, password):
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
             response = requests.get(device_url, headers=headers, verify=False)
             if response.status_code == 200:
-                print json.dumps(response.json(), indent=4, sort_keys=True)
+                print (json.dumps(response.json(), indent=4, sort_keys=True))
             else:
-                print "Unable to retrieve device list from %s" % (ip_address)
+                print ("Unable to retrieve device list from %s" % (ip_address))
         else:
-            print "Unable to create a session with appliance %s" % (ip_address)
+            print ("Unable to create a session with appliance %s" % (ip_address))
     except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print ("Unexpected error:", sys.exc_info()[0])
 
 
 if __name__ == '__main__':
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
