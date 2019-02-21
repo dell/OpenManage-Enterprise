@@ -89,13 +89,13 @@ function Get-DiscoverDevicePayload() {
                 {
                  "DiscoveryConfigTargets":[
 				 {
-						  "NetworkAddressDetail":"10.35.0.252"
+						  "NetworkAddressDetail":""
                      }
                  ],
               "ConnectionProfile":"{\"profileName\":\"\",\"profileDescription\":
 			 \"\",\"type\":\"DISCOVERY\",\"credentials\" :[{\"type\":
 			 \"WSMAN\",\"authType\":\"Basic\",\"modified\":false,\"credentials\":
-			 {\"username\":\"root\",\"password\":\"calvin\",\"port\":443,\"retries\":3,\"timeout\":
+			 {\"username\":\"\",\"password\":\"\",\"port\":443,\"retries\":3,\"timeout\":
 			 60}}]}",
                  "DeviceType":[1000]}],
             "Schedule":{
@@ -107,7 +107,7 @@ function Get-DiscoverDevicePayload() {
                "DiscoveryConfigGroupName": "Network switch Discovery ",
                "DiscoveryConfigModels": [{
 					  "DiscoveryConfigTargets": [{
-									 "NetworkAddressDetail": "100.97.199.5"
+									 "NetworkAddressDetail": ""
 					  }],
 					  "ConnectionProfile":  "{\"profileName\" : \"\",\"profileDescription\" :
 					  \"\",  \"type\" : \"DISCOVERY\",\"credentials\" : [ {\"type\" :
@@ -125,7 +125,7 @@ function Get-DiscoverDevicePayload() {
                "DiscoveryConfigGroupName": "Storage Discovery",
                "DiscoveryConfigModels": [{
 					  "DiscoveryConfigTargets": [{
-									 "NetworkAddressDetail": "10.255.7.245"
+									 "NetworkAddressDetail": ""
 					  }],
 					  "ConnectionProfile":  "{\"profileName\" : \"\",\"profileDescription\" :
 					  \"\",  \"type\" : \"DISCOVERY\",\"credentials\" : [ {\"type\" :
@@ -144,13 +144,13 @@ function Get-DiscoverDevicePayload() {
             "DiscoveryConfigModels":[{
                  "DiscoveryConfigTargets":[
                      {
-						  "NetworkAddressDetail":"10.255.3.221"
+						  "NetworkAddressDetail":""
                      }
                  ],
                "ConnectionProfile":"{\"profileName\":\"\",\"profileDescription\":
 			 \"\",\"type\":\"DISCOVERY\",\"credentials\" :[{\"type\":
 			 \"WSMAN\",\"authType\":\"Basic\",\"modified\":false,\"credentials\":
-			 {\"username\":\"root\",\"password\":\"calvin\",\"port\":443,\"retries\":3,\"timeout\":
+			 {\"username\":\"\",\"password\":\"\",\"port\":443,\"retries\":3,\"timeout\":
 			 60}}]}",
                  "DeviceType":[1000]}],
             "Schedule":{
