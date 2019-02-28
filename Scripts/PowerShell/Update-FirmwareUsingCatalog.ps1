@@ -396,6 +396,9 @@ function Check-DeviceComplianceReport($IpAddress, $Headers, $Type, $BaselineId) 
 				
                         }
                     }
+					else {
+						Write-Warning "Compliance reports api call did not succeed...status code returned is not 200"
+					}
                 }
             }
 			#>
@@ -612,7 +615,19 @@ Try {
         ## This is a Powershell quirk on Invoke-WebRequest failing with an error
         if ($GroupId) {
             $GroupList = Get-GroupList $IpAddress $Headers $Type
-            if ($GroupList -contains $GroupId) {}
+            if ($GroupList -contains $GroupId) {
+				#check if there are any devices associated with this group
+				$GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
+				$Response = Invoke-WebRequest -Uri $GroupServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+				$groupInfo = @{}
+				if ($Response.StatusCode -eq 200) {
+					$GroupResp = $Response.Content | ConvertFrom-Json
+					if ($GroupResp."@odata.count" -eq 0) {
+						throw "Unable to fetch group info for group id $($GroupId)"
+					}
+				}
+				else {throw "Unable to fetch group info for the device ... Exiting"}
+			}
             else {throw "Group $($GroupId) not present on $($IpAddress) ... Exiting"}
         }
         else {

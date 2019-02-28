@@ -18,9 +18,9 @@ import json
 import sys
 import time
 import argparse
-from argparse import RawTextHelpFormatter
 import requests
 import urllib3
+from argparse import RawTextHelpFormatter
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -52,38 +52,37 @@ def authenticate_with_ome(ip_address, user_name, password):
 def check_for_existing_catalog(ip_address, headers):
     """ Check if existing catalog exists """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
-    response = requests.get(url, headers=headers, verify=False)
-    if response.status_code == 200:
-        dev_response = response.json()
-        if dev_response['@odata.count'] > 0:
-            process_value_node(dev_response)
+    cat_response = requests.get(url, headers=headers, verify=False)
+    if cat_response.status_code == 200:
+        cat_json_resp = cat_response.json()
+        if cat_json_resp['@odata.count'] > 0:
+            process_value_node(cat_json_resp)
         return CATALOGDETAILS
     raise Exception("Unable to retrieve catalog information")
 
-def process_value_node(dev_response):
+def process_value_node(cat_json_resp):
     """ Processing each value to extract catalog id, baseline id
     and repository id.
     """
     associated_baseline_list = []
     i = 0
-    while i < len(dev_response["value"]):
-        if dev_response["value"][i].get("Repository")["Source"] == "downloads.dell.com":
-            if dev_response["value"][i].get("AssociatedBaselines"):
-            #len(dev_response["value"][i].get("AssociatedBaselines")) > 0:
+    while i < len(cat_json_resp["value"]):
+        if cat_json_resp["value"][i].get("Repository")["Source"] == "downloads.dell.com":
+            if cat_json_resp["value"][i].get("AssociatedBaselines"):
                 j = 0
-                while j < len(dev_response["value"][i].get("AssociatedBaselines")):
+                while j < len(cat_json_resp["value"][i].get("AssociatedBaselines")):
                     associated_baseline_list.append(
-                        dev_response["value"][i].get(
+                        cat_json_resp["value"][i].get(
                             "AssociatedBaselines")[j]["BaselineId"])
                     j += 1
                 CATALOGDETAILS.append(
-                    {'REPO_ID': dev_response["value"][i].get("Repository")["Id"],
-                     'CATALOG_ID': dev_response["value"][i]["Id"],
+                    {'REPO_ID': cat_json_resp["value"][i].get("Repository")["Id"],
+                     'CATALOG_ID': cat_json_resp["value"][i]["Id"],
                      'associated_baseline_id': associated_baseline_list})
             else:
                 CATALOGDETAILS.append(
-                    {'REPO_ID': dev_response["value"][i].get("Repository")["Id"],
-                     'CATALOG_ID': dev_response["value"][i]["Id"],
+                    {'REPO_ID': cat_json_resp["value"][i].get("Repository")["Id"],
+                     'CATALOG_ID': cat_json_resp["value"][i]["Id"],
                      'associated_baseline_id': []})
         i += 1
     return CATALOGDETAILS
@@ -145,7 +144,7 @@ def baseline_creation(ip_address, headers, param_map):
     baseline_status, baseline_data = request(ip_address=ip_address, url=url,
                                              header=headers, payload=payload, method='POST')
     if baseline_status == 201:
-        time.sleep(90)
+        time.sleep(200)
         id_repo = CATALOG_INFO.get("REPO_ID")
         id_cat = CATALOG_INFO.get("CATALOG_ID")
         return get_baseline_id(ip_address, headers, id_repo, id_cat)
@@ -153,56 +152,55 @@ def baseline_creation(ip_address, headers, param_map):
 
 
 def check_device_compliance_report(ip_address, headers, id_baseline):
-	compliance_report_list = []
-	device_compliance_report_hash = {}
-	source_names = None
-	compl_url = "https://%s/api/UpdateService/Baselines(%s)/DeviceComplianceReports"%(ip_address,id_baseline)
-	component_status, component_data = request(ip_address=ip_address, url=compl_url, header=headers)
-	if (component_status == 200 and len(component_data["value"]) > 0):
-		comp_val_list = component_data["value"]
-		response_flag = check_response_type(comp_val_list)
-		if response_flag:
-			for compliance_dict in comp_val_list:
-				compliance_list = compliance_dict.get('ComponentComplianceReports')
-				if (len(compliance_list)):
-					for component in compliance_list:
-						if component["Version"] > component["CurrentVersion"]:
-							if source_names:
-								source_names = source_names + ';' + component["SourceName"]
-							else:
-								source_names = component["SourceName"]
-						if (source_names):
-							device_compliance_report_hash["Id"] = compliance_dict.get("DeviceId")
-							device_compliance_report_hash["Data"] = source_names
-							compliance_report_list.append(device_compliance_report_hash)
-		else:
-			for compliance_dict in comp_val_list:
-				compliance_report_list.append({"DeviceId": compliance_dict.get("DeviceId")})
-				navigation_url_link = compliance_dict.get('ComponentComplianceReports@odata.navigationLink')
-				navigation_url = "https://(%s)(%s)"%(ip_address,navigation_url_link)
-				print "navigation_url = %s"%navigation_url
-				component_status,component_data = request(ip_address=ip_address, url=navigation_url, header=headers)
-				if (component_status == 200 and (len(component_data["value"]))):
-					comp_val_list = component_data["value"]
-					for compliance_dict in comp_val_list:
-						if (compliance_dict):
-							for component in compliance_dict:
-								if component["Version"] > component["CurrentVersion"]:
-									if source_names:
-										source_names = source_names + ';' + component["SourceName"]
-									else:
-										source_names = component["SourceName"]
-						if (source_names):
-							device_compliance_report_hash["Id"] = compliance_dict.get("DeviceId")
-							device_compliance_report_hash["Data"] = source_names
-							compliance_report_list.append(device_compliance_report_hash)
-				else:
-					sys.exit("component data is empty")
-	else:	
-		raise Exception("Unable to get compliance data")
-	return compliance_report_list
+    """ Checks device compliances """
+    compliance_report_list = []
+    source_names = None
+    compl_url = "https://%s/api/UpdateService/Baselines(%s)/DeviceComplianceReports"%(ip_address,
+                                                                                      id_baseline)
+    component_status, component_data = request(ip_address=ip_address, url=compl_url, header=headers)
+    if (component_status == 200 and component_data["value"]):
+        comp_val_list = component_data["value"]
+        response_flag = check_response_type(comp_val_list)
+        if response_flag:
+            for compliance_dict in comp_val_list:
+                compliance_list = compliance_dict.get('ComponentComplianceReports')
+                if compliance_list:
+                    for component in compliance_list:
+                        if component["UpdateAction"] == "UPGRADE":
+                            if source_names:
+                                source_names = source_names + ';' + component["SourceName"]
+                            else:
+                                source_names = component["SourceName"]
+                        if source_names:
+                            compliance_report_list.append({"Id": compliance_dict.get("DeviceId"), "Data":source_names })
+        else:
+            for compliance_dict in comp_val_list:
+                source_names = None
+                navigation_url_link = compliance_dict.get('ComponentComplianceReports@odata.navigationLink')
+                navigation_url = "https://%s%s"%(ip_address, navigation_url_link)
+                component_status, component_data = request(ip_address=ip_address, url=navigation_url, header=headers)
+
+                if (component_status == 200 and component_data["value"]):
+                    comp_val_list = component_data["value"]
+                    for compliance_dicts in comp_val_list:
+                        if compliance_dicts:
+                            if compliance_dicts["UpdateAction"] == "UPGRADE":
+                                if source_names:
+                                    source_names = source_names + ';' + compliance_dicts["SourceName"]
+                                else:
+                                    source_names = compliance_dicts["SourceName"]
+                    
+                    if source_names:
+                        compliance_report_list.append({"Id": compliance_dict.get("DeviceId"), "Data":source_names })
+                        
+                else:
+                    sys.exit("component data is empty")
+    else:
+        raise Exception("Unable to get compliance data")
+    return compliance_report_list
 
 def create_target_payload(compliance_data_list):
+    """ Create target for firmware payload """
     my_dist = {}
     target_list = []
     for data in compliance_data_list:
@@ -218,17 +216,17 @@ def create_target_payload(compliance_data_list):
 
         if my_dist["Data"] != "":
             target_list.append(my_dist.copy())
-    if len(target_list) > 0:
+    if target_list:
         return target_list
-    else:
-        return 0
-	
+    return 0
+
 def check_response_type(comp_val_list):
-	flag = False
-	for val in comp_val_list:
-		if 'ComponentComplianceReports' in val:
-			flag = True
-	return flag
+    """ Checks whether response contains ComponentComplianceReports or not """
+    flag = False
+    for val in comp_val_list:
+        if 'ComponentComplianceReports' in val:
+            flag = True
+    return flag
 
 
 def firmware_update(ip_address, headers, repository_id, id_cat, id_baseline, target_data):
@@ -373,15 +371,15 @@ def request(ip_address, url, header, payload=None, method='GET'):
 def get_catalog_details(ip_address, headers):
     """ Get Catalog details """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
-    response = requests.get(url, headers=headers, verify=False)
-    if response.status_code == 200:
-        dev_response = response.json()
-        if dev_response['@odata.count'] > 0:
+    catalog_response = requests.get(url, headers=headers, verify=False)
+    if catalog_response.status_code == 200:
+        catalog_json_response = catalog_response.json()
+        if catalog_json_response['@odata.count'] > 0:
             i = 0
-            while i < len(dev_response["value"]):
-                if dev_response["value"][i].get("Repository")["Source"] == "downloads.dell.com":
-                    CATALOG_INFO["REPO_ID"] = dev_response["value"][i].get("Repository")["Id"]
-                    CATALOG_INFO["CATALOG_ID"] = dev_response["value"][i]["Id"]
+            while i < len(catalog_json_response["value"]):
+                if catalog_json_response["value"][i].get("Repository")["Source"] == "downloads.dell.com":
+                    CATALOG_INFO["REPO_ID"] = catalog_json_response["value"][i].get("Repository")["Id"]
+                    CATALOG_INFO["CATALOG_ID"] = catalog_json_response["value"][i]["Id"]
                     return CATALOG_INFO
                 i += 1
         else:
@@ -393,13 +391,13 @@ def get_catalog_details(ip_address, headers):
 
 def get_group_details(ip_address, headers, group_id):
     """ Get  group details  from OME """
-    device_url = 'https://%s/api/GroupService/Groups(%s)' % (ip_address, group_id)
-    response = requests.get(device_url, headers=headers, verify=False)
-    if response.status_code == 200:
-        dev_response = response.json()
-        if dev_response['Id'] == group_id:
-            group_type = dev_response["TypeId"]
-            group_name = dev_response["Name"]
+    group_service_url = 'https://%s/api/GroupService/Groups(%s)' % (ip_address, group_id)
+    group_response = requests.get(group_service_url, headers=headers, verify=False)
+    if group_response.status_code == 200:
+        group_json_response = group_response.json()
+        if group_json_response['Id'] == group_id:
+            group_type = group_json_response["TypeId"]
+            group_name = group_json_response["Name"]
             return group_type, group_name
         raise Exception("Unable to find group id")
     else:
@@ -409,12 +407,12 @@ def get_group_details(ip_address, headers, group_id):
 def get_device_details(ip_address, headers, device_id):
     """ Get device details  from OME """
     device_url = 'https://%s/api/DeviceService/Devices(%s)' % (ip_address, device_id)
-    response = requests.get(device_url, headers=headers, verify=False)
-    if response.status_code == 200:
-        dev_response = response.json()
-        if dev_response['Id'] == device_id:
-            device_type = dev_response["Type"]
-            device_name = dev_response["DeviceName"]
+    device_details_response = requests.get(device_url, headers=headers, verify=False)
+    if device_details_response.status_code == 200:
+        device_details_json_response = device_details_response.json()
+        if device_details_json_response['Id'] == device_id:
+            device_type = device_details_json_response["Type"]
+            device_name = device_details_json_response["DeviceName"]
             return device_type, device_name
         print("unable to find device id")
     else:
@@ -426,11 +424,11 @@ def get_device_list(ip_address, headers):
     """ Get list of devices from OME """
     ome_device_list = None
     device_url = 'https://%s/api/DeviceService/Devices' % ip_address
-    response = requests.get(device_url, headers=headers, verify=False)
-    if response.status_code == 200:
-        dev_response = response.json()
-        if dev_response['@odata.count'] > 0:
-            ome_device_list = [x['Id'] for x in dev_response['value']]
+    device_response = requests.get(device_url, headers=headers, verify=False)
+    if device_response.status_code == 200:
+        dev_json_response = device_response.json()
+        if dev_json_response['@odata.count'] > 0:
+            ome_device_list = [x['Id'] for x in dev_json_response['value']]
         else:
             print("No devices found at ", ip_address)
     else:
@@ -441,10 +439,10 @@ def get_device_list(ip_address, headers):
 def get_group_list(ip_address, headers):
     """ Get list of groups from OME """
     group_list = None
-    group_url = 'https://%s/api/GroupService/Groups' % ip_address
-    response = requests.get(group_url, headers=headers, verify=False)
-    if response.status_code == 200:
-        group_response = response.json()
+    group_list_url = 'https://%s/api/GroupService/Groups' % ip_address
+    group_response = requests.get(group_list_url, headers=headers, verify=False)
+    if group_response.status_code == 200:
+        group_response = group_response.json()
         if group_response['@odata.count'] > 0:
             group_list = [x['Id'] for x in group_response['value']]
         else:
@@ -548,7 +546,7 @@ def baseline_deletion_payload(baseline_list):
 
 
 if __name__ == '__main__':
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+   # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", required=True, help="OME Appliance IP")
@@ -579,14 +577,14 @@ if __name__ == '__main__':
                 GROUP_LIST = get_group_list(IP_ADDRESS, HEADERS)
                 if GROUP_LIST:
                     if GROUP_ID in GROUP_LIST:
-						group_url = "https://%s/api/GroupService/Groups(%s)/Devices"%(IP_ADDRESS,GROUP_ID)
-						response = requests.get(group_url, headers=HEADERS, verify=False)
-						if response.status_code == 200:
-							dev_response = response.json()
-							if dev_response['@odata.count'] == 0:
-								raise Exception("There are no devices associated with this group id")
-						else:
-							raise Exception("Unable to fetch group device details")
+                        GROUP_URL = "https://%s/api/GroupService/Groups(%s)/Devices"%(IP_ADDRESS, GROUP_ID)
+                        RESPONSE = requests.get(GROUP_URL, headers=HEADERS, verify=False)
+                        if RESPONSE.status_code == 200:
+                            DEV_RESPONSE = RESPONSE.json()
+                            if DEV_RESPONSE['@odata.count'] == 0:
+                                raise Exception("No devices associated with this group id")
+                        else:
+                            raise Exception("Unable to fetch group device details")
                     else:
                         raise ValueError("Group %s not found on %s ... Exiting" % (
                             GROUP_ID, IP_ADDRESS))
