@@ -3,7 +3,7 @@
    Script to perform power control on device
 
  .DESCRIPTION
-    This script exercises the OME REST API to power on 
+    This script exercises the OME REST API to power on
     /power off/reset(warm boot)/power cycle (cold boot)/shutdown
     devices managed by OME.
     Note that the credentials entered are not stored to disk.
@@ -196,11 +196,11 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId, $State) {
             Write-Host "Iteration $($Ctr): Status of $($JobId) is  $($JOB_STATUS_MAP.$JobStatus)"
             if ($JobStatus -eq 2060) {
                 ## Completed successfully
-                Write-Host "Device successfully $($StatusName[$State]) ..."
+                Write-Host " $($StatusName[$State]) completed successfully..."
                 break
             }
             elseif ($FailedJobStatuses -contains $JobStatus) {
-                Write-Warning " job failed .... "
+                Write-Warning " $($StatusName[$State]) operation failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
                 $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
@@ -250,12 +250,12 @@ Try {
           $PowerState = Get-DevicepowerState $IpAddress $Headers $Type $DeviceId
           if($PowerState){
             if($PowerStateMap[$State] -eq $PowerState ){
-                Write-Host "Device is  already $($State) "
+                Write-Host "Device is already in the desired state. "
             }elseif(($State -eq "On") -and ($PowerState -eq $PowerStateMap["PoweringOn"])){
-                Write-Host "Device is in Poweringon state. No need to power on "
+                Write-Host "Device is already in the desired state."
             }
             elseif(($State -eq "Off") -and ($PowerState -eq $PowerStateMap["PoweringOff"])){
-                Write-Host "Device is in Poweringoff state. No need to power off "
+                Write-Host "Device is already in the desired state. "
             }
             else{
                 $JobServicePayload = Get-JobServicePayload
@@ -273,13 +273,13 @@ Try {
                 }
             }
           }else{
-              Write-Host "Unable to get powerstate"
+              Write-Host "Unable to fetch powerstate for device with id $($DeviceId))"
           }
        }else{
-        Write-Warning "Device with Id $($DeviceId) not present on $($IPAddress) .....Existing "
+        Write-Warning "Device with Id $($DeviceId) not found on $($IPAddress) .....Existing "
        }
     }else{
-        Write-Error "Devices not present on $($IpAddress) ... Exiting"
+        Write-Error "Device not found on $($IpAddress) ... Exiting"
     }
 }else {
     Write-Error "Unable to create a session with appliance $($IpAddress)"
