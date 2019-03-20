@@ -15,20 +15,19 @@
   .PARAMETER IPAddressCsvFile
   Path to the Csv file which contains ip addresses
   .PARAMETER IpArray
-  Array of Ip address
-  .PARAMETER $serviceApiCredentials
-  $serviceApiCredentials used to talk to the server ,chassis
+  Array of Ip addresses
+  .PARAMETER $nodeCredentials
+  Credentials used to talk to the server ,chassis
  .EXAMPLE
   $cred = Get-Credential
   $disccred = Get-Credential
-  .\Discover_Device.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  -IPAddressCsvFile .\xxxx.csv  -Credentials $disccred
+  .\Find-DeviceForManagement.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  -IPAddressCsvFile .\xxxx.csv  -nodeCredentials $disccred
    where {device_type} can be server/chassis
    In this instance you will be prompted for credentials to use to
    connect to the appliance
    .EXAMPLE
   $cred = Get-Credential
-  $disccred = Get-Credential
-  .\Discover_Device.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,.... -Credentials $disccred
+  .\Find-DeviceForManagement.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,...
    where {device_type} can be server/chassis
    In this instance you will be prompted for credentials
 #>
@@ -57,7 +56,7 @@ param(
     [parameter(ParameterSetName = 'Discover_Ip', Mandatory)]
     [String[]]$IpArray,
     [Parameter(Mandatory)]
-    [pscredential] $serviceApiCredentials
+    [pscredential] $nodeCredentials
 )
 function Set-CertPolicy() {
     ## Trust all certs - for sample usage only
@@ -255,9 +254,9 @@ function Get-ExecutionHistoryDetail($ExecResp, $ExecHistoryUrl, $Headers, $Type,
 
 }
 
-function Update-Payload($ipAddressList, $DeviceType, $serviceApiCredentials) {
-    $DiscoverUserName = $serviceApiCredentials.username
-    $DiscoverPassword = $serviceApiCredentials.GetNetworkCredential().password
+function Update-Payload($ipAddressList, $DeviceType, $nodeCredentials) {
+    $DiscoverUserName = $nodeCredentials.username
+    $DiscoverPassword = $nodeCredentials.GetNetworkCredential().password
     $inputs = Get-DiscoverDevicePayload
     $input = $inputs.$DeviceType
     $input.DiscoveryConfigModels[0].PSObject.Properties.Remove("DiscoveryConfigTargets")
@@ -298,7 +297,7 @@ Try {
     }
     $ipAddressList = Test-IpAddress $ipAddrs
 	if($ipAddressList){
-    $input = Update-Payload $ipAddressList $DeviceType $serviceApiCredentials
+    $input = Update-Payload $ipAddressList $DeviceType $nodeCredentials
     $input = $input | ConvertTo-Json -Depth 6
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{ }
