@@ -3,7 +3,9 @@
    Script to perform power control on device
 
  .DESCRIPTION
-    This script exercises the OME REST API to power on /power off/reset(warm boot)/power cycle (cold boot)/shutdown devices.
+    This script exercises the OME REST API to power on 
+    /power off/reset(warm boot)/power cycle (cold boot)/shutdown
+    devices managed by OME.
     Note that the credentials entered are not stored to disk.
 
  .PARAMETER IpAddress
@@ -11,13 +13,14 @@
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
  .PARAMETER DeviceId
-    The Id of the device be on/off/reset/cold boot/shutdown
+    The Id of the device to perform the operation on
  .PARAMETER State
-   It can be on/ off/warm boot/cold boot/shutdown
+   The desired power state for the device - One of
+   off/on/warm boot/cold boot/shutdown
 
  .EXAMPLE
    $cred = Get-Credential
-   .\Power-Control.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\Set-PowerState.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -DeviceId 25527  -State {state}
     where {state} can be on/off/warm boot/cold boot/shutdown
 #>
