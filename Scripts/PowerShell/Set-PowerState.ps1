@@ -249,8 +249,8 @@ Try {
        if($DeviceIdList -Contains $DeviceId){
           $PowerState = Get-DevicepowerState $IpAddress $Headers $Type $DeviceId
           if($PowerState){
-            if($PowerStateMap[$State] -eq $PowerState ){
-                Write-Host "Device is already in the desired state. "
+            if($PowerControlStateMap[$State] -eq $PowerState ){
+                Write-Host "Device is already in the desired state."
             }elseif(($State -eq "On") -and ($PowerState -eq $PowerStateMap["PoweringOn"])){
                 Write-Host "Device is already in the desired state."
             }
