@@ -106,7 +106,6 @@ Try {
     $InventoryTypeMap = @{"cpus"="serverProcessors";"os"="serverOperatingSystems";"disks"="serverArrayDisks";"controllers"="serverRaidControllers";"memory" ="serverMemoryDevices"}
     $FilterExpr  = $FilterMap[$FilterBy]
     $BaseUrl     = "https://$($IpAddress)/api/DeviceService/Devices?`$filter=$($FilterExpr) eq"
-    $InventoryUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails"
     $DevUrl      = ""
     $Type        = "application/json"
     $UserName    = $Credentials.username
@@ -130,6 +129,7 @@ Try {
             $DevInfo = $DevResp.Content | ConvertFrom-Json
             if ($DevInfo.'@odata.count' -gt 0) {
                 $DeviceId = $DevInfo.value[0].Id
+                $InventoryUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails"
                 if($InventoryType){
                     $InventoryUrl =  "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails('$($InventoryTypeMap[$InventoryType])')"
                 }

@@ -26,13 +26,13 @@ SYNOPSIS:
 
 DESCRIPTION:
     This script exercises the OME REST API to get detailed inventory
-    for a device given ID/Name/Asset Tag or Service Tag of the
-    device
+    for a device given ID/Name/Asset Tag or Service Tag 
+    and Inventory type (os,cpus,disks,memory,controllers) of the device
     Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
     python get_device_inventory.py -i <ip addr> -u admin
-        -p <password> -fby Name -f "iDRAC-abcdef"
+        -p <password> -fby Name -f "iDRAC-abcdef" -inventorytype os
 
 """
 import sys
@@ -43,12 +43,20 @@ import requests
 import urllib3
 
 
-def get_device_inventory(ip_address, user_name, password, filter_by, field):
+def get_device_inventory(ip_address, user_name, password, filter_by, field,inventory_type):
     """ Get inventory details for a device based on filters """
     filter_map = {'Name': 'DeviceName',
                   'AssetTag': 'AssetTag',
                   'Id': 'Id',
                   'SvcTag': 'DeviceServiceTag'}
+    INVENTORY_TYPES = {
+   "cpus" : "serverProcessors",
+   "os" : "serverOperatingSystems",
+   "disks" : "serverArrayDisks",
+   "controllers" : "serverRaidControllers",
+   "memory" : "serverMemoryDevices"
+}
+
     try:
 
         session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
@@ -75,14 +83,18 @@ def get_device_inventory(ip_address, user_name, password, filter_by, field):
                     # Technically there should be only one result in the filter
                     device_id = json_data['value'][0]['Id']
                     inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails" % (ip_address, device_id)
+                    if inventory_type:
+                       inventory_url = "https://%s/api/DeviceService/Devices(%s)/InventoryDetails(\'%s\')" % (ip_address, device_id, INVENTORY_TYPES[inventory_type])
                     inven_resp = requests.get(inventory_url, headers=headers,
                                               verify=False)
                     if inven_resp.status_code == 200:
                         print ("\n*** Inventory for device (%s) ***" % (field))
                         print (json.dumps(inven_resp.json(), indent=4,
                                          sort_keys=True))
+                    elif inven_resp.status_code == 400:
+                        print ("Inventory type %s not applicable for device with Id %s" % (inventory_type, device_id))
                     else:
-                        print ("Unable to retrieve inventory for device (%s)" % (field))
+                        print ("Unable to retrieve inventory for device %s due to status code %s" % (device_id, inven_resp.status_code))
                 else:
                     print ("Unable to retrieve details for device (%s) from %s" % (field, ip_address))
             else:
@@ -108,6 +120,9 @@ if __name__ == '__main__':
                         help="Filter by id/asset tag/name/service tag")
     PARSER.add_argument("--field", "-f", required=True,
                         help="Field to filter by (id/name/asset/svc tag)")
+    PARSER.add_argument("--inventorytype", "-invtype", required=False,
+						choices=('cpus', 'os', 'disks', 'controllers', 'memory'),
+						help="Get inventory by cpus/os/disks/controllers,memory")
     ARGS = PARSER.parse_args()
     get_device_inventory(ARGS.ip, ARGS.user, ARGS.password,
-                         ARGS.filterby, str(ARGS.field))
+                         ARGS.filterby, str(ARGS.field), ARGS.inventorytype)
