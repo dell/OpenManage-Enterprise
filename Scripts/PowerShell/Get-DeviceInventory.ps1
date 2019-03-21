@@ -36,6 +36,8 @@ limitations under the License.
    Credentials used to talk to the OME Appliance
  .PARAMETER FilterBy
    Express filter criteria - Name/SvcTag/Id/AssetTag
+ .PARAMETER InventoryType
+   The InventoryType can be cpus/memory/controllers/disks/os
  .PARAMETER DeviceInfo
    The actual field value to search by
 
@@ -44,10 +46,13 @@ limitations under the License.
  .EXAMPLE
    $cred = Get-Credential
    .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-    $cred -FilterBy Name -DeviceInfo idrac-BZ0M630
+    $cred -InventoryType {InventoryType} -FilterBy Name -DeviceInfo idrac-BZ0M630
+    where {InventoryType} can be cpus or memory or controllers or disks or os
+
 
  .EXAMPLE
-   .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -FilterBy SvcTag -DeviceInfo BZ0M630
+   .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -InventoryType {InventoryType} -FilterBy SvcTag -DeviceInfo BZ0M630
+    where {InventoryType} can be cpus or memory or controllers or disks or os
    In this instance you will be prompted for credentials to use to
    connect to the appliance
 #>
@@ -62,6 +67,10 @@ param(
     [Parameter(Mandatory)]
     [ValidateSet("Name","AssetTag", "Id", "SvcTag")]
     [String] $FilterBy,
+
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("cpus","memory", "controllers", "disks","os")]
+    [String] $InventoryType,
 
     [Parameter(Mandatory)]
     [String] $DeviceInfo
@@ -94,8 +103,10 @@ Try {
     $FilterMap = @{'Name'='DeviceName'; 'AssetTag'='AssetTag';
                    'Id'='Id'; 'SvcTag'='DeviceServiceTag'}
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
+    $InventoryTypeMap = @{"cpus"="serverProcessors";"os"="serverOperatingSystems";"disks"="serverArrayDisks";"controllers"="serverRaidControllers";"memory" ="serverMemoryDevices"}
     $FilterExpr  = $FilterMap[$FilterBy]
     $BaseUrl     = "https://$($IpAddress)/api/DeviceService/Devices?`$filter=$($FilterExpr) eq"
+    $InventoryUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails"
     $DevUrl      = ""
     $Type        = "application/json"
     $UserName    = $Credentials.username
@@ -119,14 +130,20 @@ Try {
             $DevInfo = $DevResp.Content | ConvertFrom-Json
             if ($DevInfo.'@odata.count' -gt 0) {
                 $DeviceId = $DevInfo.value[0].Id
-                $InventoryUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails"
+                if($InventoryType){
+                    $InventoryUrl =  "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails('$($InventoryTypeMap[$InventoryType])')"
+                }
                 $InventoryResp = Invoke-WebRequest -Uri $InventoryUrl -UseBasicParsing -Headers $Headers -Method Get -ContentType $Type
                 if ($InventoryResp.StatusCode -eq 200) {
                     $InventoryInfo = $InventoryResp.Content | ConvertFrom-Json
-                    $InventoryInfo.value | ConvertTo-Json -Depth 4
+                  $InventoryDetails = $InventoryInfo | ConvertTo-Json -Depth 6
+                  Write-Host  $InventoryDetails
                 }
+                elseif($InventoryResp.StatusCode -eq 400){
+					Write-Warning "Inventory type $($InventoryType) not applicable for device id  $($DeviceId) "
+				}
                 else {
-                    Write-Warning "Unable to retrieve inventory for device ($($DeviceInfo))"
+                    Write-Warning "Unable to retrieve inventory for device $($DeviceId) due to status code ($($InventoryResp.StatusCode))"
                 }
             }
             else {
