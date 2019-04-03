@@ -51,7 +51,7 @@ param(
     [System.UInt32]$GroupId,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("iDRAC", "BIOS", "System", "NIC", "LifecycleController", "RAID", "EventFilters")]
+    [ValidateSet("iDRAC", "BIOS", "System", "NIC", "LifecycleController", "RAID", "EventFilters", "All")]
     [String]$Component
 
 )
