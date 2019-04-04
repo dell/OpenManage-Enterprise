@@ -210,7 +210,6 @@ def deploy_template(ip_address, headers, tmpl_id, target_ids):
 	deploy_payload["TargetIds"][:] = []
 	for target in target_ids:
 		deploy_payload["TargetIds"].append(target)
-	print deploy_payload
 	url = 'https://%s/api/TemplateService/Actions/TemplateService.Deploy' % ip_address
 	response = requests.post(url, verify=False,
 				 data=json.dumps(deploy_payload),
@@ -300,6 +299,8 @@ if __name__ == '__main__':
 	MUTEX_GROUP.add_argument("--targetid", type=int,
 						help="Target device id to deploy template on the target device")
 	PARSER.add_argument("--component", required=False,
+					 choices=("iDRAC", "BIOS", "System", "NIC", "LifecycleController",
+                              "RAID", "EventFilters", "All"),
 					 help="Component to clone from source device")
 	ARGS = PARSER.parse_args()
 	IP_ADDRESS = ARGS.ip
@@ -338,7 +339,6 @@ if __name__ == '__main__':
 				TARGET_ID = ARGS.targetid
 				DEVICE_LIST = get_device_list(IP_ADDRESS, HEADERS)
 				if DEVICE_LIST:
-					print DEVICE_LIST
 					if TARGET_ID in DEVICE_LIST:
 						TARGET_IDS.append(TARGET_ID)
 					else:
