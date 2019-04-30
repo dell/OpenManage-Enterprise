@@ -28,7 +28,6 @@ CATALOGDETAILS = []
 CATALOG_INFO = {}
 BASELINE_INFO = {}
 
-
 def authenticate_with_ome(ip_address, user_name, password):
     """ X-auth session creation """
     auth_success = False
@@ -114,8 +113,8 @@ def catalog_creation(ip_address, headers):
     status, data = request(ip_address=ip_address, url=url,
                            header=headers, payload=payload, method='POST')
     if status != 201:
-        raise Exception("unable to create Catalog", data)
-    time.sleep(60)
+        raise Exception("Unable to create catalog", data)
+    time.sleep(180)
     get_catalog_status, get_catalog_data = request(ip_address=ip_address, url=url, header=headers)
     if get_catalog_status == 200 and get_catalog_data["@odata.count"] != 0:
         if get_catalog_data["value"][0].get("Repository")["Source"] == "downloads.dell.com":
@@ -144,10 +143,11 @@ def baseline_creation(ip_address, headers, param_map):
     baseline_status, baseline_data = request(ip_address=ip_address, url=url,
                                              header=headers, payload=payload, method='POST')
     if baseline_status == 201:
-        time.sleep(200)
-        id_repo = CATALOG_INFO.get("REPO_ID")
-        id_cat = CATALOG_INFO.get("CATALOG_ID")
-        return get_baseline_id(ip_address, headers, id_repo, id_cat)
+		baseline_task_id = baseline_data["TaskId"]
+		track_job_to_completion(ip_address, headers, baseline_task_id, 'Baseline job')
+		id_repo = CATALOG_INFO.get("REPO_ID")
+		id_cat = CATALOG_INFO.get("CATALOG_ID")
+		return get_baseline_id(ip_address, headers, id_repo, id_cat)
     raise Exception("Unable to create baseline, Job status : ", baseline_status)
 
 
@@ -244,7 +244,7 @@ def firmware_update(ip_address, headers, repository_id, id_cat, id_baseline, tar
         if update_status == 201 and  update_data != 0:
             job_id = update_data["Id"]
             if job_id != -1 or job_id != 0 or job_id is not None:
-                track_job_to_completion(ip_address, headers, job_id)
+                track_job_to_completion(ip_address, headers, job_id, 'Firmware Update')
         else:
             print("unsuccessful or Unable to get job id")
     else:
@@ -260,7 +260,7 @@ def get_job_type_id(values, job_type_response_data):
             return job_type_id
         i += 1
     return 0
-def track_job_to_completion(ip_address, headers, job_id):
+def track_job_to_completion(ip_address, headers, job_id, job_name):
     """ Tracks the update job to completion / error """
     job_status_map = {
         "2020": "Scheduled",
@@ -293,11 +293,11 @@ def track_job_to_completion(ip_address, headers, job_id):
                                                         job_status_map[job_status]))
             if int(job_status) == 2060:
                 job_incomplete = False
-                print("Completed updating firmware successfully ... Exiting")
+                print("%s completed successfully ... Exiting"%job_name)
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
-                print("Update job failed ... ")
+                print("%s job failed ... "%job_name)
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
                 if job_hist_resp.status_code == 200:
@@ -340,7 +340,7 @@ def get_baseline_id(ip_address, headers, id_repo, id_cat):
                 repo_data = data["value"][i]["RepositoryId"]
                 catalog_data = data["value"][i]["CatalogId"]
                 if id_repo == repo_data and id_cat == catalog_data:
-                    return id_repo, id_cat, data["value"][i]["Id"]
+                    return id_repo, id_cat, data["value"][i]["Id"], data["value"][i]["TaskId"]
                 if i == len(data["value"]):
                     print("unable to find  the corresponding baseline")
                     return 0
@@ -350,7 +350,7 @@ def get_baseline_id(ip_address, headers, id_repo, id_cat):
     print("unable to get baseline id")
     return 0
 
-
+	
 def get_job_types(ip_address, header):
     """ Get job type """
     url = "https://{0}/api/JobService/JobTypes".format(ip_address)
@@ -363,8 +363,10 @@ def request(ip_address, url, header, payload=None, method='GET'):
                                        assert_hostname=False)
     request_obj = pool.urlopen(method, url, headers=header, body=json.dumps(payload))
     data = None
-    if request_obj.data:
+    if request_obj.data and request_obj.status != 400:
         data = json.loads(request_obj.data)
+    else:
+		data = request_obj.data
     return request_obj.status, data
 
 
@@ -435,7 +437,37 @@ def get_device_list(ip_address, headers):
         print("No devices found at ", ip_address)
     return ome_device_list
 
-
+def refresh_compliance_data(ip_address, headers, baseline_job_id, id_baseline):
+	""" Reruns baseline job to refresh inventory data """
+	url = 'https://%s/api/JobService/Actions/JobService.RunJobs' % ip_address
+	payload = {
+		"JobIds": [10203]
+	}
+	payload["JobIds"][:] = []
+	payload["JobIds"].append(baseline_job_id)
+	print("payload",payload)
+	status, data = request(ip_address=ip_address, url=url,
+											 header=headers, payload=payload, method='POST')
+	if status != 204:
+		job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, baseline_job_id)
+		job_response = requests.get(job_url, headers=headers, verify=False)
+		job_status = job_response["LastRunStatus"]["Name"]
+		if job_status == "Running":
+			print("Baseline job is rerunning")
+			track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
+		#else:	
+		#	print("Baseline job not running")
+	elif status == 204:
+		print("Baseline rerun job created")
+		track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
+	time.sleep(10)
+	fresh_compliance_list = check_device_compliance_report(ip_address, headers, id_baseline)
+	if (len(fresh_compliance_list) == 0):
+		print("All components are compliant")
+	else:
+		print("Compliance refresh failed")
+	
+		
 def get_group_list(ip_address, headers):
     """ Get list of groups from OME """
     group_list = None
@@ -453,10 +485,10 @@ def get_group_list(ip_address, headers):
 
 
 def catalog_creation_payload():
-    """
-    :return: dict representing the payload
-    """
-    return {
+	"""
+	:return: dict representing the payload
+	"""
+	return {
         "Filename": "",
         "SourcePath": "",
         "Repository": {
@@ -470,7 +502,6 @@ def catalog_creation_payload():
             "CheckCertificate": False
         }
     }
-
 
 def baseline_creation_payload(id_cat, repository_id, target_id, target_type, target_name):
     """ Return payload for Baseline creation """
@@ -544,9 +575,32 @@ def baseline_deletion_payload(baseline_list):
         "BaselineIds": baseline_list
     }
 
+def rerun_baseline(ip_address, headers, baseline_job_id):
+	""" Reruns baseline job to refresh inventory data """
+	url = 'https://%s/api/JobService/Actions/JobService.RunJobs'%ip_address
+	payload = {
+		"JobIds": [10203]
+	}
+	payload["JobIds"][:] = []
+	payload["JobIds"].append(baseline_job_id)
+	status, data = request(ip_address=ip_address, url=url,
+											 header=headers, payload=payload, method='POST')
+	if status != 204:
+		job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, baseline_job_id)
+		job_response = requests.get(job_url, headers=headers, verify=False)
+		#track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
+		if job_response.status_code == 200:
+			response = job_response.json()
+			job_status = response["LastRunStatus"]["Name"]
+			if job_status == "Running":
+				print("Baseline job is running")
+				track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
+	elif status == 204:
+		print("Baseline rerun job created")
+		track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
 
 if __name__ == '__main__':
-   # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", required=True, help="OME Appliance IP")
@@ -599,46 +653,12 @@ if __name__ == '__main__':
                     else:
                         raise ValueError("Device %s not found on %s ... Exiting" % (
                             DEVICE_ID, IP_ADDRESS))
-            CATALOG_DETAILS = check_for_existing_catalog(ip_address=IP_ADDRESS, headers=HEADERS)
-            if CATALOG_DETAILS:
-                for catalog in CATALOG_DETAILS:
-                    if catalog["associated_baseline_id"]:
-                        print("Existing catalog and baseline found from dell repo")
-                        # Associated baselines exists, deleting baselines before catalogs
-                        list1 = catalog.get("associated_baseline_id")
-                        baseline_delete_status, baseline_delete_data = delete_baseline(
-                            ip_address=IP_ADDRESS,
-                            headers=HEADERS,
-                            baseline_list=list1)
-                        if baseline_delete_status == 204:
-                            print("Successfully deleted the existing baseline")
-                        else:
-                            raise Exception("Unable to delete the existing baseline")
-                        catalog_delete_status, catalog_delete_data = delete_catalog(
-                            ip_address=IP_ADDRESS,
-                            headers=HEADERS)
-                        if catalog_delete_status == 204:
-                            print("Successfully deleted the existing catalog")
-                            CATALOGDETAILS = []
-                        else:
-                            raise Exception("Unable to delete the existing catalog")
-                    else:
-                        # when No Associated Baselines exists for catalog
-                        print("Existing catalog found from dell repo")
-                        catalog_delete_status, catalog_delete_data = delete_catalog(
-                            ip_address=IP_ADDRESS,
-                            headers=HEADERS)
-                        if catalog_delete_status == 204:
-                            print("Successfully deleted the existing catalog")
-                            CATALOGDETAILS = []
-                        else:
-                            raise Exception("Unable to delete the existing catalog.!")
             CATALOG_ID = catalog_creation(ip_address=IP_ADDRESS, headers=HEADERS)
             if CATALOG_ID:
                 print("Successfully created the catalog")
             else:
                 raise Exception("Unable to create Catalog")
-            REPO_ID, ID_CATALOG, BASELINE_ID = baseline_creation(ip_address=IP_ADDRESS,
+            REPO_ID, ID_CATALOG, BASELINE_ID, BASELINE_JOB_ID = baseline_creation(ip_address=IP_ADDRESS,
                                                                  headers=HEADERS,
                                                                  param_map=PARAM_MAP)
             if BASELINE_ID == 0:
@@ -646,17 +666,21 @@ if __name__ == '__main__':
             elif BASELINE_ID != 0:
                 print("Successfully created baseline")
             COMPLIANCE_LIST = check_device_compliance_report(ip_address=IP_ADDRESS, headers=HEADERS,
-                                                             id_baseline=BASELINE_ID)
+															 id_baseline=BASELINE_ID)
+            print("Compliance List: %s"%COMPLIANCE_LIST)
             if COMPLIANCE_LIST:
-                TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
-                if TARGET_PAYLOAD != 0:
-                    firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
-                                    id_cat=ID_CATALOG,
-                                    id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
-                else:
-                    print("No component present for upgrade")
+				TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
+				if TARGET_PAYLOAD != 0:
+					firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
+									id_cat=ID_CATALOG,
+									id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
+					#Initiate compliance refresh
+					refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
+								baseline_job_id=BASELINE_JOB_ID, id_baseline=BASELINE_ID)
+				else:
+					print("No components found for upgrade")
             else:
-                print("No Target devices found to update the firmware")
+				print("No components found for upgrade...skipping firmware upgrade")
         else:
             print("Unable to authenticate with OME .. Check IP/Username/Pwd")
     except OSError:
