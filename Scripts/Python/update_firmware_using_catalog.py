@@ -455,17 +455,17 @@ def refresh_compliance_data(ip_address, headers, baseline_job_id, id_baseline):
 		if job_status == "Running":
 			print("Baseline job is rerunning")
 			track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
-		#else:	
-		#	print("Baseline job not running")
 	elif status == 204:
 		print("Baseline rerun job created")
 		track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
+	'''
 	time.sleep(10)
 	fresh_compliance_list = check_device_compliance_report(ip_address, headers, id_baseline)
 	if (len(fresh_compliance_list) == 0):
 		print("All components are compliant")
 	else:
 		print("Compliance refresh failed")
+	'''
 	
 		
 def get_group_list(ip_address, headers):
