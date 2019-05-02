@@ -113,7 +113,7 @@ def get_discover_device_payload():
 			 \"WSMAN\",\"authType\":\"Basic\",\"modified\":false,\"credentials\":\
 			 {\"username\":\"\",\"password\":\"\",\"port\":443,\"retries\":3,\"timeout\":\
 			 60}}]}",
-                "DeviceType":[1000]}],
+                "DeviceType":[2000]}],
             "Schedule":{
                 "RunNow":True,
                 "Cron":"startnow"}
