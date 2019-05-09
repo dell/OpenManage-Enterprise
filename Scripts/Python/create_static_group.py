@@ -96,7 +96,7 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--groupname", "-g",
+    PARSER.add_argument("--groupname", "-g", required=True,
                         help="A valid name for the group")
     ARGS = PARSER.parse_args()
     create_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname)

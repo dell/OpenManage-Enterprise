@@ -8,9 +8,9 @@ DESCRIPTION:
 
 EXAMPLE:
    python discover_device.py --ip <ip addr> --user admin
-    --password <passwd> --serviceApiUserName <user name>
-    --serviceApiPassword <password> --deviceType <{Device_Type}>
-    --IpAddressArray <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx> or --csvFilePath xyz.csv
+    --password <passwd> --targetUserName <user name>
+    --targetPassword <password> --deviceType <{Device_Type}>
+    --targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx> or --targetIpAddrCsvFile xyz.csv
     where {Device_Type} can be server,chassis
 """
 import sys
@@ -21,7 +21,6 @@ import time
 import argparse
 from argparse import RawTextHelpFormatter
 import json
-from IPy import IP
 import urllib3
 import requests
 def authenticate_with_ome(ip_address, user_name, password):
@@ -153,9 +152,9 @@ def get_job_id(ip_address, headers, discovery_config_group_id):
                     job_id = value_object['JobId']
                     break
         else:
-            print("unable to get job id ")
+            print("unable to get job id "+job_resp_object)
     else:
-        print("unable to get job id", job_resp.status_code)
+        print("unable to get job id.Status code:  " + job_resp.status_code)
     return job_id
 
 def track_job_to_completion(ip_address, headers, job_id):
@@ -234,28 +233,29 @@ if __name__ == '__main__':
                         default="admin")
     PARSER.add_argument("--password", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--serviceApiUserName", required=True,
+    PARSER.add_argument("--targetUserName", required=True,
                         help="Username to discover devices")
-    PARSER.add_argument("--serviceApiPassword", required=True,
+    PARSER.add_argument("--targetPassword", required=True,
                         help="Password to discover devices")
     PARSER.add_argument("--deviceType", required=True,
                         choices=('server', 'chassis'),
                         help="Device Type  to discover devices")
     MUTEX_GROUP = PARSER.add_mutually_exclusive_group(required=True)
-    MUTEX_GROUP.add_argument("--IpAddress",
+    MUTEX_GROUP.add_argument("--targetIpAddresses",
                              help="Array of Ip address to discover devices ")
-    MUTEX_GROUP.add_argument("--csvFilePath",
+    MUTEX_GROUP.add_argument("--targetIpAddrCsvFile",
                              help="Path to Csv file that contains IP address to discover devices")
     ARGS = PARSER.parse_args()
     IP_ADDRESS = ARGS.ip
     USER_NAME = ARGS.user
     PASSWORD = ARGS.password
-    DISCOVER_USER_NAME = ARGS.serviceApiUserName
-    DISCOVER_PASSWORD = ARGS.serviceApiPassword
-    IP_ARRAY = ARGS.IpAddress
-    CSV_FILE_PATH = ARGS.csvFilePath
+    DISCOVER_USER_NAME = ARGS.targetUserName
+    DISCOVER_PASSWORD = ARGS.targetPassword
+    IP_ARRAY = ARGS.targetIpAddresses
+    CSV_FILE_PATH = ARGS.targetIpAddrCsvFile
     DEVICE_TYPE = ARGS.deviceType
     LIST_OF_IP = []
+    LIST_OF_IPADDRESS = []
     if IP_ARRAY:
         LIST_OF_IP = IP_ARRAY.split(',')
     else:
@@ -270,16 +270,29 @@ if __name__ == '__main__':
             else:
                 print("File %s seems to be empty ... Exiting" % CSV_FILE_PATH)
         else:
-            print("File not found ... Retry")
-
+            raise Exception("File not found ... Retry")
+	
     for ip in LIST_OF_IP:
         if '-' in ip:
             ips = ip.split('-')
-            for ip_addrs in ips:
-                IP(ip_addrs)
         else:
-            if ip != ' ':
-                IP(ip)
+            ips = ip
+        if type(ips) is list:
+            for ip in ips:
+                LIST_OF_IPADDRESS.append(ip)
+        else:
+            LIST_OF_IPADDRESS.append(ips)
+        for ip_addr in LIST_OF_IPADDRESS:
+            Ipbytes = ip_addr.split('.')
+            if len(Ipbytes)!=4:
+                raise Exception("Invalid IP address "+ip_addr+" Example of valid ip be like 192.168.1.0")
+            for Ipbyte in Ipbytes:
+                if not Ipbyte.isdigit():
+                    raise Exception("Invalid Ip address" +ip_addr + " Only digits are allowed. Example of valid ip be like 192.168.1.0")
+                Ip = int(Ipbyte)
+                if Ip<0 or Ip>255:
+                    raise Exception("Invalid Ip address "+ip_addr+" single byte must be 0 <= byte < 256. Example of valid ip be like 192.168.1.0")
+          
 
 
 
