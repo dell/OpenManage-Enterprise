@@ -270,7 +270,7 @@ if __name__ == '__main__':
             else:
                 print("File %s seems to be empty ... Exiting" % CSV_FILE_PATH)
         else:
-            raise Exception("File not found ... Retry")
+            raise Exception("File not found ...  Retry")
 	
     for ip in LIST_OF_IP:
         if '-' in ip:
