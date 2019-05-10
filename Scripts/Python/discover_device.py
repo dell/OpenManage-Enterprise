@@ -285,13 +285,13 @@ if __name__ == '__main__':
         for ip_addr in LIST_OF_IPADDRESS:
             Ipbytes = ip_addr.split('.')
             if len(Ipbytes)!=4:
-                raise Exception("Invalid IP address "+ip_addr+" Example of valid ip be like 192.168.1.0")
+                raise Exception("Invalid IP address "+ip_addr+" Example of valid ip  192.168.1.0")
             for Ipbyte in Ipbytes:
                 if not Ipbyte.isdigit():
-                    raise Exception("Invalid Ip address" +ip_addr + " Only digits are allowed. Example of valid ip be like 192.168.1.0")
+                    raise Exception("Invalid Ip address" +ip_addr + " Only digits are allowed. Example of valid ip 192.168.1.0")
                 Ip = int(Ipbyte)
                 if Ip<0 or Ip>255:
-                    raise Exception("Invalid Ip address "+ip_addr+" single byte must be 0 <= byte < 256. Example of valid ip be like 192.168.1.0")
+                    raise Exception("Invalid Ip address "+ip_addr+" single byte must be 0 <= byte < 256. Example of valid ip 192.168.1.0")
           
 
 
