@@ -4,6 +4,7 @@ Example cookbooks to use the OpenManage Enterprise REST APIs to perform common c
 
 ## Targeted Use Cases
 
+* Add IP / Hosts to discovery range 
 * Get list of groups
 * Get list of devices
 * Get device Inventory
@@ -11,14 +12,20 @@ Example cookbooks to use the OpenManage Enterprise REST APIs to perform common c
 * Get group details using Filter constructs
 * Get list of alerts by group
 * Get list of alerts by device
-* Add IP / Hosts to discovery range
-* Perform firmware update on devices / groups using a single DUP file
+* Get list of pre-canned reports
 * Run a pre-defined report
+* Create a static group
+* Set power state for the target system
+* Perform firmware update on devices / groups using a single DUP file
+* Perform firmware update on devices / groups using a catalog
+* Clone configuration from a reference server to a target server
 
 
 ## Authors
 
-* **Raajeev Kalyanaraman** - *Initial work* 
+* **Raajeev Kalyanaraman** - *Initial work*
+* **Vittal Reddy**
+* **Laxmi Joshi** 
 
 
 ## License
@@ -27,5 +34,3 @@ Copyright Dell EMC
 
 
 ## Acknowledgments
-
-* Christo Magri (Firmware update details)
