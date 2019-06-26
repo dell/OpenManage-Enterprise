@@ -25,7 +25,7 @@ limitations under the License.
 
    This script exercises the OME REST API to get the inventory
    for a device. The device can be filtered using the Device Name
-   or Asset Tag or Service Tag or Device Id
+    Service Tag or Device Id
    This example uses ODATA queries with filter constructs.
 
    Note that the credentials entered are not stored to disk.
@@ -35,7 +35,7 @@ limitations under the License.
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
  .PARAMETER FilterBy
-   Express filter criteria - Name/SvcTag/Id/AssetTag
+   Express filter criteria - Name/SvcTag/Id
  .PARAMETER InventoryType
    The InventoryType can be cpus/memory/controllers/disks/os
  .PARAMETER DeviceInfo
@@ -65,7 +65,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [ValidateSet("Name","AssetTag", "Id", "SvcTag")]
+    [ValidateSet("Name", "Id", "SvcTag")]
     [String] $FilterBy,
 
     [Parameter(Mandatory=$false)]
@@ -100,8 +100,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $FilterMap = @{'Name'='DeviceName'; 'AssetTag'='AssetTag';
-                   'Id'='Id'; 'SvcTag'='DeviceServiceTag'}
+    $FilterMap = @{'Name'='DeviceName'; 'Id'='Id'; 'SvcTag'='DeviceServiceTag'}
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
     $InventoryTypeMap = @{"cpus"="serverProcessors";"os"="serverOperatingSystems";"disks"="serverArrayDisks";"controllers"="serverRaidControllers";"memory" ="serverMemoryDevices"}
     $FilterExpr  = $FilterMap[$FilterBy]
