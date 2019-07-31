@@ -26,7 +26,7 @@ SYNOPSIS:
 
 DESCRIPTION:
     This script exercises the OME REST API to get detailed inventory
-    for a device given ID/Name/Asset Tag or Service Tag
+    for a device given ID/Name/Service Tag
     and Inventory type (os,cpus,disks,memory,controllers) of the device
     Note that the credentials entered are not stored to disk.
 
@@ -46,7 +46,6 @@ import urllib3
 def get_device_inventory(ip_address, user_name, password, filter_by, field, inventory_type):
     """ Get inventory details for a device based on filters """
     filter_map = {'Name': 'DeviceName',
-                  'AssetTag': 'AssetTag',
                   'Id': 'Id',
                   'SvcTag': 'DeviceServiceTag'}
     inventory_types = {
@@ -115,10 +114,10 @@ if __name__ == '__main__':
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
     PARSER.add_argument("--filterby", "-fby", required=True,
-                        choices=('Id', 'Name', 'AssetTag', 'SvcTag'),
-                        help="Filter by id/asset tag/name/service tag")
+                        choices=('Id', 'Name','SvcTag'),
+                        help="Filter by id/name/service tag")
     PARSER.add_argument("--field", "-f", required=True,
-                        help="Field to filter by (id/name/asset/svc tag)")
+                        help="Field to filter by (id/name/svc tag)")
     PARSER.add_argument("--inventorytype", "-invtype", required=False,
                         choices=('cpus', 'os', 'disks', 'controllers', 'memory'),
                         help="Get inventory by cpus/os/disks/controllers,memory")

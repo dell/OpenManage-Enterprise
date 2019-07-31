@@ -7,7 +7,7 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python discover_device.py --ip <ip addr> --user admin
+   python set_power_state.py --ip <ip addr> --user admin
     --password <passwd> --deviceId 25527  --state {state}
     where {state} can be "On", "Off", "Cold Boot","Warm Boot", "ShutDown"
 """
