@@ -47,7 +47,7 @@ def get_device_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate devices """
     try:
         session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        device_url = 'https://%s/api/DeviceService/Devices' % (ip_address)
+        device_count_url = 'https://%s/api/DeviceService/Devices?$count=true & $top=0' % (ip_address)
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -57,11 +57,21 @@ def get_device_list(ip_address, user_name, password):
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            response = requests.get(device_url, headers=headers, verify=False)
-            if response.status_code == 200:
-                print (json.dumps(response.json(), indent=4, sort_keys=True))
+            device_response = requests.get(device_count_url, headers=headers, verify=False)
+            if device_response.status_code == 200:
+                json_data = device_response.json()
+                device_count = json_data['@odata.count']
+                if device_count>0:
+                    device_url = 'https://%s/api/DeviceService/Devices?$skip=0 & $top=%s' % (ip_address,device_count)
+                    device_resp = requests.get(device_url, headers=headers,verify=False)
+                    if device_resp.status_code ==200:
+                       print (json.dumps(device_resp.json(), indent=4, sort_keys=True))
+                    else:
+                         print ("Unable to retrieve device list from %s" % (ip_address))
+                else:
+                    print ("No devices managed by %s" %(ip_address))
             else:
-                print ("Unable to retrieve device list from %s" % (ip_address))
+                print ("Unable to get count of managed devices .. Exiting")     
         else:
             print ("Unable to create a session with appliance %s" % (ip_address))
     except:
