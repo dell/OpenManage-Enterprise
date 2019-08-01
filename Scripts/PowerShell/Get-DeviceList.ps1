@@ -75,7 +75,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $DeviceUrl   = "https://$($IpAddress)/api/DeviceService/Devices"
+    $DeviceCountUrl   = "https://$($IpAddress)/api/DeviceService/Devices?$count=true&$top=0"    
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -87,14 +87,29 @@ Try {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($DevResp.StatusCode -eq 200) {
-            $Devices = $DevResp.Content | ConvertFrom-Json
-            $Devices.'value' | Format-List
+        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        if ($DevCountResp.StatusCode -eq 200) {
+            $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
+            $NumManagedDevices = $DeviceCountData.'@odata.count'
+            if ($NumManagedDevices -gt 0){
+                $DeviceUrl   = "https://$($IpAddress)/api/DeviceService/Devices?$skip=0&$top=$($NumManagedDevices)"
+                $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                if ($DevResp.StatusCode -eq 200) {
+                    $Devices = $DevResp.Content | ConvertFrom-Json
+                    $Devices.'value' | Format-List
+                }
+                else {
+                    Write-Error "Unable to retrieve device list from $($IpAddress)"
+                }
+            }
+            else {
+                Write-Error "No devices managed by $($IpAddress)"
+            }
         }
         else {
-            Write-Error "Unable to retrieve device list from $($IpAddress)"
+            Write-Error "Unable to get count of managed devices .. Exiting"
         }
+
     }
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
