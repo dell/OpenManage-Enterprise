@@ -75,7 +75,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $DeviceCountUrl   = "https://$($IpAddress)/api/DeviceService/Devices?$count=true&$top=0"    
+    $DeviceCountUrl   = "https://$($IpAddress)/api/DeviceService/Devices?`$count=true&`$top=0"    
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -92,7 +92,7 @@ Try {
             $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
             $NumManagedDevices = $DeviceCountData.'@odata.count'
             if ($NumManagedDevices -gt 0){
-                $DeviceUrl   = "https://$($IpAddress)/api/DeviceService/Devices?$skip=0&$top=$($NumManagedDevices)"
+                $DeviceUrl   = "https://$($IpAddress)/api/DeviceService/Devices?`$skip=0&`$top=$($NumManagedDevices)"
                 $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                 if ($DevResp.StatusCode -eq 200) {
                     $Devices = $DevResp.Content | ConvertFrom-Json

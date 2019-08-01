@@ -90,9 +90,23 @@ Try {
         $ReportResp = Invoke-WebRequest -Uri $ReportUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($ReportResp.StatusCode -eq 200) {
             $ReportInfo = $ReportResp.Content | ConvertFrom-Json
-            if ($ReportInfo.'@odata.count' -gt 0) {
+            $ReportList = $ReportInfo.value
+            $totalReports = $ReportInfo.'@odata.count'
+            if ($totalReports -gt 0) {
+                if ($totalReports -gt 20) {
+                  $delta = $totalReports - 20
+                  $RemainingRepUrl = $ReportUrl +"?`$skip=20&`$top=$($delta)"
+                  $RemReportResp = Invoke-WebRequest -Uri $RemainingRepUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                  if ($RemReportResp.StatusCode -eq 200) {
+                    $RemReportInfo = $RemReportResp.Content | ConvertFrom-Json
+                    $ReportList += $RemReportInfo.value
+                  }
+                  else {
+                    Write-Error "Unable to get full set of reports ... "
+                  }
+                }
                 Write-Output "*** List of pre-defined reports ***"
-                $ReportInfo.value | Format-List
+                $ReportList | Format-List
             }
             else {
                     Write-Warning "No pre-defined reports found on $($IpAddress)"
