@@ -93,9 +93,10 @@ Try {
             $ReportList = $ReportInfo.value
             $totalReports = $ReportInfo.'@odata.count'
             if ($totalReports -gt 0) {
-                if ($totalReports -gt 20) {
-                  $delta = $totalReports - 20
-                  $RemainingRepUrl = $ReportUrl +"?`$skip=20&`$top=$($delta)"
+                $currReportCount = ($ReportInfo.value).Length
+                if ($totalReports -gt $currReportCount) {
+                  $delta = $totalReports - $currReportCount
+                  $RemainingRepUrl = $ReportUrl +"?`$skip=$($currReportCount)&`$top=$($delta)"
                   $RemReportResp = Invoke-WebRequest -Uri $RemainingRepUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                   if ($RemReportResp.StatusCode -eq 200) {
                     $RemReportInfo = $RemReportResp.Content | ConvertFrom-Json
