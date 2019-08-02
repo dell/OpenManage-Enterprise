@@ -53,25 +53,24 @@ def get_report_list(ip_address, user_name, password):
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            response = requests.get(report_svc, headers=headers, verify=False)
-            if response.status_code == 200:
-                json_data = response.json() 
-                total_data = json_data['@odata.count']
-                if total_data > 0:
-                    if total_data >20:
-                        delta = total_data -20
-                        remaining_report_url = report_svc +"?$skip=20&$top=%s"%(delta)
+            report_response = requests.get(report_svc, headers=headers, verify=False)
+            if report_response.status_code == 200:
+                report_info = report_response.json() 
+                total_reports = report_info['@odata.count']
+                if total_reports > 0:
+                    current_repo_count = len(report_info['value'])
+                    if total_reports > current_repo_count:
+                        delta = total_reports - current_repo_count
+                        remaining_report_url = report_svc +"?$skip=%s&$top=%s"%(current_repo_count, delta)
                         remaining_report_resp = requests.get(remaining_report_url, headers=headers, verify =False)
                         if remaining_report_resp.status_code == 200:
                             remaining_report_data = remaining_report_resp.json()
-                            remaining_report_value = remaining_report_data["value"]
-                            for value in remaining_report_value:
-                               if value not in json_data["value"]:
-                                   json_data["value"].append(value)
+                            for value in remaining_report_data["value"]:
+                                report_info["value"].append(value)
                         else:
                             print ("Unable to get full set of reports ... ")    
                     print ("*** List of pre-defined reports ***")
-                    print (json.dumps(json_data, indent=4, sort_keys=True))
+                    print (json.dumps(report_info, indent=4, sort_keys=True))
                 else:
                     print ("No pre-defined reports found on %s" % (ip_address))
             else:

@@ -155,7 +155,19 @@ class OMEReportExecutor(object):
                                          verify=False)
             if report_result.status_code == 200:
                 report_info = report_result.json()
-                if report_info['@odata.count'] > 0:
+                total_rep_results = report_info['@odata.count']
+                if total_rep_results > 0:
+                    current_rep_result_count = len(report_info['value'])
+                    if total_rep_results >current_rep_result_count:
+                        delta = total_rep_results - current_rep_result_count
+                        remaining_res_url = result_url +"?$skip=%s&$top=%s"%(current_rep_result_count, delta)
+                        rem_res_resp = requests.get(remaining_res_url, headers=headers, verify = False)
+                        if rem_res_resp.status_code ==200:
+                            rem_resp_info = rem_res_resp.json()
+                            for value in rem_res_info['value']:
+                                report_info.append(value)
+                        else:
+                            print("Unable to get full set of report results")        
                     for result in report_info['value']:
                         print (",".join(result['Values']))
                 else:
