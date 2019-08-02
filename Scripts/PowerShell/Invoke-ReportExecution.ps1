@@ -95,13 +95,13 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
         $RepResult = Invoke-WebRequest -Uri $ResultUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($RepResult.StatusCode -eq 200) {
             $RepInfo = $RepResult.Content | ConvertFrom-Json
-            $totalRepResults = $RepInfo.'@odata.count'
+            $totalRepResults = [int]($RepInfo.'@odata.count')
             if ($totalRepResults -gt 0) {
                 $ReportResultList = $RepInfo.Value
                 $currRepResultCount = $ReportResultList.Length
                 if ($totalRepResults -gt $currRepResultCount) {
-                    $delta = $totalRepResults - $currRepResultCount
-                    $RemainingResUrl = $ResultUrl + +"?`$skip=$($currRepResultCount)&`$top=$($delta)"
+                    $delta = [int]($totalRepResults - $currRepResultCount)
+                    $RemainingResUrl = $ResultUrl + "?`$skip=" + [string]$currRepResultCount + "&`$top=" + [string]$delta
                     $RemResResp = Invoke-WebRequest -Uri $RemainingResUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                     if ($RemResResp.StatusCode -eq 200) {
                         $RemRespInfo = $RemResResp.Content | ConvertFrom-Json
