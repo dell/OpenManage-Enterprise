@@ -41,7 +41,8 @@ import json
 import requests
 import urllib3
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning) 
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 
 def get_device_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate devices """
@@ -61,27 +62,27 @@ def get_device_list(ip_address, user_name, password):
             if device_response.status_code == 200:
                 json_data = device_response.json()
                 device_count = json_data['@odata.count']
-                if device_count>0:
-                    if device_count>20:
-                        delta = device_count -20
-                        remaining_device_url = device_url+"?$skip=20&$top=%s"%(delta)
-                        remaining_device_resp = requests.get(remaining_device_url, headers=headers,verify=False)
-                        if remaining_device_resp.status_code ==200:
+                if device_count > 0:
+                    curr_dev_count = len(json_data['value'])
+                    if device_count > curr_dev_count:
+                        delta = device_count - curr_dev_count
+                        remaining_device_url = device_url+"?$skip=%s&$top=%s" % (curr_dev_count, delta)
+                        remaining_device_resp = requests.get(remaining_device_url,
+                                                             headers=headers,
+                                                             verify=False)
+                        if remaining_device_resp.status_code == 200:
                             remaining_device_data = remaining_device_resp.json()
-                            remaining_device_value = remaining_device_data["value"]
-                            for value in remaining_device_value :
-                                if value not in json_data["value"]:
-                                    json_data["value"].append(value)
+                            json_data['value'] = json_data['value'] + remaining_device_data['value']
                         else:
-                            print ("Unable to get full device list ... ") 
-                    print ("*** Device List ***")        
-                    print (json.dumps(json_data, indent=4, sort_keys=True))
+                            print ("Unable to get full device list ... ")
+                    print("*** Device List ***")
+                    print(json.dumps(json_data, indent=4, sort_keys=True))
                 else:
-                     print ("No devices managed by %s" %(ip_address))   
+                    print("No devices managed by %s" % (ip_address))
             else:
-                print ("Unable to retrieve device list from %s" % (ip_address))
+                print("Unable to retrieve device list from %s" % (ip_address))
         else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
+            print("Unable to create a session with appliance %s" % (ip_address))
     except:
         print ("Unexpected error:", sys.exc_info()[0])
 
