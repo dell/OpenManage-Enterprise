@@ -165,7 +165,7 @@ class OMEReportExecutor(object):
                         if rem_res_resp.status_code ==200:
                             rem_resp_info = rem_res_resp.json()
                             for value in rem_res_info['value']:
-                                report_info.append(value)
+                                report_info['value'].append(value)
                         else:
                             print("Unable to get full set of report results")        
                     for result in report_info['value']:
