@@ -116,7 +116,6 @@ Try {
             $TotalAlerts = $AlertInfo.'@odata.count' 
             if ($TotalAlerts -gt 0) {
                 $currAlertCount = ($AlertInfo.value).Length
-                $RemainingAlertUrl = $AlertUrl +"&`$skip=0&`$top=5"
                 if ($totalAlerts -gt $currAlertCount) {
                   $delta = $totalAlerts- $currAlertCount
                   $RemainingAlertUrl = $AlertUrl +"&`$skip=$($currAlertCount)&`$top=$($delta)"
