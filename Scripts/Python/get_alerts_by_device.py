@@ -45,7 +45,7 @@ import requests
 
 def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
     """ Get alerts from OME filtered by name or asset tag """
-    filter_map = {'Name': 'AlertDeviceName', 'AssetTag': 'AlertDeviceAssetTag'}
+    filter_map = {'Name': 'AlertDeviceName', 'DeviceIdentifier': 'AlertDeviceIdentifier'}
     try:
         session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
         alert_svc = "https://%s/api/AlertService/Alerts?$filter=%s eq '%s'" % (ip_address, filter_map[filter_by], field)
@@ -62,7 +62,19 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
             response = requests.get(alert_svc, headers=headers, verify=False)
             if response.status_code == 200:
                 json_data = response.json()
-                if json_data['@odata.count'] > 0:
+                total_reports = json_data['@odata.count']
+                if total_reports > 0:
+                    current_repo_count = len(json_data['value'])
+                    if total_reports>current_repo_count:
+                            delta = total_reports-current_repo_count
+                            remaining_alert_url =alert_svc+"& $Skip=%s&$top=%s"%(current_repo_count,delta)
+                            remaining_alert_resp = requests.get(remaining_alert_url, headers=headers, verify=False)
+                            if remaining_alert_resp.status_code ==200:
+                                remaining_alert_data = remaining_alert_resp.json()
+                                for value in remaining_alert_data["value"]:
+                                    json_data["value"].append(value)
+                            else:
+                                print ("Unable to get full set of reports ... ")
                     # Technically there should be only one result in the filter
                     print ("\n*** Alerts for device (%s) ***" % (field))
                     print (json.dumps(json_data, indent=4, sort_keys=True))
@@ -87,10 +99,10 @@ if __name__ == '__main__':
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
     PARSER.add_argument("--filterby", "-fby", required=True,
-                        choices=('Name', 'AssetTag'),
-                        help="Filter by asset tag or name")
+                        choices=('Name', 'DeviceIdentifier'),
+                        help="Filter by device identifier or name")
     PARSER.add_argument("--field", "-f", required=True,
-                        help="Field to filter by (a valid asset tag or name)")
+                        help="Field to filter by (a valid device identifier or name)")
     ARGS = PARSER.parse_args()
     get_alerts_by_device(ARGS.ip, ARGS.user, ARGS.password,
                          ARGS.filterby, str(ARGS.field))

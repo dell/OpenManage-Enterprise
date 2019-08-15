@@ -35,9 +35,9 @@ limitations under the License.
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
  .PARAMETER FilterBy
-   Express filter criteria - Name or AssetTag
+   Express filter criteria - Name or Deviceidentifier
  .PARAMETER DeviceInfo
-   The actual device name or asset tag to search against
+   The actual device name or device identifier to search against
    The device name maps to the Device Identifier if you are
    enumerating the list of devices. This same field is 
    represented as AlertDeviceName in the Alert data.
@@ -50,7 +50,7 @@ limitations under the License.
     $cred -FilterBy name -DeviceInfo ""
 
  .EXAMPLE
-   .\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -FilterBy AssetTag -DeviceInfo ""
+   .\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -FilterBy DeviceIdentifier -DeviceInfo ""
    In this instance you will be prompted for credentials to use to
    connect to the appliance
 #>
@@ -63,7 +63,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [ValidateSet("Name","AssetTag")]
+    [ValidateSet("Name","DeviceIdentifier")]
     [String] $FilterBy,
 
     [Parameter(Mandatory)]
@@ -94,7 +94,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $FilterMap = @{'Name'='AlertDeviceName'; 'AssetTag'='AlertDeviceAssetTag'}
+    $FilterMap = @{'Name'='AlertDeviceName'; 'DeviceIdentifier'='AlertDeviceIdentifier'}
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
     $FilterExpr  = $FilterMap[$FilterBy]
     $AlertUrl    = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=$($FilterExpr) eq '$($DeviceInfo)'"
@@ -112,9 +112,25 @@ Try {
         $AlertResp = Invoke-WebRequest -Uri $AlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($AlertResp.StatusCode -eq 200) {
             $AlertInfo = $AlertResp.Content | ConvertFrom-Json
-            if ($AlertInfo.'@odata.count' -gt 0) {
+            $AlertList = $AlertInfo.value
+            $TotalAlerts = $AlertInfo.'@odata.count' 
+            if ($TotalAlerts -gt 0) {
+                $currAlertCount = ($AlertInfo.value).Length
+                $RemainingAlertUrl = $AlertUrl +"&`$skip=0&`$top=5"
+                if ($totalAlerts -gt $currAlertCount) {
+                  $delta = $totalAlerts- $currAlertCount
+                  $RemainingAlertUrl = $AlertUrl +"&`$skip=$($currAlertCount)&`$top=$($delta)"
+                  $RemAlertResp = Invoke-WebRequest -Uri $RemainingAlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                  if ($RemAlertResp.StatusCode -eq 200) {
+                    $RemAlertInfo = $RemAlertResp.Content | ConvertFrom-Json
+                    $AlertList += $RemAlertInfo.value
+                  }
+                  else {
+                    Write-Error "Unable to get full set of Alerts ... "
+                  }
+                }
                 Write-Output "*** Alerts for device ($($DeviceInfo)) ***"
-                $AlertInfo.'value' | Format-List
+                $AlertList | Format-List
             }
             else {
                     Write-Warning "No alerts found for device $($DeviceInfo)"
