@@ -62,19 +62,19 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
             response = requests.get(alert_svc, headers=headers, verify=False)
             if response.status_code == 200:
                 json_data = response.json()
-                total_reports = json_data['@odata.count']
-                if total_reports > 0:
-                    current_repo_count = len(json_data['value'])
-                    if total_reports>current_repo_count:
-                            delta = total_reports-current_repo_count
-                            remaining_alert_url =alert_svc+"& $Skip=%s&$top=%s"%(current_repo_count,delta)
+                total_alert = json_data['@odata.count']
+                if total_alert > 0:
+                    current_alert_count = len(json_data['value'])
+                    if total_alert>current_repo_count:
+                            delta = total_alert-current_alert_count
+                            remaining_alert_url =alert_svc+"& $Skip=%s&$top=%s"%(current_alert_count,delta)
                             remaining_alert_resp = requests.get(remaining_alert_url, headers=headers, verify=False)
                             if remaining_alert_resp.status_code ==200:
                                 remaining_alert_data = remaining_alert_resp.json()
                                 for value in remaining_alert_data["value"]:
                                     json_data["value"].append(value)
                             else:
-                                print ("Unable to get full set of reports ... ")
+                                print ("Unable to get full set of alerts ... ")
                     # Technically there should be only one result in the filter
                     print ("\n*** Alerts for device (%s) ***" % (field))
                     print (json.dumps(json_data, indent=4, sort_keys=True))
