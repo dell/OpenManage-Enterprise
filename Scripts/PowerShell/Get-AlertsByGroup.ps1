@@ -91,6 +91,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
+
     $GroupUrl    = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
     $Type        = "application/json"
     $UserName    = $Credentials.username
@@ -108,15 +109,28 @@ Try {
             $GrpInfo = $GrpResp.Content | ConvertFrom-Json
             if ($GrpInfo.'@odata.count' -gt 0) {
                 $GroupId = $GrpInfo.value[0].Id
-
                 $AlertUrl = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=AlertDeviceGroup eq $($GroupId)"
                 $AlertResp = Invoke-WebRequest -Uri $AlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                 if ($AlertResp.StatusCode -eq 200) {
                     $AlertInfo = $AlertResp.Content | ConvertFrom-Json
-                    if ($AlertInfo.'@odata.count' -gt 0) {
+                    $AlertList = $AlertInfo.value
+                   $TotalCount = $AlertInfo.'@odata.count'
+                    if ($TotalCount -gt 0) {
+                        $currAlertCount = ($AlertInfo.value).Length
+                        if($TotalCount -gt $currAlertCount){
+                            $delta = $totalCount- $currAlertCount
+                            $RemainingAlertUrl = $AlertUrl +"&`$skip=$($currAlertCount)&`$top=$($delta)"
+                            $RemAlertResp = Invoke-WebRequest -Uri $RemainingAlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                            if ($RemAlertResp.StatusCode -eq 200) {
+                                $RemAlertInfo = $RemAlertResp.Content | ConvertFrom-Json
+                                $AlertList += $RemAlertInfo.value
+                              }
+                              else {
+                                Write-Error "Unable to get full set of Alerts ... "
+                              }
+                            }
                         Write-Output "*** Alerts for group ($($GroupInfo))***"
-                        $Alerts = $AlertResp.Content | ConvertFrom-Json
-                        $Alerts.'value' | Format-List
+                        $AlertList| Format-List
                     }
                     else {
                         Write-Warning "No alerts found for group ($($GroupInfo))"
