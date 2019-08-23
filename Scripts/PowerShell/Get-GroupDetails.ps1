@@ -82,6 +82,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 
+
+
+
+
 Try {
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
@@ -91,7 +95,6 @@ Try {
     $Password    = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
     $Headers     = @{}
-
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
@@ -101,25 +104,51 @@ Try {
         if ($GrpResp.StatusCode -eq 200) {
             ## Iterate over groups and see if a match is found for given criteria
             $GrpInfo = $GrpResp.Content | ConvertFrom-Json
-            if ($GrpInfo.'@odata.count' -gt 0) {
+            $groupList = $GrpInfo.value
+            $groupCount = $GrpInfo.'@odata.count'
+            if ($groupCount -gt 0) {
                 $FoundGroup = $FALSE
+                $currGroupCount = ($groupList.value).Length
+                if($groupCount -gt $currGroupCount){
+                    $delta = $groupCount-$currGroupCount
+                    $RemainingGroupUrl = $GroupUrl+"?`$skip=$($currGroupCount)&`$top=$($delta)"
+                    $remainingGroupResp = Invoke-WebRequest -Uri $RemainingGroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if($remainingGroupResp.StatusCode -eq 200){
+                        $remGroupInfo = $remainingGroupResp.Content|ConvertFrom-Json
+                        $groupList += $remGroupInfo.value
+                    }
+                }
                 foreach ($Group in $GrpInfo.'value') {
                     if ($Group.Id -eq $GroupInfo -or
                         ([String]($Group.Name)).ToLower() -eq $GroupInfo.ToLower() -or
                         ([String]($Group.Description)).ToLower() -eq $GroupInfo.ToLower()) {
-
                         $FoundGroup = $TRUE
                         Write-Output "*** Group Details ***"
                         $Group | Format-List
-
                         $DevUrl = $GroupUrl + "(" + [String]($Group.Id) + ")/Devices"
                         $DevResp = Invoke-WebRequest -Uri $DevUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                         if ($DevResp.StatusCode -eq 200) {
                             $DevInfo = $DevResp.Content | ConvertFrom-Json
-                            if ($DevInfo.'@odata.count' -gt 0) {
+                            $DevList = $DevInfo.value
+                            $deviceCount = $DevInfo.'@odata.count'
+                            if ($deviceCount -gt 0) {
+                                $currDeviceCount = ($DevInfo.value).Length
+                                if($deviceCount -gt $currDeviceCount){
+                                    $delta = $deviceCount-$currDeviceCount 
+                                    $RemainingDeviceurl = $DevUrl+"?`$skip=$($currDeviceCount)&`$top=$($delta)"
+                                    $RemainingDeviceResp = Invoke-WebRequest -Uri $RemainingDeviceurl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                                    if($RemainingDeviceResp.StatusCode -eq 200){
+                                        $RemainingDeviceInfo = $RemainingDeviceResp.Content|ConvertFrom-Json
+                                        $DevList+=$RemainingDeviceInfo.value
+                                    }
+                                    else {
+                                        Write-Error "Unable to get full set of devices ... "
+                                      }
+                                }
+
                                 Write-Output "*** Group Device Details ***"
-                                $Devices = $DevResp.Content | ConvertFrom-Json
-                                $Devices.'value' | Format-List
+                                #$Devices = $DevResp.Content | ConvertFrom-Json
+                                $DevList | Format-List
                             }
                             else {
                                 Write-Warning "No devices found in group ($($GroupInfo))"

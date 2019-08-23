@@ -58,8 +58,19 @@ def get_group_details(ip_address, user_name, password, group_info):
             response = requests.get(group_url, headers=headers, verify=False)
             if response.status_code == 200:
                 group_list = response.json()
-                if group_list['@odata.count'] > 0:
+                group_count = group_list['@odata.count']
+                if group_count > 0:
                     found_group = False
+                    current_group_count = len(group_list['value'])
+                    if group_count>current_group_count:
+                        delta = group_count-current_group_count
+                        remaining_group_url = group_url+"?$skip=%s&$top=%s" % (curr_dev_count, delta)
+                        remaining_group_resp = requests.get(remaining_group_url, headers=headers, verify=False)
+                        if remaining_group_resp.status_code ==200:
+                            remaining_group_data=remaining_group_resp.json()
+                            group_list['value']=group_list['value']+remaining_group_data['value']
+                        else:
+                            print ("Unable to get full group list ... ")        
                     for group in group_list['value']:
                         if ((str(group['Id']).lower() == group_info.lower()) or
                                 str(group['Name']).lower() == group_info.lower() or
@@ -73,8 +84,22 @@ def get_group_details(ip_address, user_name, password, group_info):
                                                         headers=headers,
                                                         verify=False)
                             if dev_response.status_code == 200:
+                                device_list = dev_response.json()
+                                device_count = device_list['@odata.count']
+                                if device_count>0:
+                                    current_device_count = len(device_list['value'])
+                                    if device_count>current_device_count:
+                                        delta =device_count-current_device_count
+                                        remaining_device_url = dev_url+"?$skip=%s&$top=%s" % (current_device_count, delta)
+                                        remaining_device_resp = requests.get(remaining_device_url, headers=headers,verify=False)
+                                        if remaining_device_resp.status_code==200:
+                                            remaining_device_data= remaining_device_resp.json()
+                                            device_list['value']=device_list['value']+remaining_device_data['value']
+                                        else:
+                                             print ("Unable to get full device list ... ")
+
                                 print ("\n*** Group Device Details ***")
-                                print (json.dumps(dev_response.json(), indent=4,
+                                print (json.dumps(device_list, indent=4,
                                                  sort_keys=True))
                             else:
                                 print ("Unable to get devices for (%s)" % (group_info))
