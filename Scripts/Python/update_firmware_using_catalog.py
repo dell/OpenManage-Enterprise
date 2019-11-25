@@ -143,11 +143,11 @@ def baseline_creation(ip_address, headers, param_map):
     baseline_status, baseline_data = request(ip_address=ip_address, url=url,
                                              header=headers, payload=payload, method='POST')
     if baseline_status == 201:
-		baseline_task_id = baseline_data["TaskId"]
-		track_job_to_completion(ip_address, headers, baseline_task_id, 'Baseline job')
-		id_repo = CATALOG_INFO.get("REPO_ID")
-		id_cat = CATALOG_INFO.get("CATALOG_ID")
-		return get_baseline_id(ip_address, headers, id_repo, id_cat)
+        baseline_task_id = baseline_data["TaskId"]
+        track_job_to_completion(ip_address, headers, baseline_task_id, 'Baseline job')
+        id_repo = CATALOG_INFO.get("REPO_ID")
+        id_cat = CATALOG_INFO.get("CATALOG_ID")
+        return get_baseline_id(ip_address, headers, id_repo, id_cat)
     raise Exception("Unable to create baseline, Job status : ", baseline_status)
 
 
@@ -360,13 +360,13 @@ def get_job_types(ip_address, header):
 def request(ip_address, url, header, payload=None, method='GET'):
     """ Returns status and data """
     pool = urllib3.HTTPSConnectionPool(ip_address, port=443, cert_reqs='CERT_NONE',
-                                       assert_hostname=False)
+                                        assert_hostname=False)
     request_obj = pool.urlopen(method, url, headers=header, body=json.dumps(payload))
     data = None
     if request_obj.data and request_obj.status != 400:
         data = json.loads(request_obj.data)
     else:
-		data = request_obj.data
+        data = request_obj.data
     return request_obj.status, data
 
 
@@ -669,18 +669,19 @@ if __name__ == '__main__':
 															 id_baseline=BASELINE_ID)
             print("Compliance List: %s"%COMPLIANCE_LIST)
             if COMPLIANCE_LIST:
-				TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
-				if TARGET_PAYLOAD != 0:
-					firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
-									id_cat=ID_CATALOG,
-									id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
-					#Initiate compliance refresh
-					refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
-								baseline_job_id=BASELINE_JOB_ID, id_baseline=BASELINE_ID)
-				else:
-					print("No components found for upgrade")
+                TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
+                #sys.exit(0)
+                if TARGET_PAYLOAD != 0:
+                    firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
+                                    id_cat=ID_CATALOG,
+                                    id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
+                    #Initiate compliance refresh
+                    refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
+                                baseline_job_id=BASELINE_JOB_ID, id_baseline=BASELINE_ID)
+                else:
+                    print("No components found for upgrade")
             else:
-				print("No components found for upgrade...skipping firmware upgrade")
+                print("No components found for upgrade...skipping firmware upgrade")
         else:
             print("Unable to authenticate with OME .. Check IP/Username/Pwd")
     except OSError:
