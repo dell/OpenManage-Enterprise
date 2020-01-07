@@ -80,7 +80,7 @@ function Get-DiscoveredDomains($IpAddress, $Headers, $Role) {
     $FilteredDiscoveredDomains = @()
     #$CreateGroupURL = "https://$($IpAddress)/api/ManagementDomainService"
     $URL = "https://$($IpAddress)/api/ManagementDomainService/DiscoveredDomains"
-    Write-Host "Invoking URL $($URL)"
+    #Write-Host "Invoking URL $($URL)"
     $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
@@ -176,6 +176,7 @@ function Add-AllMembersViaLead($IpAddress, $Headers) {
         $Payload = $TargetArray
         $ManagementDomainURL = "https://$($IpAddress)/api/ManagementDomainService/Actions/ManagementDomainService.Domains"
         $Body = $Payload | ConvertTo-Json -Depth 6
+        Write-Host "Adding members to the group..."
         Write-Host "Invoking URL $($ManagementDomainURL)"
         #Write-Host "Payload sending $($Body)"
         $Response = Invoke-WebRequest -Uri $ManagementDomainURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
@@ -197,7 +198,7 @@ function Assign-BackupLead($IpAddress, $Headers) {
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead"
     $ListOfMembers = Get-Domains $IpAddress $Headers
     $JobId = 0
-    $Payload = @()
+    #$Payload = @()
     if ($ListOfMembers.Length -gt 0) {
         $Member = Get-Random -InputObject $ListOfMembers -Count 1
         $MemberId = $Member."Id"
@@ -205,12 +206,11 @@ function Assign-BackupLead($IpAddress, $Headers) {
         $TargetTempHash = @{}
         $TargetTempHash."Id" = $MemberId
         $TargetArray += $TargetTempHash
-        $TargetArray += $TargetTempHash
-        #Write-Host "Target Array $($TargetArray)"
-        $Payload = $TargetArray
-        $Body = $Payload | ConvertTo-Json
+        #$Payload = $TargetArray
+        $Body = ConvertTo-Json $TargetArray
+        Write-Host "Assigning backup lead..."
         Write-Host "Invoking URL $($URL)"
-        Write-Host "Payload sending $($Body)"
+        #Write-Host "Payload sending $($Body)"
         $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
         if ($Response.StatusCode -eq 200) {
             $BackupLeadData = $Response | ConvertFrom-Json
@@ -228,7 +228,7 @@ function Assign-BackupLead($IpAddress, $Headers) {
 function Get-Domains($IpAddress, $Headers) {
     $Members = @()
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Domains"
-    Write-Host "Invoking URL $($URL)"
+    #Write-Host "Invoking URL $($URL)"
     $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
@@ -345,13 +345,13 @@ Try {
             if ($JobId) {
                 Write-Host "Polling addition of members to group ..."
                 Wait-OnJobStatus $IpAddress $Headers $Type $JobId
-                #$JobId = Assign-BackupLead $IpAddress $Headers
-                #if ($JobId) {
-                    #Write-Host "Polling backup lead assignment ..."
-                    #Wait-OnJobStatus $IpAddress $Headers $Type $JobId
-                #}else {
-                    #Write-Error "Unable to track backup lead assignment ..." 
-                #}
+                $JobId = Assign-BackupLead $IpAddress $Headers
+                if ($JobId) {
+                    Write-Host "Polling backup lead assignment ..."
+                    Wait-OnJobStatus $IpAddress $Headers $Type $JobId
+                }else {
+                    Write-Error "Unable to track backup lead assignment ..." 
+                }
             }
         }
         else {
