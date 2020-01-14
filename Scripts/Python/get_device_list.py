@@ -48,7 +48,9 @@ def get_device_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate devices """
     try:
         session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        device_url = 'https://%s/api/DeviceService/Devices' % (ip_address)
+        base_uri = 'https://%s' %(ip_address)
+        device_url = base_uri + '/api/DeviceService/Devices'
+        next_link_url = None
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -63,18 +65,19 @@ def get_device_list(ip_address, user_name, password):
                 json_data = device_response.json()
                 device_count = json_data['@odata.count']
                 if device_count > 0:
-                    curr_dev_count = len(json_data['value'])
-                    if device_count > curr_dev_count:
-                        delta = device_count - curr_dev_count
-                        remaining_device_url = device_url+"?$skip=%s&$top=%s" % (curr_dev_count, delta)
-                        remaining_device_resp = requests.get(remaining_device_url,
-                                                             headers=headers,
-                                                             verify=False)
-                        if remaining_device_resp.status_code == 200:
-                            remaining_device_data = remaining_device_resp.json()
-                            json_data['value'] = json_data['value'] + remaining_device_data['value']
+                    if '@odata.nextLink' in json_data:
+                        next_link_url = base_uri + json_data['@odata.nextLink']
+                    while next_link_url:
+                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                        if next_link_response.status_code == 200:
+                            next_link_json_data = next_link_response.json()
+                            json_data['value'] += next_link_json_data['value']
+                            if '@odata.nextLink' in next_link_json_data:
+                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                            else:
+                                next_link_url = None
                         else:
-                            print ("Unable to get full device list ... ")
+                            print("Unable to retrieve device list from nextLink %s" % (next_link_url))
                     print("*** Device List ***")
                     print(json.dumps(json_data, indent=4, sort_keys=True))
                 else:
