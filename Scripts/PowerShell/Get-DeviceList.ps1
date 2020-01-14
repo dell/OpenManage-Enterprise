@@ -77,6 +77,7 @@ Try {
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
     $BaseUri = "https://$($IpAddress)"
     $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
+    $NextLinkUrl = $null
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -95,8 +96,6 @@ Try {
             $DeviceData += $DeviceCountData.'value'
             if ($DeviceCountData.'@odata.nextLink'){
                 $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
-            }else{
-                $NextLinkUrl = $null
             }
             while ($NextLinkUrl){
                 $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
