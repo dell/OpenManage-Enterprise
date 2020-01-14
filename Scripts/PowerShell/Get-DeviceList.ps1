@@ -75,7 +75,8 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $DeviceCountUrl   = "https://$($IpAddress)/api/DeviceService/Devices?`$count=true&`$top=0"    
+    $BaseUri = "https://$($IpAddress)"
+    $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -87,29 +88,35 @@ Try {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+        $DeviceData = @()
         $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($DevCountResp.StatusCode -eq 200) {
             $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
-            $NumManagedDevices = $DeviceCountData.'@odata.count'
-            if ($NumManagedDevices -gt 0){
-                $DeviceUrl   = "https://$($IpAddress)/api/DeviceService/Devices?`$skip=0&`$top=$($NumManagedDevices)"
-                $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                if ($DevResp.StatusCode -eq 200) {
-                    $Devices = $DevResp.Content | ConvertFrom-Json
-                    $Devices.'value' | Format-List
-                }
-                else {
-                    Write-Error "Unable to retrieve device list from $($IpAddress)"
-                }
+            $DeviceData += $DeviceCountData.'value'
+            if ($DeviceCountData.'@odata.nextLink'){
+                $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
+            }else{
+                $NextLinkUrl = $null
             }
-            else {
-                Write-Error "No devices managed by $($IpAddress)"
-            }
+            while ($NextLinkUrl){
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                if ($NextLinkResponse.StatusCode -eq 200) {
+                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                    $DeviceData += $NextLinkData.'value'
+                    if ($NextLinkData.'@odata.nextLink'){
+                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                    }else{
+                        $NextLinkUrl = $null
+                    }
+                }else {
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                }
+            } 
+            $DeviceData | Format-List
         }
         else {
             Write-Error "Unable to get count of managed devices .. Exiting"
         }
-
     }
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
