@@ -42,8 +42,10 @@ import urllib3
 def get_report_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate reports """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        report_svc = 'https://%s/api/ReportService/ReportDefs' % (ip_address)
+        base_uri = 'https://%s'%(ip_address)
+        session_url = base_uri + '/api/SessionService/Sessions'
+        report_svc = base_uri + '/api/ReportService/ReportDefs'
+        next_link_url = None
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -58,17 +60,19 @@ def get_report_list(ip_address, user_name, password):
                 report_info = report_response.json() 
                 total_reports = report_info['@odata.count']
                 if total_reports > 0:
-                    current_repo_count = len(report_info['value'])
-                    if total_reports > current_repo_count:
-                        delta = total_reports - current_repo_count
-                        remaining_report_url = report_svc +"?$skip=%s&$top=%s"%(current_repo_count, delta)
-                        remaining_report_resp = requests.get(remaining_report_url, headers=headers, verify =False)
-                        if remaining_report_resp.status_code == 200:
-                            remaining_report_data = remaining_report_resp.json()
-                            for value in remaining_report_data["value"]:
-                                report_info["value"].append(value)
+                    if '@odata.nextLink' in report_info:
+                        next_link_url = base_uri + report_info['@odata.nextLink']
+                    while next_link_url:
+                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                        if next_link_response.status_code == 200:
+                            next_link_json_data = next_link_response.json()
+                            report_info['value'] += next_link_json_data['value']
+                            if '@odata.nextLink' in next_link_json_data:
+                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                            else:
+                                next_link_url = None
                         else:
-                            print ("Unable to get full set of reports ... ")    
+                            print("Unable to retrieve device list from nextLink %s" % (next_link_url))
                     print ("*** List of pre-defined reports ***")
                     print (json.dumps(report_info, indent=4, sort_keys=True))
                 else:
