@@ -45,11 +45,12 @@ import urllib3
 def get_alerts_by_group(ip_address, user_name, password, filter_by, field):
     """ Get alerts by group using OData filter """
     try:
-
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        base_grp = "https://%s/api/GroupService/Groups" % (ip_address)
-        alert_svc = "https://%s/api/AlertService/Alerts" % (ip_address)
+        base_uri = 'https://%s' %(ip_address)
+        session_url = base_uri + "/api/SessionService/Sessions"
+        base_grp = base_uri + "/api/GroupService/Groups"
+        alert_svc = base_uri + "/api/AlertService/Alerts"
         grp_url = base_grp + "?$filter=%s eq '%s'" % (filter_by, field)
+        next_link_url = None
         headers = {'content-type': 'application/json'}
 
         user_details = {'UserName': user_name,
@@ -73,15 +74,17 @@ def get_alerts_by_group(ip_address, user_name, password, filter_by, field):
                         alert_Info = alert_resp.json()
                         total_alerts = alert_Info['@odata.count']
                         if total_alerts>0:
-                            current_alert_count = len(alert_Info['value'])
-                            if total_alerts>current_alert_count:
-                                delta = total_alerts-current_alert_count
-                                remaining_alert_url = alert_url+"& $Skip=%s&$top=%s"%(current_alert_count,delta)
-                                remaining_alert_resp =  requests.get(remaining_alert_url, headers=headers, verify=False)
-                                if remaining_alert_resp.status_code ==200:
-                                    remaining_alert_data = remaining_alert_resp.json()
-                                    for value in remaining_alert_data['value']:
-                                        alert_Info['value'].append(value)
+                            if '@odata.nextLink' in alert_Info:
+                                next_link_url = base_uri + alert_Info['@odata.nextLink']
+                            while next_link_url:
+                                next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                                if next_link_response.status_code == 200:
+                                    next_link_json_data = next_link_response.json()
+                                    alert_Info['value'] += next_link_json_data['value']
+                                    if '@odata.nextLink' in next_link_json_data:
+                                        next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                                    else:
+                                        next_link_url = None
                                 else:
                                     print ("Unable to get full set of alerts ... ")
                         print ("\n*** Alerts for group (%s) ***" % (field))

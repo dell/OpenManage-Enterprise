@@ -47,7 +47,8 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
     """ Get alerts from OME filtered by name or asset tag """
     filter_map = {'Name': 'AlertDeviceName', 'DeviceIdentifier': 'AlertDeviceIdentifier'}
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        base_uri = 'https://%s' %(ip_address)
+        session_url = base_uri + "/api/SessionService/Sessions"
         alert_svc = "https://%s/api/AlertService/Alerts?$filter=%s eq '%s'" % (ip_address, filter_map[filter_by], field)
         headers = {'content-type': 'application/json'}
 
@@ -64,17 +65,19 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
                 json_data = response.json()
                 total_alert = json_data['@odata.count']
                 if total_alert > 0:
-                    current_alert_count = len(json_data['value'])
-                    if total_alert>current_repo_count:
-                            delta = total_alert-current_alert_count
-                            remaining_alert_url =alert_svc+"& $Skip=%s&$top=%s"%(current_alert_count,delta)
-                            remaining_alert_resp = requests.get(remaining_alert_url, headers=headers, verify=False)
-                            if remaining_alert_resp.status_code ==200:
-                                remaining_alert_data = remaining_alert_resp.json()
-                                for value in remaining_alert_data["value"]:
-                                    json_data["value"].append(value)
+                    if '@odata.nextLink' in json_data:
+                        next_link_url = base_uri + json_data['@odata.nextLink']
+                    while next_link_url:
+                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                        if next_link_response.status_code == 200:
+                            next_link_json_data = next_link_response.json()
+                            json_data['value'] += next_link_json_data['value']
+                            if '@odata.nextLink' in next_link_json_data:
+                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
                             else:
-                                print ("Unable to get full set of alerts ... ")
+                                next_link_url = None
+                        else:
+                            print ("Unable to get full set of alerts ... ")
                     # Technically there should be only one result in the filter
                     print ("\n*** Alerts for device (%s) ***" % (field))
                     print (json.dumps(json_data, indent=4, sort_keys=True))
