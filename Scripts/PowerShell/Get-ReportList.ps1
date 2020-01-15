@@ -74,8 +74,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $ReportUrl   = "https://$($IpAddress)/api/ReportService/ReportDefs"
+    $BaseUri = "https://$($IpAddress)"
+    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
+    $ReportUrl   = $BaseUri + "/api/ReportService/ReportDefs"
+    $NextLinkUrl = $null
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -93,21 +95,25 @@ Try {
             $ReportList = $ReportInfo.value
             $totalReports = $ReportInfo.'@odata.count'
             if ($totalReports -gt 0) {
-                $currReportCount = ($ReportInfo.value).Length
-                if ($totalReports -gt $currReportCount) {
-                  $delta = $totalReports - $currReportCount
-                  $RemainingRepUrl = $ReportUrl +"?`$skip=$($currReportCount)&`$top=$($delta)"
-                  $RemReportResp = Invoke-WebRequest -Uri $RemainingRepUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                  if ($RemReportResp.StatusCode -eq 200) {
-                    $RemReportInfo = $RemReportResp.Content | ConvertFrom-Json
-                    $ReportList += $RemReportInfo.value
+              if ($ReportInfo.'@odata.nextLink'){
+                $NextLinkUrl = $BaseUri + $ReportInfo.'@odata.nextLink'
+              }
+              while ($NextLinkUrl){
+                  $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                  if ($NextLinkResponse.StatusCode -eq 200) {
+                      $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                      $ReportList += $NextLinkData.'value'
+                      if ($NextLinkData.'@odata.nextLink'){
+                          $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                      }else{
+                          $NextLinkUrl = $null
+                      }
+                  }else {
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
                   }
-                  else {
-                    Write-Error "Unable to get full set of reports ... "
-                  }
-                }
-                Write-Output "*** List of pre-defined reports ***"
-                $ReportList | Format-List
+              }
+              Write-Output "*** List of pre-defined reports ***"
+              $ReportList | Format-List
             }
             else {
                     Write-Warning "No pre-defined reports found on $($IpAddress)"
