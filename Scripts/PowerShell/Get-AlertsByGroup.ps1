@@ -90,9 +90,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-
+    $BaseUri = "https://$($IpAddress)"
+    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
     $GroupUrl    = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
+    $NextLinkUrl = $null
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -114,21 +115,25 @@ Try {
                 if ($AlertResp.StatusCode -eq 200) {
                     $AlertInfo = $AlertResp.Content | ConvertFrom-Json
                     $AlertList = $AlertInfo.value
-                   $TotalCount = $AlertInfo.'@odata.count'
+                    $TotalCount = $AlertInfo.'@odata.count'
                     if ($TotalCount -gt 0) {
-                        $currAlertCount = ($AlertInfo.value).Length
-                        if($TotalCount -gt $currAlertCount){
-                            $delta = $totalCount- $currAlertCount
-                            $RemainingAlertUrl = $AlertUrl +"&`$skip=$($currAlertCount)&`$top=$($delta)"
-                            $RemAlertResp = Invoke-WebRequest -Uri $RemainingAlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                            if ($RemAlertResp.StatusCode -eq 200) {
-                                $RemAlertInfo = $RemAlertResp.Content | ConvertFrom-Json
-                                $AlertList += $RemAlertInfo.value
-                              }
-                              else {
-                                Write-Error "Unable to get full set of Alerts ... "
-                              }
+                        if ($AlertInfo.'@odata.nextLink'){
+                            $NextLinkUrl = $BaseUri + $AlertInfo.'@odata.nextLink'
+                        }
+                        while ($NextLinkUrl){
+                            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                            if ($NextLinkResponse.StatusCode -eq 200) {
+                                $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                                $AlertList += $NextLinkData.'value'
+                                if ($NextLinkData.'@odata.nextLink'){
+                                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                                }else{
+                                    $NextLinkUrl = $null
+                                }
+                            }else{
+                            Write-Error "Unable to get full set of Alerts ... "
                             }
+                        }
                         Write-Output "*** Alerts for group ($($GroupInfo))***"
                         $AlertList| Format-List
                     }
