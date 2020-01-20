@@ -45,9 +45,11 @@ import requests
 def get_group_details(ip_address, user_name, password, filter_by, field):
     """ Get Group Details using OData filters """
     try:
-        sess_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        base_grp = "https://%s/api/GroupService/Groups" % (ip_address)
+        base_uri = 'https://%s' %(ip_address)
+        sess_url = base_uri + '/api/SessionService/Sessions'
+        base_grp = base_uri + "/api/GroupService/Groups"
         grp_url = base_grp + "?$filter=%s eq '%s'" % (filter_by, field)
+        next_link_url = None
         headers = {'content-type': 'application/json'}
 
         user_details = {'UserName': user_name,
@@ -71,21 +73,23 @@ def get_group_details(ip_address, user_name, password, filter_by, field):
                     dev_resp = requests.get(dev_url, headers=headers,
                                             verify=False)
                     if dev_resp.status_code == 200:
-						print (json.dumps(dev_resp.json(), indent=4,
-								sort_keys=True))
-						device_list = dev_resp.json()
-						device_count = device_list['@odata.count']
-						if device_count>0:
-							current_device_count = len(device_list['value'])
-							if device_count>current_device_count:
-								delta =device_count-current_device_count
-								remaining_device_url = dev_url+"?$skip=%s&$top=%s" % (current_device_count, delta)
-								remaining_device_resp = requests.get(remaining_device_url, headers=headers,verify=False)
-								if remaining_device_resp.status_code==200:
-									remaining_device_data= remaining_device_resp.json()
-									device_list['value']=device_list['value']+remaining_device_data['value']
-									#print ("Device count %s" %len(device_list['value']))
-								else:
+                        print (json.dumps(dev_resp.json(), indent=4,
+                                sort_keys=True))
+                        device_list = dev_resp.json()
+                        device_count = device_list['@odata.count']
+                        if device_count>0:
+                            if '@odata.nextLink' in device_list:
+                                next_link_url = base_uri + device_list['@odata.nextLink']
+                            while next_link_url:
+                                next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                                if next_link_response.status_code == 200:
+                                    next_link_json_data = next_link_response.json()
+                                    device_list['value'] += next_link_json_data['value']
+                                    if '@odata.nextLink' in next_link_json_data:
+                                        next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                                    else:
+                                        next_link_url = None
+                                else:
 									print ("Unable to get full device list ... ")
                     else:
                         print ("Unable to retrieve devices for group (%s) from %s" % (field, ip_address))

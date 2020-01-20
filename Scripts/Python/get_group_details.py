@@ -43,8 +43,10 @@ import requests
 def get_group_details(ip_address, user_name, password, group_info):
     """ List out group details based on id/name/description """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        group_url = 'https://%s/api/GroupService/Groups' % (ip_address)
+        base_uri = 'https://%s' %(ip_address)
+        session_url = base_uri + '/api/SessionService/Sessions'
+        group_url = base_uri + '/api/GroupService/Groups'
+        next_link_url = None
         headers = {'content-type': 'application/json'}
 
         user_details = {'UserName': user_name,
@@ -61,14 +63,17 @@ def get_group_details(ip_address, user_name, password, group_info):
                 group_count = group_list['@odata.count']
                 if group_count > 0:
                     found_group = False
-                    current_group_count = len(group_list['value'])
-                    if group_count>current_group_count:
-                        delta = group_count-current_group_count
-                        remaining_group_url = group_url+"?$skip=%s&$top=%s" % (curr_dev_count, delta)
-                        remaining_group_resp = requests.get(remaining_group_url, headers=headers, verify=False)
-                        if remaining_group_resp.status_code ==200:
-                            remaining_group_data=remaining_group_resp.json()
-                            group_list['value']=group_list['value']+remaining_group_data['value']
+                    if '@odata.nextLink' in group_list:
+                        next_link_url = base_uri + group_list['@odata.nextLink']
+                    while next_link_url:
+                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                        if next_link_response.status_code == 200:
+                            next_link_json_data = next_link_response.json()
+                            group_list['value'] += next_link_json_data['value']
+                            if '@odata.nextLink' in next_link_json_data:
+                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                            else:
+                                next_link_url = None
                         else:
                             print ("Unable to get full group list ... ")        
                     for group in group_list['value']:
@@ -87,14 +92,17 @@ def get_group_details(ip_address, user_name, password, group_info):
                                 device_list = dev_response.json()
                                 device_count = device_list['@odata.count']
                                 if device_count>0:
-                                    current_device_count = len(device_list['value'])
-                                    if device_count>current_device_count:
-                                        delta =device_count-current_device_count
-                                        remaining_device_url = dev_url+"?$skip=%s&$top=%s" % (current_device_count, delta)
-                                        remaining_device_resp = requests.get(remaining_device_url, headers=headers,verify=False)
-                                        if remaining_device_resp.status_code==200:
-                                            remaining_device_data= remaining_device_resp.json()
-                                            device_list['value']=device_list['value']+remaining_device_data['value']
+                                    if '@odata.nextLink' in device_list:
+                                        next_link_url = base_uri + device_list['@odata.nextLink']
+                                    while next_link_url:
+                                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                                        if next_link_response.status_code == 200:
+                                            next_link_json_data = next_link_response.json()
+                                            device_list['value'] += next_link_json_data['value']
+                                            if '@odata.nextLink' in next_link_json_data:
+                                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
+                                            else:
+                                                next_link_url = None
                                         else:
                                              print ("Unable to get full device list ... ")
 

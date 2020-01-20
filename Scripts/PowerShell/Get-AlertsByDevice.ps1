@@ -95,9 +95,11 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $FilterMap = @{'Name'='AlertDeviceName'; 'DeviceIdentifier'='AlertDeviceIdentifier'}
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
+    $BaseUri     = "https://$($IpAddress)"
+    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
     $FilterExpr  = $FilterMap[$FilterBy]
     $AlertUrl    = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=$($FilterExpr) eq '$($DeviceInfo)'"
+    $NextLinkUrl = $null
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
@@ -115,18 +117,22 @@ Try {
             $AlertList = $AlertInfo.value
             $TotalAlerts = $AlertInfo.'@odata.count' 
             if ($TotalAlerts -gt 0) {
-                $currAlertCount = ($AlertInfo.value).Length
-                if ($totalAlerts -gt $currAlertCount) {
-                  $delta = $totalAlerts- $currAlertCount
-                  $RemainingAlertUrl = $AlertUrl +"&`$skip=$($currAlertCount)&`$top=$($delta)"
-                  $RemAlertResp = Invoke-WebRequest -Uri $RemainingAlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                  if ($RemAlertResp.StatusCode -eq 200) {
-                    $RemAlertInfo = $RemAlertResp.Content | ConvertFrom-Json
-                    $AlertList += $RemAlertInfo.value
-                  }
-                  else {
-                    Write-Error "Unable to get full set of Alerts ... "
-                  }
+                if ($AlertInfo.'@odata.nextLink'){
+                  $NextLinkUrl = $BaseUri + $AlertInfo.'@odata.nextLink'
+                }
+                while ($NextLinkUrl){
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if ($NextLinkResponse.StatusCode -eq 200) {
+                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                        $AlertList += $NextLinkData.'value'
+                        if ($NextLinkData.'@odata.nextLink'){
+                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                        }else{
+                            $NextLinkUrl = $null
+                        }
+                    }else{
+                        Write-Error "Unable to get full set of Alerts ... "
+                      }
                 }
                 Write-Output "*** Alerts for device ($($DeviceInfo)) ***"
                 $AlertList | Format-List
