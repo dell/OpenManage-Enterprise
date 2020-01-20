@@ -140,6 +140,7 @@ class OMEReportExecutor(object):
         """ Pretty print report and associated column names """
         report_url_suffix = "ReportService/ReportDefs(%s)" % (self.report_id)
         report_details_url = self.base_url + report_url_suffix
+        next_link_url = None
         report_details_resp = requests.get(report_details_url,
                                            headers=headers,
                                            verify=False)
@@ -157,15 +158,17 @@ class OMEReportExecutor(object):
                 report_info = report_result.json()
                 total_rep_results = report_info['@odata.count']
                 if total_rep_results > 0:
-                    current_rep_result_count = len(report_info['value'])
-                    if total_rep_results >current_rep_result_count:
-                        delta = total_rep_results - current_rep_result_count
-                        remaining_res_url = result_url +"?$skip=%s&$top=%s"%(current_rep_result_count, delta)
-                        rem_res_resp = requests.get(remaining_res_url, headers=headers, verify = False)
-                        if rem_res_resp.status_code ==200:
-                            rem_resp_info = rem_res_resp.json()
-                            for value in rem_res_info['value']:
-                                report_info['value'].append(value)
+                    if '@odata.nextLink' in report_info:
+                        next_link_url = self.base_url + report_info['@odata.nextLink']
+                    while next_link_url:
+                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
+                        if next_link_response.status_code == 200:
+                            next_link_json_data = next_link_response.json()
+                            report_info['value'] += next_link_json_data['value']
+                            if '@odata.nextLink' in next_link_json_data:
+                                next_link_url = self.base_url + next_link_json_data['@odata.nextLink']
+                            else:
+                                next_link_url = None
                         else:
                             print("Unable to get full set of report results")        
                     for result in report_info['value']:

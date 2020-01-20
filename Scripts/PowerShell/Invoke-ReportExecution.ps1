@@ -82,7 +82,9 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 }
 
 function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
-    $ReportDeets = "https://$($IpAddress)/api/ReportService/ReportDefs($($ReportId))"
+    $BaseUri = "https://$($IpAddress)"
+    $ReportDeets = $BaseUri + "/api/ReportService/ReportDefs($($ReportId))"
+    $NextLinkUrl = $null
     $OutputArray = @()
     $ColumnNames = @()
     $DeetsResp = Invoke-WebRequest -Uri $ReportDeets -UseBasicParsing -Headers $Headers -Method Get -ContentType $Type
@@ -90,7 +92,7 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
         $DeetsInfo = $DeetsResp.Content | ConvertFrom-Json
         $ColumnNames = $DeetsInfo.ColumnNames.Name
         Write-Verbose "Extracting results for report ($($ReportId))"
-        $ResultUrl = "https://$($IpAddress)/api/ReportService/ReportDefs($($ReportId))/ReportResults/ResultRows"
+        $ResultUrl = $BaseUri + "/api/ReportService/ReportDefs($($ReportId))/ReportResults/ResultRows"
         
         $RepResult = Invoke-WebRequest -Uri $ResultUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($RepResult.StatusCode -eq 200) {
@@ -98,16 +100,20 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
             $totalRepResults = [int]($RepInfo.'@odata.count')
             if ($totalRepResults -gt 0) {
                 $ReportResultList = $RepInfo.Value
-                $currRepResultCount = $ReportResultList.Length
-                if ($totalRepResults -gt $currRepResultCount) {
-                    $delta = [int]($totalRepResults - $currRepResultCount)
-                    $RemainingResUrl = $ResultUrl + "?`$skip=" + [string]$currRepResultCount + "&`$top=" + [string]$delta
-                    $RemResResp = Invoke-WebRequest -Uri $RemainingResUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if ($RemResResp.StatusCode -eq 200) {
-                        $RemRespInfo = $RemResResp.Content | ConvertFrom-Json
-                        $ReportResultList += $RemRespInfo.Value
-                    }
-                    else {
+                if ($RepInfo.'@odata.nextLink'){
+                    $NextLinkUrl = $BaseUri + $RepInfo.'@odata.nextLink'
+                }
+                while ($NextLinkUrl){
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if ($NextLinkResponse.StatusCode -eq 200) {
+                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                        $ReportResultList += $NextLinkData.'value'
+                        if ($NextLinkData.'@odata.nextLink'){
+                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                        }else{
+                            $NextLinkUrl = $null
+                        }
+                    }else {
                         Write-Error "Unable to get full set of report results"
                     }
                 }
