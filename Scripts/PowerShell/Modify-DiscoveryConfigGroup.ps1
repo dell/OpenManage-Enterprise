@@ -136,7 +136,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     $JobSvcUrl = $BaseUri + "/api/JobService/Jobs"
 	$NextLinkUrl = $null
 	Write-Host "Polling job status"
-	$SLEEP_INTERVAL = 10
+	$SLEEP_INTERVAL = 3
 	Start-Sleep -Seconds $SLEEP_INTERVAL
 	$JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
 	#Write-Host "Polling job status"
