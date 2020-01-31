@@ -109,26 +109,6 @@ function Get-DiscoverConfigPayload() {
     return $DiscoveryConfigDetails
 }
 
-function Get-JobId($IpAddress, $Headers, $DiscoverConfigGroupId) {
-    $JobId = -1
-    $JobUrl = "https://$($IpAddress)/api/DiscoveryConfigService/Jobs"
-    $JobResponse = Invoke-WebRequest -UseBasicParsing -Uri $JobUrl -Headers $Headers -Method Get
-    if ($JobResponse.StatusCode -eq 200) {
-        $JobInfo = $JobResponse.Content | ConvertFrom-Json
-        $JobValues = $JobInfo.value
-        foreach ($value in $JobValues) {
-            if ($value.DiscoveryConfigGroupId -eq $DiscoverConfigGroupId) {
-                $JobId = $value.JobId
-                break;
-            }
-        }
-    }
-    else {
-        Write-Warning "Unable to get jobid"
-    }
-    return $JobId
-}
-
 
 function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
@@ -139,8 +119,6 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
 	$SLEEP_INTERVAL = 3
 	Start-Sleep -Seconds $SLEEP_INTERVAL
 	$JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
-	#Write-Host "Polling job status"
-	#Start-Sleep -Seconds $SLEEP_INTERVAL
 	if ($JobResp.StatusCode -eq 200) {
 		$JobInfo = $JobResp.Content | ConvertFrom-Json
 		$JobList = $JobInfo.value
@@ -177,7 +155,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
 		}
 		
 		if (!$match){
-			Write-Host "Unable to track discovery config job status "
+			Write-Host "Unable to track running discovery config job"
 		}
 	}else{
 		Write-Warning "Unable to fetch jobs"
