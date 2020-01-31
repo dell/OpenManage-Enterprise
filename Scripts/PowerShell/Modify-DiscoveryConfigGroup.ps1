@@ -112,54 +112,58 @@ function Get-DiscoverConfigPayload() {
 
 function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
-	$BaseUri = "https://$($IpAddress)"
+    $BaseUri = "https://$($IpAddress)"
     $JobSvcUrl = $BaseUri + "/api/JobService/Jobs"
-	$NextLinkUrl = $null
-	Write-Host "Polling job status"
-	$SLEEP_INTERVAL = 3
-	Start-Sleep -Seconds $SLEEP_INTERVAL
-	$JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
-	if ($JobResp.StatusCode -eq 200) {
-		$JobInfo = $JobResp.Content | ConvertFrom-Json
-		$JobList = $JobInfo.value
-		$totalJobs = $JobInfo.'@odata.count'
-		if ($totalJobs -gt 0) {
-			if ($JobInfo.'@odata.nextLink'){
-				$NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
-			}
-			while ($NextLinkUrl){
-			  $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-			  if ($NextLinkResponse.StatusCode -eq 200) {
-				  $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-				  $JobList += $NextLinkData.'value'
-				  if ($NextLinkData.'@odata.nextLink'){
-					  $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-				  }else{
-					  $NextLinkUrl = $null
-				  }
-			  }else {
-				Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-			  }
-			}
-		}else{
-			Write-Warning "Job results are empty"
-		}
-		$match = $null
-		foreach ($jobinfo in $JobList){
-			if ($jobinfo.'JobName' -match $JobName){
-				if ($jobinfo.'LastRunStatus'.'Name' -eq "Running"){
-					Write-Host "Discovery config job status is $($jobinfo.'LastRunStatus'.'Name')"
-					$match = 1
-				}
-			}
-		}
-		
-		if (!$match){
-			Write-Host "Unable to track running discovery config job"
-		}
-	}else{
-		Write-Warning "Unable to fetch jobs"
-	}
+    $NextLinkUrl = $null
+    Write-Host "Polling job status"
+    $SLEEP_INTERVAL = 3
+    Start-Sleep -Seconds $SLEEP_INTERVAL
+    $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
+    if ($JobResp.StatusCode -eq 200) {
+        $JobInfo = $JobResp.Content | ConvertFrom-Json
+        $JobList = $JobInfo.value
+        $totalJobs = $JobInfo.'@odata.count'
+        if ($totalJobs -gt 0) {
+            if ($JobInfo.'@odata.nextLink'){
+                $NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
+            }
+            while ($NextLinkUrl){
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                if ($NextLinkResponse.StatusCode -eq 200) {
+                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                    $JobList += $NextLinkData.'value'
+                    if ($NextLinkData.'@odata.nextLink'){
+                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                    }
+                    else{
+                        $NextLinkUrl = $null
+                    }
+                }
+                else {
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                }
+            }
+        }
+        else{
+            Write-Warning "Job results are empty"
+        }
+        $match = $null
+        foreach ($jobinfo in $JobList){
+            if ($jobinfo.'JobName' -match $JobName){
+                if ($jobinfo.'LastRunStatus'.'Name' -eq "Running"){
+                    Write-Host "Discovery config job status is $($jobinfo.'LastRunStatus'.'Name')"
+                    $match = 1
+                }
+            }
+        }
+
+        if (!$match){
+            Write-Host "Unable to track running discovery config job"
+        }
+    }
+    else{
+        Write-Warning "Unable to fetch jobs"
+    }
 }
 
 
@@ -169,52 +173,51 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
     $CredentialsList = @()
     $DiscoveryConfigUrl = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups"
     $DiscoveryResp = Invoke-WebRequest -UseBasicParsing -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
-	$Payload = Get-DiscoverConfigPayload
-	$ConfigGrpId = $null
+    $Payload = Get-DiscoverConfigPayload
+    $ConfigGrpId = $null
     if ($DiscoveryResp.StatusCode -eq 200) {
         $ResponseData = $DiscoveryResp | ConvertFrom-Json
-		
+
         $ConfigValueList = $ResponseData.'value'
-		if ($ConfigValueList.Length -gt 0) {
-			foreach ($value in $ConfigValueList) {
-				if ($value.DiscoveryConfigGroupName -match $JobNamePattern) {
-					$ConfigGrpId = $value.DiscoveryConfigGroupId
-					#$DiscoveryConfigModels = $value.'DiscoveryConfigModels'
-					$connectionProfile = $value.'DiscoveryConfigModels'.'ConnectionProfile' | ConvertFrom-Json
-					$connectionProfile.'credentials'[0].'credentials'.'username' = $DeviceUserName
-					$connectionProfile.'credentials'[0].'credentials'.'password' = $DevicePassword
-					$connectionProfile.'credentials'[1].'credentials'.'username' = $DeviceUserName
-					$connectionProfile.'credentials'[1].'credentials'.'password' = $DevicePassword
-					$value.'DiscoveryConfigModels'[0].'ConnectionProfile' = $connectionProfile | ConvertTo-Json -Depth 6
-					$Payload.'DiscoveryConfigGroupId' = $value.DiscoveryConfigGroupId
-					$Payload.'DiscoveryConfigGroupName' = $value.DiscoveryConfigGroupName
-					$Payload.'DiscoveryConfigModels' = $value.'DiscoveryConfigModels'
-					break;
-				}
-			}
-			#Write-Host $Payload.'DiscoveryConfigModels' | ConvertFrom-Json
-			#Write-Host $Payload
-		}else{
-			Write-Warning "Unable to get device config data"
-		}
+        if ($ConfigValueList.Length -gt 0) {
+            foreach ($value in $ConfigValueList) {
+                if ($value.DiscoveryConfigGroupName -match $JobNamePattern) {
+                    $ConfigGrpId = $value.DiscoveryConfigGroupId
+                    #$DiscoveryConfigModels = $value.'DiscoveryConfigModels'
+                    $connectionProfile = $value.'DiscoveryConfigModels'.'ConnectionProfile' | ConvertFrom-Json
+                    $connectionProfile.'credentials'[0].'credentials'.'username' = $DeviceUserName
+                    $connectionProfile.'credentials'[0].'credentials'.'password' = $DevicePassword
+                    $connectionProfile.'credentials'[1].'credentials'.'username' = $DeviceUserName
+                    $connectionProfile.'credentials'[1].'credentials'.'password' = $DevicePassword
+                    $value.'DiscoveryConfigModels'[0].'ConnectionProfile' = $connectionProfile | ConvertTo-Json -Depth 6
+                    $Payload.'DiscoveryConfigGroupId' = $value.DiscoveryConfigGroupId
+                    $Payload.'DiscoveryConfigGroupName' = $value.DiscoveryConfigGroupName
+                    $Payload.'DiscoveryConfigModels' = $value.'DiscoveryConfigModels'
+                    break;
+                }
+            }
+        }
+        else{
+            Write-Warning "Unable to get device config data"
+        }
 		
-		if ($ConfigGrpId){
-			# Run discovery config job
-			$ModifyConfigGrpURL = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups($($ConfigGrpId))"
-			Write-Host "URL = $($ModifyConfigGrpURL)"
-			$Body = $Payload | ConvertTo-Json -Depth 6
-			#Write-Host " Body $($Body)"
-			$Response = Invoke-WebRequest -Uri $ModifyConfigGrpURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method PUT -Body $Body
-			if ($Response.StatusCode -eq 200) {
-				Write-Host "Successfully modified the discovery config group"
-				Get-JobStatus $IpAddress $Headers $Type $JobNamePattern
-			}
-			else {
-				Write-Warning "Failed to modify discovery config group"
-			}
-		}else{
-			Write-Warning "Unable to find discovery config groupjname corresponding to the discovery job name pattern passed"
-		}
+        if ($ConfigGrpId){
+            # Run discovery config job
+            $ModifyConfigGrpURL = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups($($ConfigGrpId))"
+            Write-Host "URL = $($ModifyConfigGrpURL)"
+            $Body = $Payload | ConvertTo-Json -Depth 6
+            $Response = Invoke-WebRequest -Uri $ModifyConfigGrpURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method PUT -Body $Body
+            if ($Response.StatusCode -eq 200) {
+                Write-Host "Successfully modified the discovery config group"
+                Get-JobStatus $IpAddress $Headers $Type $JobNamePattern
+            }
+            else {
+                Write-Warning "Failed to modify discovery config group"
+            }
+        }
+        else{
+            Write-Warning "Unable to find discovery config groupjname corresponding to the discovery job name pattern passed"
+        }
     }
     else {
         Write-Warning "Unable to get device config data"
@@ -234,7 +237,7 @@ Try {
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-		Update-Config-Payload $IpAddress $DeviceUserName $DevicePassword $JobNamePattern
+        Update-Config-Payload $IpAddress $DeviceUserName $DevicePassword $JobNamePattern
     }
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
