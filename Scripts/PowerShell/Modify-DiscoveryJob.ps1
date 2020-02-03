@@ -134,6 +134,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     $BaseUri = "https://$($IpAddress)"
     $JobSvcUrl = $BaseUri + "/api/JobService/Jobs"
     $NextLinkUrl = $null
+    $job_match_found = $null
     Write-Host "Polling job status"
     $SLEEP_INTERVAL = 3
     Start-Sleep -Seconds $SLEEP_INTERVAL
@@ -166,17 +167,17 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
         else{
             Write-Warning "Job results are empty"
         }
-        $match = $null
+        
         foreach ($jobinfo in $JobList){
             if ($jobinfo.'JobName' -match $JobName){
                 if ($jobinfo.'LastRunStatus'.'Name' -eq "Running"){
                     Write-Host "Discovery config job status is $($jobinfo.'LastRunStatus'.'Name')"
-                    $match = 1
+                    $job_match_found = 1
                 }
             }
         }
 
-        if (!$match){
+        if (!$job_match_found){
             Write-Host "Unable to track running discovery config job"
         }
     }
