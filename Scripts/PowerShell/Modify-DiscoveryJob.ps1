@@ -1,32 +1,27 @@
 <#
  .SYNOPSIS
-   Script to discover devices in OME
+   Script to update an existing discovery job in OME
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to discover devices.
+   This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and networkaddress if user passses the iparray.
 
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
   .PARAMETER JobNamePattern
-  It is discovery job name pattern
+  It is an existing discovery job name/job name pattern
   .PARAMETER DeviceUserName
   user name of the device that needs to be updated in connection profile
   .PARAMETER DevicePassword
   password of the device that needs to be updated in connection profile
-  .PARAMETER $nodeCredentials
-  Credentials used to talk to the server ,chassis
- .EXAMPLE
-  $cred = Get-Credential
-  $disccred = Get-Credential
-  .\Modify-DiscoveryConfig.ps1.ps1 --IpAddress "10.xx.xx.xx" -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12"
-   In this instance you will be prompted for credentials to use to
-   connect to the appliance
+  .PARAMETER IpArray
+  Array of Ip addresses
+  
    .EXAMPLE
   $cred = Get-Credential
-  .\Modify-DiscoveryConfig.ps1.ps1 --IpAddress "10.xx.xx.xx" -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12"
+  .\Modify-DiscoveryConfig.ps1.ps1 --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
    
    In this instance you will be prompted for credentials
 #>
@@ -45,7 +40,10 @@ param(
     [String] $DeviceUserName,
 
     [Parameter(Mandatory)]
-    [String] $DevicePassword
+    [String] $DevicePassword,
+
+    [parameter(ParameterSetName = 'Discover_Ip')]
+    [String[]]$IpArray
 )
 function Set-CertPolicy() {
     ## Trust all certs - for sample usage only
@@ -110,6 +108,27 @@ function Get-DiscoverConfigPayload() {
 }
 
 
+function Test-IpAddress($ipAddrs) {
+    $ipAddrs = $ipAddrs | Where-Object {$_}
+    $ipAddressList = [System.Collections.ArrayList][String[]]$ipAddrs
+    foreach ($ip in $ipAddrs) {
+        if ($ip -Match '-') {
+            $ips = $ip -split "-"
+            if (([System.Net.IPAddress]::TryParse($ips[0], [ref]$null) -eq $false) -or ([System.Net.IPAddress]::TryParse($ips[1], [ref]$null) -eq $false) ) {
+                Write-Warning "Removing invalid ip address $($ip)"
+                $ipAddressList.Remove($ip)
+            }
+        }
+        else {
+            if ([System.Net.IPAddress]::TryParse($ip, [ref]$null) -eq $false) {
+                Write-Warning "Removing invalid ip address $($ip)"
+                $ipAddressList.Remove($ip)
+            }
+        }
+    }
+    return $ipAddressList
+}
+
 function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
     $BaseUri = "https://$($IpAddress)"
@@ -168,13 +187,14 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
 
 
 
-function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNamePattern) {
+function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNamePattern,$ipAddressList) {
     $DiscoveryConfigModels = @()
     $CredentialsList = @()
     $DiscoveryConfigUrl = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups"
     $DiscoveryResp = Invoke-WebRequest -UseBasicParsing -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
     $Payload = Get-DiscoverConfigPayload
     $ConfigGrpId = $null
+    $DiscoveryConfigTargets = @()
     if ($DiscoveryResp.StatusCode -eq 200) {
         $ResponseData = $DiscoveryResp | ConvertFrom-Json
 
@@ -183,7 +203,20 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
             foreach ($value in $ConfigValueList) {
                 if ($value.DiscoveryConfigGroupName -match $JobNamePattern) {
                     $ConfigGrpId = $value.DiscoveryConfigGroupId
-                    #$DiscoveryConfigModels = $value.'DiscoveryConfigModels'
+                    $DiscoveryConfigTargets = $value.DiscoveryConfigModels[0].DiscoveryConfigTargets
+                    $value.DiscoveryConfigModels[0].PSObject.Properties.Remove("DiscoveryConfigTargets")
+                    $value.DiscoveryConfigModels[0]| Add-Member -MemberType NoteProperty -Name 'DiscoveryConfigTargets' -Value @()
+                    if ($ipAddressList.Length -gt 0){
+                        foreach ($ip in $ipAddressList) {
+                            $jsonContent = [PSCustomObject]@{
+                                'NetworkAddressDetail' = $ip
+                            }
+                            $value.DiscoveryConfigModels[0].DiscoveryConfigTargets += $jsonContent
+                        }
+                    }
+                    else{
+                        $value.DiscoveryConfigModels[0].DiscoveryConfigTargets = $DiscoveryConfigTargets
+                    }
                     $connectionProfile = $value.'DiscoveryConfigModels'.'ConnectionProfile' | ConvertFrom-Json
                     $connectionProfile.'credentials'[0].'credentials'.'username' = $DeviceUserName
                     $connectionProfile.'credentials'[0].'credentials'.'password' = $DevicePassword
@@ -202,7 +235,7 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
         }
 		
         if ($ConfigGrpId){
-            # Run discovery config job
+            # Modify an existing discovery job
             $ModifyConfigGrpURL = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups($($ConfigGrpId))"
             Write-Host "URL = $($ModifyConfigGrpURL)"
             $Body = $Payload | ConvertTo-Json -Depth 6
@@ -216,7 +249,7 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
             }
         }
         else{
-            Write-Warning "Unable to find discovery config groupjname corresponding to the discovery job name pattern passed"
+            Write-Warning "Unable to find discovery config groupname corresponding to the discovery job name pattern passed"
         }
     }
     else {
@@ -234,10 +267,11 @@ Try {
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{ }
+    $ipAddressList = Test-IpAddress $IpArray
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        Update-Config-Payload $IpAddress $DeviceUserName $DevicePassword $JobNamePattern
+        Update-Config-Payload $IpAddress $DeviceUserName $DevicePassword $JobNamePattern $ipAddressList
     }
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
