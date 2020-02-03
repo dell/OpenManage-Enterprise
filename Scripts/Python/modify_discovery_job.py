@@ -1,6 +1,6 @@
 """
 SYNOPSIS:
-   Script to discover devices managed by OM Enterprise
+   Script to update an existing discovery job in OME
 DESCRIPTION:
    This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and also 
    it updates networkaddress if user passs iprange.
