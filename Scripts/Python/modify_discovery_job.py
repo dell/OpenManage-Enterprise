@@ -55,7 +55,7 @@ def get_discovery_config_payload():
                 "DiscoveryConfigTargets": [
                     {
                         "DiscoveryConfigTargetId": 2,
-                        "NetworkAddressDetail": "10.255.2.174",
+                        "NetworkAddressDetail": None,
                         "SubnetMask": None,
                         "AddressType": 3,
                         "Disabled": False,
@@ -63,7 +63,7 @@ def get_discovery_config_payload():
                     }
                 ],
                 "ConnectionProfileId": 10079,
-                "ConnectionProfile": "{\n  \"profileId\" : 10079,\n  \"profileName\" : \"\",\n  \"profileDescription\" : \"\",\n  \"type\" : \"DISCOVERY\",\n  \"updatedBy\" : null,\n  \"updateTime\" : 1580413699634,\n  \"credentials\" : [ {\n    \"type\" : \"WSMAN\",\n    \"authType\" : \"Basic\",\n    \"modified\" : false,\n    \"id\" : 3,\n    \"credentials\" : {\n      \"username\" : \"root\",\n      \"password\" : \"sebastian\",\n      \"domain\" : null,\n      \"caCheck\" : false,\n      \"cnCheck\" : false,\n      \"certificateData\" : null,\n      \"certificateDetail\" : null,\n      \"port\" : 443,\n      \"retries\" : 3,\n      \"timeout\" : 60,\n      \"isHttp\" : false,\n      \"keepAlive\" : false\n    }\n  }, {\n    \"type\" : \"REDFISH\",\n    \"authType\" : \"Basic\",\n    \"modified\" : false,\n    \"id\" : 4,\n    \"credentials\" : {\n      \"username\" : \"root\",\n      \"password\" : null,\n      \"domain\" : null,\n      \"caCheck\" : false,\n      \"cnCheck\" : false,\n      \"certificateData\" : null,\n      \"certificateDetail\" : null,\n      \"port\" : 443,\n      \"retries\" : 3,\n      \"timeout\" : 60,\n      \"isHttp\" : false,\n      \"keepAlive\" : true,\n      \"version\" : null\n    }\n  } ]\n}",
+                "ConnectionProfile": "{\n  \"profileId\" : 10079,\n  \"profileName\" : \"\",\n  \"profileDescription\" : \"\",\n  \"type\" : \"DISCOVERY\",\n  \"updatedBy\" : null,\n  \"updateTime\" : 1580413699634,\n  \"credentials\" : [ {\n    \"type\" : \"WSMAN\",\n    \"authType\" : \"Basic\",\n    \"modified\" : false,\n    \"id\" : 3,\n    \"credentials\" : {\n      \"username\" : \"root\",\n      \"password\" : null,\n      \"domain\" : null,\n      \"caCheck\" : false,\n      \"cnCheck\" : false,\n      \"certificateData\" : null,\n      \"certificateDetail\" : null,\n      \"port\" : 443,\n      \"retries\" : 3,\n      \"timeout\" : 60,\n      \"isHttp\" : false,\n      \"keepAlive\" : false\n    }\n  }, {\n    \"type\" : \"REDFISH\",\n    \"authType\" : \"Basic\",\n    \"modified\" : false,\n    \"id\" : 4,\n    \"credentials\" : {\n      \"username\" : \"root\",\n      \"password\" : null,\n      \"domain\" : null,\n      \"caCheck\" : false,\n      \"cnCheck\" : false,\n      \"certificateData\" : null,\n      \"certificateDetail\" : null,\n      \"port\" : 443,\n      \"retries\" : 3,\n      \"timeout\" : 60,\n      \"isHttp\" : false,\n      \"keepAlive\" : true,\n      \"version\" : null\n    }\n  } ]\n}",
                 "DeviceType": [
                     1000
                 ]
