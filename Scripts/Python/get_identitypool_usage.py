@@ -1,5 +1,5 @@
 #
-#  Python script using OME API to get device list.
+#  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 # _version_ = 0.1
@@ -22,16 +22,18 @@
 
 """
 SYNOPSIS:
-   Script to get the list of devices managed by OM Enterprise
+   Script to get the list of virtual addresses in an Identity Pool
 
 DESCRIPTION:
-   This script exercises the OME REST API to get a list of devices
-   currently being managed by that instance. For authentication X-Auth
-   is used over Basic Authentication
+   This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
+   Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
+   For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python get_device_list.py --ip <xx> --user <username> --password <pwd>
+   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
+   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
+   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
 """
 
 import sys
@@ -93,8 +95,6 @@ def get_device_list(ip_address, user_name, password, identitypool_id, outfile):
             if identitypool_response.status_code == 200:
                 identitypool_data = identitypool_response.json()
                 identitypool_data = identitypool_data['value']
-                #device_count = identitypool_data['@odata.count']
-                #if device_count > 0:
                 for i in identitypool_data:
                     print("Id: %s, Name: %s" %(i["Id"], i["Name"]))
             else:
@@ -200,6 +200,5 @@ if __name__ == '__main__':
                         help="Full path to CSV file")
 
     ARGS = PARSER.parse_args()
-
 
     get_device_list(ARGS.ip, ARGS.user, ARGS.password, ARGS.id, ARGS.outfile)
