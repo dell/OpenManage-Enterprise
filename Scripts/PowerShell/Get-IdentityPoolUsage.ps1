@@ -31,7 +31,7 @@ limitations under the License.
    This is the IP address of the OME Appliance
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
- .PARAMETER IdentityPoolId
+ .PARAMETER Id
    This is the Identity Pool Id
  .PARAMETER OutFile
    This is the full path to output the CSV file
@@ -45,11 +45,11 @@ limitations under the License.
    In this instance you will be prompted for credentials to use
 
  .EXAMPLE
-   .\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -IdentityPoolId 3
+   .\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3
    In this instance you will be prompted for credentials to use
 
  .EXAMPLE
-   .\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -IdentityPoolId 3 -OutFile C:\Temp\export.csv
+   .\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3 -OutFile C:\Temp\export.csv
    In this instance you will be prompted for credentials to use
 #>
 [CmdletBinding()]
@@ -61,7 +61,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory=$false)]
-    [String] $IdentityPoolId,
+    [String] $Id,
 
     [Parameter(Mandatory=$false)]
     [String] $OutFile
@@ -113,14 +113,14 @@ Try {
             $IdentityPoolRespData = $IdentityPoolResp.Content | ConvertFrom-Json
             $IdentityPoolRespData = $IdentityPoolRespData.'value'
 
-            if ($IdentityPoolId -eq "") {
+            if ($Id -eq "") {
                 $IdentityPoolRespData | Select Id, Name | Out-String
-                $IdentityPoolId = Read-Host "Please Enter Identity Pool Id"
+                $Id = Read-Host "Please Enter Identity Pool Id"
             }
         }
 
         # Get Identity Pool Usage Sets
-        $IdentityPoolUsageSetUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($IdentityPoolId))/UsageIdentitySets"
+        $IdentityPoolUsageSetUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets"
         $IdentityPoolUsageSetResp = Invoke-WebRequest -Uri $IdentityPoolUsageSetUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
         if ($IdentityPoolUsageSetResp.StatusCode -eq 200) {
             $IdentityPoolUsageSetRespData = $IdentityPoolUsageSetResp.Content | ConvertFrom-Json
@@ -132,7 +132,7 @@ Try {
                 $IdentitySetId = $IdentitySet.IdentitySetId
                 $IdentitySetName = $IdentitySet.Name
 
-                $IdentityPoolUsageDetailUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($IdentityPoolId))/UsageIdentitySets($($IdentitySetId))/Details"
+                $IdentityPoolUsageDetailUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets($($IdentitySetId))/Details"
                 $IdentityPoolUsageDetailResp = Invoke-WebRequest -Uri $IdentityPoolUsageDetailUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
                 if ($IdentityPoolUsageDetailResp.StatusCode -eq 200) {
                     $IdentityPoolUsageDetailData = $IdentityPoolUsageDetailResp.Content | ConvertFrom-Json
