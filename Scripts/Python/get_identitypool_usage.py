@@ -71,7 +71,6 @@ def get_session(ip_address, user_name, password):
 
 def delete_session(ip_address, headers, id):
     session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
-    print("Deleting Session %s" %(id))
     session_info = requests.delete(session_url, verify=False, headers=headers)
     if session_info.status_code == 201:
         return True
