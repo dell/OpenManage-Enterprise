@@ -255,7 +255,7 @@ function Get-BaselinePayload($IpAddress, $Headers, $Type, $CatalogId, $repoId, $
 					"CatalogId": 1104,
 					"RepositoryId": 604,
 					"DowngradeEnabled": true,
-					"Is64Bit": false,
+					"Is64Bit": true,
 					"Targets": [
 						{
 							"Id":"target_id",
