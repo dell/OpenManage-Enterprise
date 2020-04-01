@@ -75,7 +75,8 @@ def get_group_details(ip_address, user_name, password, group_info):
                             else:
                                 next_link_url = None
                         else:
-                            print ("Unable to get full group list ... ")        
+                            print ("Unable to get full group list ... ")
+                            next_link_url = None  
                     for group in group_list['value']:
                         if ((str(group['Id']).lower() == group_info.lower()) or
                                 str(group['Name']).lower() == group_info.lower() or
@@ -105,6 +106,7 @@ def get_group_details(ip_address, user_name, password, group_info):
                                                 next_link_url = None
                                         else:
                                              print ("Unable to get full device list ... ")
+                                             next_link_url = None
 
                                 print ("\n*** Group Device Details ***")
                                 print (json.dumps(device_list, indent=4,

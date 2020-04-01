@@ -90,7 +90,8 @@ def get_group_details(ip_address, user_name, password, filter_by, field):
                                     else:
                                         next_link_url = None
                                 else:
-									print ("Unable to get full device list ... ")
+                                    print ("Unable to get full device list ... ")
+                                    next_link_url = None
                     else:
                         print ("Unable to retrieve devices for group (%s) from %s" % (field, ip_address))
                 else:

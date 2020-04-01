@@ -78,6 +78,7 @@ def get_device_list(ip_address, user_name, password):
                                 next_link_url = None
                         else:
                             print("Unable to retrieve device list from nextLink %s" % (next_link_url))
+                            next_link_url = None
                     print("*** Device List ***")
                     print(json.dumps(json_data, indent=4, sort_keys=True))
                 else:
