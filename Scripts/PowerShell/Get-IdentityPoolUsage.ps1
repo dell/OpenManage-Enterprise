@@ -200,6 +200,9 @@ Try {
                             } else { 
                                 $NextLinkUrl = $null
                             }
+                        } else {
+                            $NextLinkUrl = $null
+                            Write-Error "Unable to retrieve items from nextLink... Exiting"
                         }
                     }
                 }
