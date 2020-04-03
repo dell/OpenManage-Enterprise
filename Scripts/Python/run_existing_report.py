@@ -75,6 +75,7 @@ class OMEReportExecutor(object):
         self.report_id = report_id
         self.group_id = group_id
         self.base_url = 'https://%s/api/' % (self.ip_address)
+        self.result_base = 'https://%s' %(self.ip_address)
 
     def authenticate_with_ome(self):
         """ X-auth session creation """
@@ -159,18 +160,19 @@ class OMEReportExecutor(object):
                 total_rep_results = report_info['@odata.count']
                 if total_rep_results > 0:
                     if '@odata.nextLink' in report_info:
-                        next_link_url = self.base_url + report_info['@odata.nextLink']
+                        next_link_url = self.result_base + report_info['@odata.nextLink']
                     while next_link_url:
                         next_link_response = requests.get(next_link_url, headers=headers, verify=False)
                         if next_link_response.status_code == 200:
                             next_link_json_data = next_link_response.json()
                             report_info['value'] += next_link_json_data['value']
                             if '@odata.nextLink' in next_link_json_data:
-                                next_link_url = self.base_url + next_link_json_data['@odata.nextLink']
+                                next_link_url = self.result_base + next_link_json_data['@odata.nextLink']
                             else:
                                 next_link_url = None
                         else:
-                            print("Unable to get full set of report results")        
+                            print("Unable to get full set of report results.. Exiting")
+                            next_link_url = None        
                     for result in report_info['value']:
                         print (",".join(result['Values']))
                 else:

@@ -73,6 +73,7 @@ def get_report_list(ip_address, user_name, password):
                                 next_link_url = None
                         else:
                             print("Unable to retrieve device list from nextLink %s" % (next_link_url))
+                            next_link_url = None
                     print ("*** List of pre-defined reports ***")
                     print (json.dumps(report_info, indent=4, sort_keys=True))
                 else:

@@ -50,6 +50,7 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
         base_uri = 'https://%s' %(ip_address)
         session_url = base_uri + "/api/SessionService/Sessions"
         alert_svc = "https://%s/api/AlertService/Alerts?$filter=%s eq '%s'" % (ip_address, filter_map[filter_by], field)
+        next_link_url = None
         headers = {'content-type': 'application/json'}
 
         user_details = {'UserName': user_name,
@@ -78,6 +79,7 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
                                 next_link_url = None
                         else:
                             print ("Unable to get full set of alerts ... ")
+                            next_link_url = None
                     # Technically there should be only one result in the filter
                     print ("\n*** Alerts for device (%s) ***" % (field))
                     print (json.dumps(json_data, indent=4, sort_keys=True))

@@ -87,6 +87,7 @@ def get_alerts_by_group(ip_address, user_name, password, filter_by, field):
                                         next_link_url = None
                                 else:
                                     print ("Unable to get full set of alerts ... ")
+                                    next_link_url = None
                         print ("\n*** Alerts for group (%s) ***" % (field))
                         print (json.dumps(alert_Info, indent=4, sort_keys=True))
                     else:
