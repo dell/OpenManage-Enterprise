@@ -115,6 +115,7 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
                         }
                     }else {
                         Write-Error "Unable to get full set of report results"
+                        $NextLinkUrl = $null
                     }
                 }
                 foreach ($value in $ReportResultList) {

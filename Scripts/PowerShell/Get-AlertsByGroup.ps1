@@ -131,7 +131,8 @@ Try {
                                     $NextLinkUrl = $null
                                 }
                             }else{
-                            Write-Error "Unable to get full set of Alerts ... "
+                                Write-Error "Unable to get full set of Alerts ... "
+                                $NextLinkUrl = $null
                             }
                         }
                         Write-Output "*** Alerts for group ($($GroupInfo))***"

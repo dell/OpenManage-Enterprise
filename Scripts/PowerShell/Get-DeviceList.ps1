@@ -109,6 +109,7 @@ Try {
                     }
                 }else {
                     Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    $NextLinkUrl = $null
                 }
             } 
             $DeviceData | Format-List

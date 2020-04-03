@@ -110,6 +110,7 @@ Try {
                       }
                   }else {
                     Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    $NextLinkUrl = $null
                   }
               }
               Write-Output "*** List of pre-defined reports ***"

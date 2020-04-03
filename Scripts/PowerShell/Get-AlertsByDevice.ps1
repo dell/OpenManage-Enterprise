@@ -132,6 +132,7 @@ Try {
                         }
                     }else{
                         Write-Error "Unable to get full set of Alerts ... "
+                        $NextLinkUrl = $null
                       }
                 }
                 Write-Output "*** Alerts for device ($($DeviceInfo)) ***"
