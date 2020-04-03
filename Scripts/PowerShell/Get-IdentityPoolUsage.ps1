@@ -23,7 +23,7 @@ limitations under the License.
  .DESCRIPTION
 
    This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
-   Will export to a CSV file called IdentityPoolUsage.csv in the current directory
+   Will export to a CSV file called Get-IdentityPoolUsage.csv in the current directory
    For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
 
@@ -89,22 +89,44 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 
-Try {
-    Set-CertPolicy
+$SessionAuthToken = @{}
+
+function Get-Session($IpAddress, $Credentials) {
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $BaseUri = "https://$($IpAddress)"
-    $NextLinkUrl = $null
     $Type        = "application/json"
     $UserName    = $Credentials.username
     $Password    = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+        $SessResponseData = $SessResponse.Content | ConvertFrom-Json
+        $SessionAuthToken = @{
+        "token"= $SessResponse.Headers["X-Auth-Token"];
+        "id"= $SessResponseData.Id
+        }
+    }
+    return $SessionAuthToken
+}
+
+function Remove-Session($IpAddress, $Headers, $Id) {
+    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
+    $Type        = "application/json"
+    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
+}
+
+Try {
+    Set-CertPolicy
+    $BaseUri = "https://$($IpAddress)"
+    $NextLinkUrl = $null
+    $Type        = "application/json"
+    $Headers     = @{}
+
+    # Request authentication session token
+    $AuthToken = Get-Session $IpAddress $Credentials
+    if ($AuthToken) {
+        # Successfully created a session, extract token
+        $Headers."X-Auth-Token" = $AuthToken["token"]
         
         # Display Identity Pools
         $IdentityPoolUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools"
@@ -178,6 +200,9 @@ Try {
                             } else { 
                                 $NextLinkUrl = $null
                             }
+                        } else {
+                            $NextLinkUrl = $null
+                            Write-Error "Unable to retrieve items from nextLink... Exiting"
                         }
                     }
                 }
@@ -192,8 +217,8 @@ Try {
             # Export to CSV
             if ($DeviceData.Count -gt 0) {
                 if ($OutFile -eq "") {
-                    $DeviceData | Export-Csv -Path "IdentityPoolUsage.csv" -NoTypeInformation
-                    Write-Host "Exported data to $(Get-Location)\IdentityPoolUsage.csv"
+                    $DeviceData | Export-Csv -Path "Get-IdentityPoolUsage.csv" -NoTypeInformation
+                    Write-Host "Exported data to $(Get-Location)\Get-IdentityPoolUsage.csv"
                 } else {
                     $DeviceData | Export-Csv -Path $OutFile -NoTypeInformation
                     Write-Host "Exported data to $($OutFile)"
@@ -209,5 +234,10 @@ Try {
     }
 }
 Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception: $($_)"
+}
+Finally {
+    if ($AuthToken) {
+      Remove-Session $IpAddress $Headers $AuthToken["id"]
+    }
 }

@@ -71,7 +71,6 @@ def get_session(ip_address, user_name, password):
 
 def delete_session(ip_address, headers, id):
     session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
-    print("Deleting Session %s" %(id))
     session_info = requests.delete(session_url, verify=False, headers=headers)
     if session_info.status_code == 201:
         return True
@@ -154,13 +153,12 @@ def get_device_list(ip_address, user_name, password, identitypool_id, outfile):
                                         next_link_url = base_uri + next_link_json['@odata.nextLink']
                                     else:
                                         next_link_url = None
-                            else:
-                                print("Unable to retrieve items from nextLink %s" % (next_link_url))
+                                else:
+                                    next_link_url = None
+                                    print("Unable to retrieve items from nextLink %s" % (next_link_url))
 
                 # Export results to CSV
                 if (len(detailentries) > 0):
-                    print(json.dumps(detailentries, indent=2))
-
                     currentDirectory = os.path.dirname(os.path.abspath(__file__))
                     if outfile == None:
                         outFilePath = currentDirectory + os.path.sep + "IdentityPoolUsage.csv"                        
@@ -177,7 +175,6 @@ def get_device_list(ip_address, user_name, password, identitypool_id, outfile):
                     print("No data to display")
             else:
                 print("Unable to retrieve list from %s" % (ip_address))
-
         else:
             print("Unable to create a session with appliance %s" % (ip_address))
     except:
