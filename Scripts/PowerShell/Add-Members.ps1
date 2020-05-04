@@ -137,8 +137,8 @@ function Add-AllMembersViaLead($IpAddress, $Headers) {
 
 function Assign-BackupLead($IpAddress, $Headers) {
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead"
-    $ListOfMembers = @()
-    $ListOfMembers = Get-Domains $IpAddress $Headers
+    $DomainInfo = Get-Domains $IpAddress $Headers
+    $ListOfMembers = $DomainInfo.'members'
     $JobId = 0
     if ($ListOfMembers.Length -gt 0) {
         $Member = Get-Random -InputObject $ListOfMembers -Count 1
@@ -165,7 +165,9 @@ function Assign-BackupLead($IpAddress, $Headers) {
 
 function Get-Domains($IpAddress, $Headers) {
     $Members = @()
-    $ListOfMembers = @()
+    $TargetHash = @{} 
+    $Lead = $null
+    $BackupLead = $null
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Domains"
     $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
@@ -173,7 +175,19 @@ function Get-Domains($IpAddress, $Headers) {
         if ($DomainResp."value".Length -gt 0) {
             $MemberDevices = $DomainResp."value"
             foreach ($Member in $MemberDevices) {
-                if ($Member.'DomainRoleTypeValue' -eq "MEMBER") {
+                $Role = $Member.'DomainRoleTypeValue'
+                $BackupLeadFlag = $Member.'BackupLead'
+                if ($Role -eq "LEAD") {
+                    if ($null -eq $Lead){
+                        $Lead = $Member
+                    }
+                }
+                elseif ($BackupLeadFlag) {
+                    if ($null -eq $BackupLead) {
+                        $BackupLead = $Member
+                    }
+                }
+                elseif ($Role -eq "MEMBER") {
                     $Members += $Member
                 }
             }
@@ -181,8 +195,10 @@ function Get-Domains($IpAddress, $Headers) {
         else {
             Write-Warning "No domains discovered"
         }
-        $ListOfMembers = $Members
-        return $ListOfMembers
+        $TargetHash."lead" = $Lead
+        $TargetHash."backup_lead" = $BackupLead
+        $TargetHash."members" = $Members
+        return $TargetHash
     }
     else {
         Write-Warning "Failed to get domains and status code returned is $($Response.StatusCode)"
@@ -290,7 +306,7 @@ Try {
             Wait-OnJobStatus $IpAddress $Headers $Type $JobId
         }
         $BakupLeadFound = Get-BackupLead $IpAddress $Headers
-        if ($null -eq $BackupLead){
+        if ($null -eq $BakupLeadFound){
             Write-Host "Assigning backup lead ..."
             $JobId = Assign-BackupLead $IpAddress $Headers
             if ($JobId) {

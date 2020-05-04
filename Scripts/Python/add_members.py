@@ -1,13 +1,3 @@
-import argparse
-import requests
-import json
-import urllib3
-from argparse import RawTextHelpFormatter
-import random
-import time
-import sys
-
-
 """
 SYNOPSIS
 ---------------------------------------------------------------------
@@ -44,6 +34,15 @@ API workflow is below:
    with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
 7: Parse returned job id and monitor it to completion
 """
+
+import argparse
+import requests
+import json
+import urllib3
+from argparse import RawTextHelpFormatter
+import random
+import time
+import sys
 
 
 

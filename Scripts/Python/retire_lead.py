@@ -1,17 +1,3 @@
-import argparse
-import json
-import requests
-import urllib3
-from argparse import RawTextHelpFormatter
-import random
-import time
-import sys
-
-session = requests.Session()
-session.headers.update({'content-type': 'application/json'})
-BASE_URL = ''
-HEADERS = {'content-type': 'application/json'}
-
 """
 SYNOPSIS
 ---------------------------------------------------------------------
@@ -40,6 +26,15 @@ API workflow is below:
    with POST on /ManagementDomainService/Actions/ManagementDomainService.RetireLead
 5: Parse returned job id and monitor it to completion
 """
+
+import argparse
+import json
+import requests
+import urllib3
+from argparse import RawTextHelpFormatter
+import random
+import time
+import sys
 
 
 def authenticate_with_ome(ip_address, user_name, password):
