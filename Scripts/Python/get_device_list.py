@@ -39,6 +39,7 @@ from argparse import RawTextHelpFormatter
 import json
 import csv
 import os
+import sys
 import requests
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
@@ -57,14 +58,16 @@ class GetDeviceList:
         self.__headers = {'content-type': 'application/json'}
 
         try:
-            self.__authenticate_with_ome()
+            if self.__authenticate_with_ome() is False:
+                return
         except requests.exceptions.RequestException as auth_ex:
             print("Unable to connect to OME appliance %s" % self.__session_input["ip"])
             print(auth_ex)
             return
 
         try:
-            self.__get_device_list()
+            if self.__get_device_list() is False:
+                return
         except requests.exceptions.RequestException as get_ex:
             print("Unable to get device list from OME appliance %s" % self.__session_input["ip"])
             print(get_ex)
@@ -85,8 +88,10 @@ class GetDeviceList:
                                      headers=self.__headers)
         if session_info.status_code == 201:
             self.__headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+            return True
         else:
             print("Unable to create a session with appliance %s" % self.__session_input["ip"])
+            return False
 
     def __get_device_from_uri(self, uri):
         json_data = {}
@@ -108,12 +113,14 @@ class GetDeviceList:
             next_link_url = None
             if data['@odata.count'] <= 0:
                 print("No devices managed by %s" % self.__session_input["ip"])
+                return False
             if '@odata.nextLink' in data:
                 next_link_url = self.__base_uri + data['@odata.nextLink']
             if self.json_data is None:
                 self.json_data = data
             else:
                 self.json_data['value'] += data['value']
+        return True
 
     def __format_json(self):
         # print to console in the absence of a specified file path
@@ -126,27 +133,28 @@ class GetDeviceList:
         modified_filepath = self.__get_unique_filename()
         with open(modified_filepath, "w") as json_file:
             json_file.write(json_object)
-        json_file.close()
 
     def __format_csv(self):
         exportable_props = ["Id", "Identifier", "DeviceServiceTag",
                             "ChassisServiceTag", "Model", "DeviceName"]
-        generate_default = self.__output_details["path"] == ''
-        if generate_default:
-            self.__output_details["path"] = 'device_list.csv'
-        modified_filepath = self.__get_unique_filename()
-        if generate_default:
-            print("Generating output file({0}) at current location".format(modified_filepath))
-        with open(modified_filepath, 'w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            devices = self.json_data["value"]
-            csv_writer.writerow(exportable_props)
-            for device in devices:
-                device_props = []
-                for prop in exportable_props:
-                    device_props.append(device[prop])
-                csv_writer.writerow(device_props)
-        csv_file.close()
+        csv_file = None
+        if self.__output_details["path"] == '':
+            print("*** Device List ***")
+            writer = csv.writer(sys.stdout, lineterminator=os.linesep)
+        else:
+            modified_filepath = self.__get_unique_filename()
+            csv_file = open(modified_filepath, 'w', newline='')
+            writer = csv.writer(csv_file)
+
+        devices = self.json_data["value"]
+        writer.writerow(exportable_props)
+        for device in devices:
+            device_props = []
+            for prop in exportable_props:
+                device_props.append(device[prop])
+            writer.writerow(device_props)
+        if csv_file is not None:
+            csv_file.close()
 
     def __get_unique_filename(self):
         i = 1
@@ -161,10 +169,6 @@ class GetDeviceList:
         return new_filepath
 
     def __validateargs(self):
-        if self.__session_input["ip"] == '' or self.__session_input["user"] == '' or \
-                self.__session_input["password"] == '':
-            print("IP or password cannot be empty")
-            return False
         if self.__output_details["path"] != '' and \
                 os.path.splitext(self.__output_details["path"])[1] != '' and \
                 os.path.splitext(self.__output_details["path"])[1][1:] != self.__output_details["format"]:
