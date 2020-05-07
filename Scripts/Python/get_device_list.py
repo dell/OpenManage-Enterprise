@@ -34,61 +34,147 @@ EXAMPLE:
    python get_device_list.py --ip <xx> --user <username> --password <pwd>
 """
 
-import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import json
+import csv
+import os
+import sys
 import requests
 import urllib3
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
 
 
-def get_device_list(ip_address, user_name, password):
+class GetDeviceList:
     """ Authenticate with OME and enumerate devices """
-    try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        base_uri = 'https://%s' %(ip_address)
-        device_url = base_uri + '/api/DeviceService/Devices'
-        next_link_url = None
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': user_name,
-                        'Password': password,
+    def __init__(self, session_input, output_details):
+        self.__session_input = session_input
+        self.__output_details = output_details
+        if not self.__validateargs():
+            return
+
+        self.__base_uri = 'https://%s' % self.__session_input["ip"]
+        self.__headers = {'content-type': 'application/json'}
+
+        try:
+            if self.__authenticate_with_ome() is False:
+                return
+        except requests.exceptions.RequestException as auth_ex:
+            print("Unable to connect to OME appliance %s" % self.__session_input["ip"])
+            print(auth_ex)
+            return
+
+        try:
+            if self.__get_device_list() is False:
+                return
+        except requests.exceptions.RequestException as get_ex:
+            print("Unable to get device list from OME appliance %s" % self.__session_input["ip"])
+            print(get_ex)
+            return
+
+        if self.__output_details["format"] == 'json':
+            self.__format_json()
+        elif self.__output_details["format"] == 'csv':
+            self.__format_csv()
+
+    def __authenticate_with_ome(self):
+        session_url = self.__base_uri + '/api/SessionService/Sessions'
+        user_details = {'UserName': self.__session_input["user"],
+                        'Password': self.__session_input["password"],
                         'SessionType': 'API'}
         session_info = requests.post(session_url, verify=False,
                                      data=json.dumps(user_details),
-                                     headers=headers)
+                                     headers=self.__headers)
         if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            device_response = requests.get(device_url, headers=headers, verify=False)
-            if device_response.status_code == 200:
-                json_data = device_response.json()
-                device_count = json_data['@odata.count']
-                if device_count > 0:
-                    if '@odata.nextLink' in json_data:
-                        next_link_url = base_uri + json_data['@odata.nextLink']
-                    while next_link_url:
-                        next_link_response = requests.get(next_link_url, headers=headers, verify=False)
-                        if next_link_response.status_code == 200:
-                            next_link_json_data = next_link_response.json()
-                            json_data['value'] += next_link_json_data['value']
-                            if '@odata.nextLink' in next_link_json_data:
-                                next_link_url = base_uri + next_link_json_data['@odata.nextLink']
-                            else:
-                                next_link_url = None
-                        else:
-                            print("Unable to retrieve device list from nextLink %s" % (next_link_url))
-                            next_link_url = None
-                    print("*** Device List ***")
-                    print(json.dumps(json_data, indent=4, sort_keys=True))
-                else:
-                    print("No devices managed by %s" % (ip_address))
-            else:
-                print("Unable to retrieve device list from %s" % (ip_address))
+            self.__headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+            return True
         else:
-            print("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+            print("Unable to create a session with appliance %s" % self.__session_input["ip"])
+            return False
+
+    def __get_device_from_uri(self, uri):
+        json_data = {}
+        device_response = requests.get(uri, headers=self.__headers, verify=False)
+
+        if device_response.status_code == 200:
+            json_data = device_response.json()
+        else:
+            print("Unable to retrieve device list from %s" % self.__session_input["ip"])
+
+        return json_data
+
+    def __get_device_list(self):
+        next_link_url = self.__base_uri + '/api/DeviceService/Devices'
+        self.json_data = None
+
+        while next_link_url is not None:
+            data = self.__get_device_from_uri(next_link_url)
+            next_link_url = None
+            if data['@odata.count'] <= 0:
+                print("No devices managed by %s" % self.__session_input["ip"])
+                return False
+            if '@odata.nextLink' in data:
+                next_link_url = self.__base_uri + data['@odata.nextLink']
+            if self.json_data is None:
+                self.json_data = data
+            else:
+                self.json_data['value'] += data['value']
+        return True
+
+    def __format_json(self):
+        # print to console in the absence of a specified file path
+        json_object = json.dumps(self.json_data, indent=4, sort_keys=True)
+        if self.__output_details["path"] == '':
+            print("*** Device List ***")
+            print(json_object)
+            return
+        # If file path is specified then write to file.
+        modified_filepath = self.__get_unique_filename()
+        with open(modified_filepath, "w") as json_file:
+            json_file.write(json_object)
+
+    def __format_csv(self):
+        exportable_props = ["Id", "Identifier", "DeviceServiceTag",
+                            "ChassisServiceTag", "Model", "DeviceName"]
+        csv_file = None
+        if self.__output_details["path"] == '':
+            print("*** Device List ***")
+            writer = csv.writer(sys.stdout, lineterminator=os.linesep)
+        else:
+            modified_filepath = self.__get_unique_filename()
+            csv_file = open(modified_filepath, 'w', newline='')
+            writer = csv.writer(csv_file)
+
+        devices = self.json_data["value"]
+        writer.writerow(exportable_props)
+        for device in devices:
+            device_props = []
+            for prop in exportable_props:
+                device_props.append(device[prop])
+            writer.writerow(device_props)
+        if csv_file is not None:
+            csv_file.close()
+
+    def __get_unique_filename(self):
+        i = 1
+        new_filepath = self.__output_details["path"]
+        exists = os.path.isfile(new_filepath)
+        while os.path.isfile(new_filepath):
+            (root, ext) = os.path.splitext(self.__output_details["path"])
+            new_filepath = root + "({0})".format(i) + ext
+            i += 1
+        if exists:
+            print("Output file exists. Writing to {}".format(new_filepath))
+        return new_filepath
+
+    def __validateargs(self):
+        if self.__output_details["path"] != '' and \
+                os.path.splitext(self.__output_details["path"])[1] != '' and \
+                os.path.splitext(self.__output_details["path"])[1][1:] != self.__output_details["format"]:
+            print("Output filename must match requested file format")
+            return False
+        return True
 
 
 if __name__ == '__main__':
@@ -99,5 +185,12 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
+    PARSER.add_argument("--outformat", "-of", required=False, default="json",
+                        choices=('json', 'csv'),
+                        help="Output format type")
+    PARSER.add_argument("--outpath", "-op", required=False, default="",
+                        help="Path to output file")
     ARGS = PARSER.parse_args()
-    get_device_list(ARGS.ip, ARGS.user, ARGS.password)
+
+    GetDeviceList({"ip":ARGS.ip, "user":ARGS.user, "password":ARGS.password},
+                  {"format":ARGS.outformat, "path":ARGS.outpath})
