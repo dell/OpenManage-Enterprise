@@ -39,51 +39,39 @@ import argparse
 from argparse import RawTextHelpFormatter
 import urllib3
 import requests
+from utils import authenticate_with_ome
 
 
-def create_static_group(ip_address, user_name, password, group_name):
+def create_static_group(ip_address, sessionheaders, group_name):
     """ Authenticate with OME and enumerate groups """
-    try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % (ip_address)
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': user_name,
-                        'Password': password,
-                        'SessionType': 'API'}
-
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            response = requests.get(group_url, headers=headers, verify=False)
-            if response.status_code == 200:
-                json_data = response.json()
-                if json_data['@odata.count'] > 0:
-                    # Technically there should be only one result in the filter
-                    group_id = json_data['value'][0]['Id']
-                    group_payload = {"GroupModel": {
-                                        "Name": group_name,
-                                        "Description": "",
-                                        "MembershipTypeId": 12,
-                                        "ParentId": int(group_id)}
-                                    }
-                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % (ip_address)
-                    create_resp = requests.post(create_url, headers=headers,
-                                                verify=False,
-                                                data=json.dumps(group_payload))
-                    if create_resp.status_code == 200:
-                        print ("New group created : ID =", create_resp.text)
-                    elif create_resp.status_code == 400:
-                        print ("Failed group creation ...See error info below")
-                        print (json.dumps(create_resp.json(), indent=4,
-                                         sort_keys=False))
-            else:
-                print ("Unable to retrieve group list from %s" % (ip_address))
-        else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % (ip_address)
+    response = requests.get(group_url, headers=sessionheaders, verify=False)
+    if response.status_code == 200:
+        json_data = response.json()
+        if json_data['@odata.count'] > 0:
+            # Technically there should be only one result in the filter
+            group_id = json_data['value'][0]['Id']
+            group_payload = {"GroupModel": {
+                "Name": group_name,
+                "Description": "",
+                "MembershipTypeId": 12,
+                "ParentId": int(group_id)}
+            }
+            create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % (ip_address)
+            create_resp = requests.post(create_url, headers=headers,
+                                        verify=False,
+                                        data=json.dumps(group_payload))
+            if create_resp.status_code == 200:
+                print("New group created : ID =", create_resp.text)
+                return create_resp.text
+            elif create_resp.status_code == 400:
+                print("Failed group creation ...See error info below")
+                print(json.dumps(create_resp.json(), indent=4,
+                                 sort_keys=False))
+                return None
+    else:
+        print("Unable to retrieve group list from %s" % (ip_address))
+        return None
 
 
 if __name__ == '__main__':
@@ -99,4 +87,9 @@ if __name__ == '__main__':
     PARSER.add_argument("--groupname", "-g", required=True,
                         help="A valid name for the group")
     ARGS = PARSER.parse_args()
-    create_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname)
+    try:
+        auth_success, headers = authenticate_with_ome(ARGS.ip, ARGS.user, ARGS.password)
+        if auth_success:
+            create_static_group(ARGS.ip, headers, ARGS.groupname)
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
