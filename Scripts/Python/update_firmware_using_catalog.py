@@ -119,7 +119,7 @@ def baseline_creation(ip_address, headers, param_map):
         group_type, group_name = get_group_details(ip_address, headers, param_map['group_id'])
         payload = baseline_creation_payload(CATALOG_INFO["CATALOG_ID"],
                                             CATALOG_INFO["REPO_ID"], "GROUP",
-                                            group_id=param_map['group_id'],type=group_type)
+                                            group_id=param_map['group_id'], type=group_type)
     else:
         device_details = get_device_details(ip_address, headers, param_map['device_ids'])
         payload = baseline_creation_payload(CATALOG_INFO["CATALOG_ID"],
@@ -417,8 +417,7 @@ def get_device_details(ip_address, headers, device_ids):
             device_details[device_details_json_response["value"][i]['Id']]["DeviceName"] = \
                 device_details_json_response["value"][i]["DeviceName"]
         return device_details
-    else:
-        print("Unable to fetch device details")
+    print("Unable to fetch device details")
     return 0
 
 
@@ -520,7 +519,7 @@ def baseline_creation_payload(id_cat, repository_id, target_name, **kwargs):
             "Name": None
         }
     }
-    if target_name is "GROUP":
+    if target_name == "GROUP":
         target_payload['Id'] = kwargs['group_id']
         target_payload['Type']['Id'] = kwargs['type']
         target_payload['Type']['Name'] = target_name
