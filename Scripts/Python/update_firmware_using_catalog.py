@@ -20,24 +20,37 @@ import sys
 import time
 import argparse
 from argparse import RawTextHelpFormatter
-import requests
 import urllib3
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-from utils import authenticate_with_ome
 
 CATALOGDETAILS = []
 CATALOG_INFO = {}
 BASELINE_INFO = {}
 
 
+def authenticate_with_ome(ip_address, user_name, password):
+    """ Authenticate with OME and X-auth session creation """
+    auth_success = False
+    session_url = "https://%s/api/SessionService/Sessions" % ip_address
+    user_details = {'UserName': user_name,
+                    'Password': password,
+                    'SessionType': 'API'}
+    headers = {'content-type': 'application/json'}
+    session_response = pool.urlopen('POST', session_url, headers=headers, body=json.dumps(user_details))
+    if session_response.status == 201:
+        headers['X-Auth-Token'] = session_response.headers['X-Auth-Token']
+        auth_success = True
+    else:
+        error_msg = "Failed create of session with {0} - Status code = {1}"
+        print(error_msg.format(ip_address, session_response.status_code))
+    return auth_success, headers
+
+
 def check_for_existing_catalog(ip_address, headers):
     """ Check if existing catalog exists """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
-    cat_response = requests.get(url, headers=headers, verify=False)
-    if cat_response.status_code == 200:
-        cat_json_resp = cat_response.json()
+    status, cat_json_resp = request(url, headers)
+    if status == 200:
         if cat_json_resp['@odata.count'] > 0:
             process_value_node(cat_json_resp)
         return CATALOGDETAILS
@@ -77,7 +90,7 @@ def delete_catalog(ip_address, headers):
     url = 'https://%s/api/UpdateService/Actions/UpdateService.RemoveCatalogs' % ip_address
     catalog_list = [d['CATALOG_ID'] for d in CATALOGDETAILS]
     payload = catalog_deletion_payload(catalog_list)
-    status, data = request(ip_address=ip_address, url=url,
+    status, data = request(url=url,
                            header=headers, payload=payload, method='POST')
     return status, data
 
@@ -86,7 +99,7 @@ def delete_baseline(ip_address, headers, baseline_list):
     """ Delete existing baseline from dell repo """
     url = 'https://%s/api/UpdateService/Actions/UpdateService.RemoveBaselines' % ip_address
     payload = baseline_deletion_payload(baseline_list)
-    status, data = request(ip_address=ip_address, url=url,
+    status, data = request(url=url,
                            header=headers, payload=payload, method='POST')
     return status, data
 
@@ -96,12 +109,12 @@ def catalog_creation(ip_address, headers):
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
     print("Creating new catalog.!")
     payload = catalog_creation_payload()
-    status, data = request(ip_address=ip_address, url=url,
+    status, data = request(url=url,
                            header=headers, payload=payload, method='POST')
-    if status != 201:
-        raise Exception("Unable to create catalog", data)
-    time.sleep(180)
-    get_catalog_status, get_catalog_data = request(ip_address=ip_address, url=url, header=headers)
+    # if status != 201:
+    #     raise Exception("Unable to create catalog", data)
+    # time.sleep(180)
+    get_catalog_status, get_catalog_data = request(url=url, header=headers)
     if get_catalog_status == 200 and get_catalog_data["@odata.count"] != 0:
         if get_catalog_data["value"][0].get("Repository")["Source"] == "downloads.dell.com":
             return get_catalog_data["value"][0]["Id"]
@@ -125,7 +138,7 @@ def baseline_creation(ip_address, headers, param_map):
         payload = baseline_creation_payload(CATALOG_INFO["CATALOG_ID"],
                                             CATALOG_INFO["REPO_ID"], "DEVICES",
                                             device_details=device_details)
-    baseline_status, baseline_data = request(ip_address=ip_address, url=url,
+    baseline_status, baseline_data = request(url=url,
                                              header=headers, payload=payload, method='POST')
     if baseline_status == 201:
         baseline_task_id = baseline_data["TaskId"]
@@ -142,7 +155,7 @@ def check_device_compliance_report(ip_address, headers, id_baseline):
     source_names = None
     compl_url = "https://%s/api/UpdateService/Baselines(%s)/DeviceComplianceReports" % \
                 (ip_address, id_baseline)
-    component_status, component_data = request(ip_address=ip_address, url=compl_url, header=headers)
+    component_status, component_data = request(url=compl_url, header=headers)
     if component_status == 200 and component_data["value"]:
         comp_val_list = component_data["value"]
         response_flag = check_response_type(comp_val_list)
@@ -166,7 +179,7 @@ def check_device_compliance_report(ip_address, headers, id_baseline):
                     compliance_dict.get('ComponentComplianceReports@odata.navigationLink')
                 navigation_url = "https://%s%s" % (ip_address, navigation_url_link)
                 component_status, component_data = \
-                    request(ip_address=ip_address, url=navigation_url, header=headers)
+                    request(url=navigation_url, header=headers)
 
                 if component_status == 200 and component_data["value"]:
                     comp_val_list = component_data["value"]
@@ -228,7 +241,7 @@ def firmware_update(ip_address, headers, repository_id, id_cat, id_baseline, tar
         payload = create_payload_for_firmware_update(job_type_id, str(id_baseline),
                                                      str(id_cat), str(repository_id), target_data)
         url = 'https://{0}/api/JobService/Jobs'.format(ip_address)
-        update_status, update_data = request(ip_address=ip_address, url=url,
+        update_status, update_data = request(url=url,
                                              header=headers, payload=payload, method='POST')
         if update_status == 201 and update_data != 0:
             job_id = update_data["Id"]
@@ -277,9 +290,9 @@ def track_job_to_completion(ip_address, headers, job_id, job_name):
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
-        job_resp = requests.get(job_url, headers=headers, verify=False)
-        if job_resp.status_code == 200:
-            job_status = str((job_resp.json())['LastRunStatus']['Id'])
+        status, job_resp = request(job_url, headers, method='GET')
+        if status == 200:
+            job_status = str(job_resp['LastRunStatus']['Id'])
             print("Iteration %s: Status of %s is %s" % (loop_ctr, job_id,
                                                         job_status_map[job_status]))
             if int(job_status) == 2060:
@@ -290,8 +303,8 @@ def track_job_to_completion(ip_address, headers, job_id, job_name):
                 job_incomplete = False
                 print("%s job failed ... " % job_name)
                 job_hist_url = str(job_url) + "/ExecutionHistories"
-                job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
-                if job_hist_resp.status_code == 200:
+                status, job_hist_resp = request(job_hist_url, headers, method='GET')
+                if status == 200:
                     get_execution_detail(job_hist_resp, headers, job_hist_url)
                 break
         else:
@@ -305,11 +318,9 @@ def get_execution_detail(job_hist_resp, headers, job_hist_url):
     job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
     execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
     job_hist_det_url = str(job_hist_url) + execution_hist_detail
-    job_hist_det_resp = requests.get(job_hist_det_url,
-                                     headers=headers,
-                                     verify=False)
-    if job_hist_det_resp.status_code == 200:
-        print(job_hist_det_resp.text)
+    status, job_hist_det_resp = request(job_hist_det_url, headers, method='GET')
+    if status == 200:
+        print(job_hist_det_resp)
     else:
         print("Unable to parse job execution history .. Exiting")
 
@@ -325,7 +336,7 @@ def get_job(ip_address, header, job_id):
 def get_baseline_id(ip_address, headers, id_repo, id_cat):
     """ Get Baseline id """
     url = 'https://%s/api/UpdateService/Baselines' % ip_address
-    status, data = request(ip_address=ip_address, url=url, header=headers)
+    status, data = request(url=url, header=headers)
     if status == 200:
         if data["@odata.count"]:
             i = 0
@@ -347,13 +358,11 @@ def get_baseline_id(ip_address, headers, id_repo, id_cat):
 def get_job_types(ip_address, header):
     """ Get job type """
     url = "https://{0}/api/JobService/JobTypes".format(ip_address)
-    return request(ip_address=ip_address, url=url, header=header)
+    return request(url=url, header=header)
 
 
-def request(ip_address, url, header, payload=None, method='GET'):
+def request(url, header, payload=None, method='GET'):
     """ Returns status and data """
-    pool = urllib3.HTTPSConnectionPool(ip_address, port=443,
-                                       cert_reqs='CERT_NONE', assert_hostname=False)
     request_obj = pool.urlopen(method, url, headers=header, body=json.dumps(payload))
     if request_obj.data and request_obj.status != 400:
         data = json.loads(request_obj.data)
@@ -365,9 +374,8 @@ def request(ip_address, url, header, payload=None, method='GET'):
 def get_catalog_details(ip_address, headers):
     """ Get Catalog details """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
-    catalog_response = requests.get(url, headers=headers, verify=False)
-    if catalog_response.status_code == 200:
-        catalog_json_response = catalog_response.json()
+    status, catalog_json_response = request(url, headers, method='GET')
+    if status == 200:
         if catalog_json_response['@odata.count'] > 0:
             i = 0
             while i < len(catalog_json_response["value"]):
@@ -387,9 +395,8 @@ def get_catalog_details(ip_address, headers):
 def get_group_details(ip_address, headers, group_id):
     """ Get  group details  from OME """
     group_service_url = 'https://%s/api/GroupService/Groups(%s)' % (ip_address, group_id)
-    group_response = requests.get(group_service_url, headers=headers, verify=False)
-    if group_response.status_code == 200:
-        group_json_response = group_response.json()
+    status, group_json_response = request(group_service_url, headers, method='GET')
+    if status == 200:
         if group_json_response['Id'] == group_id:
             group_type = group_json_response["TypeId"]
             group_name = group_json_response["Name"]
@@ -407,10 +414,9 @@ def get_device_details(ip_address, headers, device_ids):
     query_string = query_string[0:-1]
 
     device_url = 'https://%s/api/DeviceService/Devices?Id=%s' % (ip_address, query_string)
-    device_details_response = requests.get(device_url, headers=headers, verify=False)
+    status, device_details_json_response = request(device_url, headers, method='GET')
 
-    if device_details_response.status_code == 200:
-        device_details_json_response = device_details_response.json()
+    if status == 200:
         for i in range(device_details_json_response['@odata.count']):
             device_details[device_details_json_response["value"][i]['Id']]["Type"] = \
                 device_details_json_response["value"][i]["Type"]
@@ -426,9 +432,8 @@ def get_device_list(ip_address, headers):
     ome_device_list = None
     ome_service_tags = None
     device_url = 'https://%s/api/DeviceService/Devices' % ip_address
-    device_response = requests.get(device_url, headers=headers, verify=False)
-    if device_response.status_code == 200:
-        dev_json_response = device_response.json()
+    status, dev_json_response = request(device_url, headers, method='GET')
+    if status == 200:
         if dev_json_response['@odata.count'] > 0:
             ome_device_list = [x['Id'] for x in dev_json_response['value']]
             ome_service_tags = [x['DeviceServiceTag'] for x in dev_json_response['value']]
@@ -436,7 +441,7 @@ def get_device_list(ip_address, headers):
             print("No devices found at ", ip_address)
     else:
         print("No devices found at ", ip_address)
-    return ome_device_list, ome_service_tags
+    return dict(zip(ome_service_tags, ome_device_list))
 
 
 def refresh_compliance_data(ip_address, headers, baseline_job_id, id_baseline):
@@ -448,13 +453,13 @@ def refresh_compliance_data(ip_address, headers, baseline_job_id, id_baseline):
     payload["JobIds"][:] = []
     payload["JobIds"].append(baseline_job_id)
     print("payload", payload)
-    status, data = request(ip_address=ip_address, url=url,
+    status, data = request(url=url,
                            header=headers,
                            payload=payload, method='POST')
     if status != 204:
         job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, baseline_job_id)
-        job_response = requests.get(job_url, headers=headers, verify=False)
-        job_status = job_response.json()["LastRunStatus"]["Name"]
+        status, job_response = request(job_url, headers, method='GET')
+        job_status = job_response["LastRunStatus"]["Name"]
         if job_status == "Running":
             print("Baseline job is rerunning")
             track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
@@ -475,9 +480,8 @@ def get_group_list(ip_address, headers):
     """ Get list of groups from OME """
     group_list = None
     group_list_url = 'https://%s/api/GroupService/Groups' % ip_address
-    group_response = requests.get(group_list_url, headers=headers, verify=False)
-    if group_response.status_code == 200:
-        group_response = group_response.json()
+    status, group_response = request(group_list_url, headers, method='GET')
+    if status == 200:
         if group_response['@odata.count'] > 0:
             group_list = [x['Id'] for x in group_response['value']]
         else:
@@ -593,15 +597,14 @@ def rerun_baseline(ip_address, headers, baseline_job_id):
     }
     payload["JobIds"][:] = []
     payload["JobIds"].append(baseline_job_id)
-    status, data = request(ip_address=ip_address, url=url,
+    status, data = request(url=url,
                            header=headers,
                            payload=payload, method='POST')
     if status != 204:
         job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, baseline_job_id)
-        job_response = requests.get(job_url, headers=headers, verify=False)
+        status, response = request(job_url, headers, method='GET')
         # track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
-        if job_response.status_code == 200:
-            response = job_response.json()
+        if status == 200:
             job_status = response["LastRunStatus"]["Name"]
             if job_status == "Running":
                 print("Baseline job is running")
@@ -635,6 +638,8 @@ if __name__ == '__main__':
     PARAM_MAP = {'group_id': None, 'device_ids': None}
     TARGET_DATA = []
     try:
+        pool = urllib3.HTTPSConnectionPool(IP_ADDRESS, port=443,
+                                           cert_reqs='CERT_NONE', assert_hostname=False)
         AUTH_SUCCESS, HEADERS = authenticate_with_ome(IP_ADDRESS, USER_NAME,
                                                       PASSWORD)
         if not AUTH_SUCCESS:
@@ -648,25 +653,23 @@ if __name__ == '__main__':
                 if GROUP_ID in GROUP_LIST:
                     GROUP_URL = "https://%s/api/GroupService/Groups(%s)/Devices" % \
                                 (IP_ADDRESS, GROUP_ID)
-                    RESPONSE = requests.get(GROUP_URL, headers=HEADERS, verify=False)
-                    if RESPONSE.status_code == 200:
-                        DEV_RESPONSE = RESPONSE.json()
+                    STATUS, DEV_RESPONSE = request(GROUP_URL, headers=HEADERS)
+                    if STATUS == 200:
                         if DEV_RESPONSE['@odata.count'] == 0:
                             raise Exception("No devices associated with this group id")
                     else:
-                        formatted_error = json.dumps(RESPONSE.json(), indent=4, sort_keys=False)
+                        formatted_error = json.dumps(DEV_RESPONSE.json(), indent=4, sort_keys=False)
                         raise Exception("Unable to fetch group device details. "
                                         "See error information below \n{}".format(formatted_error))
                 else:
                     raise ValueError("Group %s not found on %s ... Exiting" % (
                         GROUP_ID, IP_ADDRESS))
         else:
-            DEVICE_LIST, DEVICE_SERVICE_TAGS = get_device_list(IP_ADDRESS, HEADERS)
+            mapping = get_device_list(IP_ADDRESS, HEADERS)
             DEVICE_IDS = None
-            mapping = dict(zip(DEVICE_SERVICE_TAGS, DEVICE_LIST))
             if ARGS.servicetags:
                 servicetags = ARGS.servicetags
-                intersection_set = set(DEVICE_SERVICE_TAGS).intersection(set(servicetags))
+                intersection_set = set(mapping.keys()).intersection(set(servicetags))
                 if len(intersection_set) <= 0:
                     raise ValueError("None of the devices are managed through OME... Exiting")
                 if len(intersection_set) != len(servicetags):
@@ -675,7 +678,7 @@ if __name__ == '__main__':
                                      unmanaged_devices)
                 DEVICE_IDS = [mapping[tag] for tag in intersection_set]
             elif ARGS.deviceid:
-                if ARGS.deviceid not in DEVICE_LIST:
+                if ARGS.deviceid not in mapping.values():
                     raise ValueError("Device %s not found on %s ... Exiting" % (
                         ARGS.deviceid, IP_ADDRESS))
                 DEVICE_IDS = [ARGS.deviceid]
