@@ -111,9 +111,9 @@ def catalog_creation(ip_address, headers):
     payload = catalog_creation_payload()
     status, data = request(url=url,
                            header=headers, payload=payload, method='POST')
-    # if status != 201:
-    #     raise Exception("Unable to create catalog", data)
-    # time.sleep(180)
+    if status != 201:
+        raise Exception("Unable to create catalog", data)
+    time.sleep(180)
     get_catalog_status, get_catalog_data = request(url=url, header=headers)
     if get_catalog_status == 200 and get_catalog_data["@odata.count"] != 0:
         if get_catalog_data["value"][0].get("Repository")["Source"] == "downloads.dell.com":
@@ -149,7 +149,7 @@ def baseline_creation(ip_address, headers, param_map):
     raise Exception("Unable to create baseline, Job status : ", baseline_status)
 
 
-def check_device_compliance_report(ip_address, headers, id_baseline):
+def check_device_compliance_report(ip_address, headers, id_baseline, required_action):
     """ Checks device compliances """
     compliance_report_list = []
     source_names = None
@@ -164,14 +164,15 @@ def check_device_compliance_report(ip_address, headers, id_baseline):
                 compliance_list = compliance_dict.get('ComponentComplianceReports')
                 if compliance_list:
                     for component in compliance_list:
-                        if component["UpdateAction"] == "UPGRADE":
+                        # if component["UpdateAction"] == "UPGRADE":
+                        if component["UpdateAction"] in required_action:
                             if source_names:
                                 source_names = source_names + ';' + component["SourceName"]
                             else:
                                 source_names = component["SourceName"]
-                        if source_names:
-                            compliance_report_list.append({"Id": compliance_dict.get("DeviceId"),
-                                                           "Data": source_names})
+                    if source_names:
+                        compliance_report_list.append({"Id": compliance_dict.get("DeviceId"),
+                                                       "Data": source_names})
         else:
             for compliance_dict in comp_val_list:
                 source_names = None
@@ -185,15 +186,15 @@ def check_device_compliance_report(ip_address, headers, id_baseline):
                     comp_val_list = component_data["value"]
                     for compliance_dicts in comp_val_list:
                         if compliance_dicts:
-                            if compliance_dicts["UpdateAction"] == "UPGRADE":
+                            if compliance_dicts["UpdateAction"] in required_action:
                                 if source_names:
                                     source_names = \
                                         source_names + ';' + compliance_dicts["SourceName"]
                                 else:
                                     source_names = compliance_dicts["SourceName"]
-                    if source_names:
-                        compliance_report_list.append({"Id": compliance_dict.get("DeviceId"),
-                                                       "Data": source_names})
+                        if source_names:
+                            compliance_report_list.append({"Id": compliance_dict.get("DeviceId"),
+                                                           "Data": source_names})
                 else:
                     sys.exit("component data is empty")
     else:
@@ -325,14 +326,6 @@ def get_execution_detail(job_hist_resp, headers, job_hist_url):
         print("Unable to parse job execution history .. Exiting")
 
 
-def get_job(ip_address, header, job_id):
-    """ Get Job details """
-    url = 'https://{0}/api/JobService/Jobs({1})'.format(ip_address, job_id)
-    pool = urllib3.HTTPSConnectionPool(ip_address, port=443, cert_reqs='CERT_NONE',
-                                       assert_hostname=False)
-    return pool.urlopen('GET', url, headers=header)
-
-
 def get_baseline_id(ip_address, headers, id_repo, id_cat):
     """ Get Baseline id """
     url = 'https://%s/api/UpdateService/Baselines' % ip_address
@@ -408,7 +401,7 @@ def get_group_details(ip_address, headers, group_id):
 def get_device_details(ip_address, headers, device_ids):
     """ Get device details  from OME """
     query_string = ""
-    device_details = {device_id:{'Type':None, 'DeviceName':None} for device_id in device_ids}
+    device_details = {device_id: {'Type': None, 'DeviceName': None} for device_id in device_ids}
     for device_id in device_ids:
         query_string = query_string + "{}".format(device_id) + ','
     query_string = query_string[0:-1]
@@ -466,14 +459,6 @@ def refresh_compliance_data(ip_address, headers, baseline_job_id, id_baseline):
     elif status == 204:
         print("Baseline rerun job created")
         track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
-    '''
-    time.sleep(10)
-    fresh_compliance_list = check_device_compliance_report(ip_address, headers, id_baseline)
-    if (len(fresh_compliance_list) == 0):
-        print("All components are compliant")
-    else:
-        print("Compliance refresh failed")
-    '''
 
 
 def get_group_list(ip_address, headers):
@@ -624,6 +609,8 @@ if __name__ == '__main__':
                         default="admin")
     PARSER.add_argument("--password", required=True,
                         help="Password for OME Appliance")
+    PARSER.add_argument("--updateactions", required=True, nargs="*",
+                        help="Update action required", choices=['upgrade', 'downgrade', 'flash-all'])
     MUTEX_GROUP = PARSER.add_mutually_exclusive_group(required=True)
     MUTEX_GROUP.add_argument("--groupid", type=int,
                              help="Id of the group to update")
@@ -635,6 +622,15 @@ if __name__ == '__main__':
     IP_ADDRESS = ARGS.ip
     USER_NAME = ARGS.user
     PASSWORD = ARGS.password
+    UPDATE_ACTIONS = set()
+    for action in ARGS.updateactions:
+        if action == "flash-all":
+            UPDATE_ACTIONS.add('UPGRADE')
+            UPDATE_ACTIONS.add('DOWNGRADE')
+            break
+        else:
+            UPDATE_ACTIONS.add(action.upper())
+
     PARAM_MAP = {'group_id': None, 'device_ids': None}
     TARGET_DATA = []
     try:
@@ -653,7 +649,7 @@ if __name__ == '__main__':
                 if GROUP_ID in GROUP_LIST:
                     GROUP_URL = "https://%s/api/GroupService/Groups(%s)/Devices" % \
                                 (IP_ADDRESS, GROUP_ID)
-                    STATUS, DEV_RESPONSE = request(GROUP_URL, headers=HEADERS)
+                    STATUS, DEV_RESPONSE = request(GROUP_URL, HEADERS)
                     if STATUS == 200:
                         if DEV_RESPONSE['@odata.count'] == 0:
                             raise Exception("No devices associated with this group id")
@@ -697,7 +693,7 @@ if __name__ == '__main__':
             raise Exception("Unable to create baseline")
         print("Successfully created baseline")
         COMPLIANCE_LIST = check_device_compliance_report(ip_address=IP_ADDRESS, headers=HEADERS,
-                                                         id_baseline=BASELINE_ID)
+                                                         id_baseline=BASELINE_ID, required_action=UPDATE_ACTIONS)
         print("Compliance List: %s" % COMPLIANCE_LIST)
         if COMPLIANCE_LIST:
             TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
@@ -710,8 +706,8 @@ if __name__ == '__main__':
                 refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
                                         baseline_job_id=BASELINE_JOB_ID, id_baseline=BASELINE_ID)
             else:
-                print("No components found for upgrade")
+                print("No components found for update")
         else:
-            print("No components found for upgrade...skipping firmware upgrade")
+            print("No components found for update...skipping firmware update")
     except OSError:
         print("Unexpected error:", sys.exc_info())
