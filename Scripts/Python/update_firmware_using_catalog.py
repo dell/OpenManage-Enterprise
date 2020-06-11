@@ -19,6 +19,7 @@ import json
 import sys
 import time
 import argparse
+import os
 from argparse import RawTextHelpFormatter
 import urllib3
 
@@ -104,48 +105,46 @@ def delete_baseline(ip_address, headers, baseline_list):
     return status, data
 
 
-def catalog_creation(ip_address, headers):
+def catalog_creation(ip_address, headers, **kwargs):
     """ Create new catalog """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
     print("Creating new catalog.!")
-    payload = catalog_creation_payload()
+    payload = catalog_creation_payload(**kwargs)
     status, data = request(url=url,
                            header=headers, payload=payload, method='POST')
     if status != 201:
         raise Exception("Unable to create catalog", data)
     time.sleep(180)
+    repoName = payload['Repository']['Name']
     get_catalog_status, get_catalog_data = request(url=url, header=headers)
     if get_catalog_status == 200 and get_catalog_data["@odata.count"] != 0:
-        if get_catalog_data["value"][0].get("Repository")["Source"] == "downloads.dell.com":
-            return get_catalog_data["value"][0]["Id"]
-        raise Exception("Exiting the code, Unable to create catalog")
+        for repo_entry in get_catalog_data.get("value"):
+            if repo_entry.get("Repository").get("Name") == repoName:
+                return repo_entry.get("Id"), repo_entry.get("Repository").get('Id')
     raise Exception("Exiting the code, Unable to create catalog : System Info ", sys.exc_info())
 
 
-def baseline_creation(ip_address, headers, param_map):
+def baseline_creation(ip_address, headers, param_map, catalog_id, repo_id):
     """ Create new baseline """
     global CATALOG_INFO
     url = 'https://%s/api/UpdateService/Baselines' % ip_address
     print("Creating new Baseline.!")
-    CATALOG_INFO = get_catalog_details(ip_address, headers)
     if param_map['group_id']:
         group_type, group_name = get_group_details(ip_address, headers, param_map['group_id'])
-        payload = baseline_creation_payload(CATALOG_INFO["CATALOG_ID"],
-                                            CATALOG_INFO["REPO_ID"], "GROUP",
+        payload = baseline_creation_payload(catalog_id,
+                                            repo_id, "GROUP",
                                             group_id=param_map['group_id'], type=group_type)
     else:
         device_details = get_device_details(ip_address, headers, param_map['device_ids'])
-        payload = baseline_creation_payload(CATALOG_INFO["CATALOG_ID"],
-                                            CATALOG_INFO["REPO_ID"], "DEVICES",
+        payload = baseline_creation_payload(catalog_id,
+                                            repo_id, "DEVICES",
                                             device_details=device_details)
     baseline_status, baseline_data = request(url=url,
                                              header=headers, payload=payload, method='POST')
     if baseline_status == 201:
         baseline_task_id = baseline_data["TaskId"]
         track_job_to_completion(ip_address, headers, baseline_task_id, 'Baseline job')
-        id_repo = CATALOG_INFO.get("REPO_ID")
-        id_cat = CATALOG_INFO.get("CATALOG_ID")
-        return get_baseline_id(ip_address, headers, id_repo, id_cat)
+        return get_baseline_id(ip_address, headers, repo_id, catalog_id)
     raise Exception("Unable to create baseline, Job status : ", baseline_status)
 
 
@@ -337,7 +336,7 @@ def get_baseline_id(ip_address, headers, id_repo, id_cat):
                 repo_data = data["value"][i]["RepositoryId"]
                 catalog_data = data["value"][i]["CatalogId"]
                 if id_repo == repo_data and id_cat == catalog_data:
-                    return id_repo, id_cat, data["value"][i]["Id"], data["value"][i]["TaskId"]
+                    return data["value"][i]["Id"], data["value"][i]["TaskId"]
                 if i == len(data["value"]):
                     print("unable to find  the corresponding baseline")
                     return 0
@@ -362,27 +361,6 @@ def request(url, header, payload=None, method='GET'):
     else:
         data = request_obj.data
     return request_obj.status, data
-
-
-def get_catalog_details(ip_address, headers):
-    """ Get Catalog details """
-    url = 'https://%s/api/UpdateService/Catalogs' % ip_address
-    status, catalog_json_response = request(url, headers, method='GET')
-    if status == 200:
-        if catalog_json_response['@odata.count'] > 0:
-            i = 0
-            while i < len(catalog_json_response["value"]):
-                curr_catalog = catalog_json_response["value"][i]
-                if curr_catalog.get("Repository")["Source"] == "downloads.dell.com":
-                    CATALOG_INFO["REPO_ID"] = curr_catalog.get("Repository")["Id"]
-                    CATALOG_INFO["CATALOG_ID"] = curr_catalog["Id"]
-                    return CATALOG_INFO
-                i += 1
-        else:
-            raise Exception("Not able to get Catalog details for baseline creation")
-    else:
-        print("unable to get catalog details")
-        return 0
 
 
 def get_group_details(ip_address, headers, group_id):
@@ -476,21 +454,39 @@ def get_group_list(ip_address, headers):
     return group_list
 
 
-def catalog_creation_payload():
+def catalog_creation_payload(**kwargs):
     """
     :return: dict representing the payload
     """
+    type = kwargs['repo_type']
+    source = None; source_path = ""; filename = "";
+    user = ""; domain = ""; password = ""
+    if type == 'DELL_ONLINE':
+        source = "downloads.dell.com"
+    else:
+        source = kwargs['repo_source_ip']
+        path_tuple = os.path.split(kwargs['catalog_path'])
+        source_path = path_tuple[0]
+        filename = path_tuple[1]
+        if type == 'CIFS':
+            user = kwargs['repo_user']
+            domain = kwargs['repo_domain'] if 'repo_domain' in kwargs.keys() else ""
+            password = kwargs['repo_password']
+            if user is not None and '\\' in user:
+                domain = kwargs['repo_user'].split('\\')[0]
+                user = user.split('\\')[1]
+
     return {
-        "Filename": "",
-        "SourcePath": "",
+        "Filename": filename,
+        "SourcePath": source_path,
         "Repository": {
             "Name": 'Test' + time.strftime(":%Y:%m:%d-%H:%M:%S"),
             "Description": "Factory test",
-            "RepositoryType": "DELL_ONLINE",
-            "Source": "downloads.dell.com",
-            "DomainName": "",
-            "Username": "",
-            "Password": "",
+            "RepositoryType": type,
+            "Source": source,
+            "DomainName": domain,
+            "Username": user,
+            "Password": password,
             "CheckCertificate": False
         }
     }
@@ -618,7 +614,24 @@ if __name__ == '__main__':
                              help="Id of the device to update")
     MUTEX_GROUP.add_argument("--servicetags", nargs="*",
                              help="Servicetags of devices to update")
+    PARSER.add_argument("--repotype", required=True, help="Repository type",
+                        choices=['DELL_ONLINE', 'NFS', 'CIFS'])
+    PARSER.add_argument("--reposourceip", required=False,
+                        help="fully qualified repo path")
+    PARSER.add_argument("--catalogpath", required=False,
+                        help="fully qualified repo path")
+    PARSER.add_argument("--repouser", required=False,
+                        help="username for CIFS repository")
+    PARSER.add_argument("--repodomain", required=False,
+                        help="domian for CIFS repository credentials")
+    PARSER.add_argument("--repopassword", required=False,
+                        help="password for CIFS repository")
     ARGS = PARSER.parse_args()
+    if ARGS.repotype == 'CIFS' and (ARGS.reposourceip is None or ARGS.catalogpath is None or ARGS.repouser is None or ARGS.repopassword is None):
+        PARSER.error("CIFS repository requires --reposourceip, --catalogpath, --repouser and --repopassword.")
+    if ARGS.repotype == 'NFS' and (ARGS.reposourceip is None or ARGS.catalogpath is None):
+        PARSER.error("NFS repository requires --reposourceip, --catalogpath.")
+
     IP_ADDRESS = ARGS.ip
     USER_NAME = ARGS.user
     PASSWORD = ARGS.password
@@ -680,15 +693,19 @@ if __name__ == '__main__':
                 DEVICE_IDS = [ARGS.deviceid]
 
             PARAM_MAP['device_ids'] = DEVICE_IDS
-
-        CATALOG_ID = catalog_creation(ip_address=IP_ADDRESS, headers=HEADERS)
+        CATALOG_ID, REPO_ID = catalog_creation(ip_address=IP_ADDRESS, headers=HEADERS, repo_type=ARGS.repotype,
+                                      repo_source_ip=ARGS.reposourceip, catalog_path=ARGS.catalogpath,
+                                      repo_user=ARGS.repouser, repo_password=ARGS.repopassword,
+                                      repo_domain=ARGS.repodomain)
         if CATALOG_ID:
             print("Successfully created the catalog")
         else:
             raise Exception("Unable to create Catalog")
-        REPO_ID, ID_CATALOG, BASELINE_ID, BASELINE_JOB_ID = baseline_creation(ip_address=IP_ADDRESS,
-                                                                              headers=HEADERS,
-                                                                              param_map=PARAM_MAP)
+        BASELINE_ID, BASELINE_JOB_ID = baseline_creation(ip_address=IP_ADDRESS,
+                                                         headers=HEADERS,
+                                                         param_map=PARAM_MAP,
+                                                         catalog_id=CATALOG_ID,
+                                                         repo_id=REPO_ID)
         if BASELINE_ID == 0:
             raise Exception("Unable to create baseline")
         print("Successfully created baseline")
@@ -700,7 +717,7 @@ if __name__ == '__main__':
             # sys.exit(0)
             if TARGET_PAYLOAD != 0:
                 firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
-                                id_cat=ID_CATALOG,
+                                id_cat=CATALOG_ID,
                                 id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
                 # Initiate compliance refresh
                 refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
