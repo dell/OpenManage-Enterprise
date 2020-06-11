@@ -1,4 +1,5 @@
-<#
+﻿<#
+PowerShell Script using OME API to get the device list.
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 _version_ = 0.1
 
@@ -20,6 +21,7 @@ limitations under the License.
 <#
  .SYNOPSIS
    Script to get the list of devices managed by OM Enterprise
+
  .DESCRIPTION
 
    This script exercises the OME REST API to get a list of devices
@@ -30,6 +32,7 @@ limitations under the License.
 
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
+
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
 
@@ -41,38 +44,125 @@ limitations under the License.
    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx"
    In this instance you will be prompted for credentials to use
 #>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [System.Net.IPAddress] $IpAddress,
 
     [Parameter(Mandatory)]
+    [String] $Fileextension,
+
+    [Parameter(Mandatory)]
+    [System.IO.FileInfo] $Outfilepath,
+
+    [Parameter(Mandatory)]
     [pscredential] $Credentials
 )
 
-function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
+function Set-CertPolicy() 
+{
+    ## Trust all certs - for sample usage only
+    Try 
+    {
+        add-type @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy 
+        {
+            public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem)
+            {
+                return true;
+            }
+        }
 "@
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    Catch 
+    {
         Write-Error "Unable to add type for cert policy"
     }
 }
 
-Try {
+function Json-Format
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $data,
+
+        [Parameter(Mandatory)]
+        [String] $path
+    )
+    
+    $jsondata = $data | ConvertTo-Json -Depth 100
+    $jsondata | Out-File -FilePath $path
+     
+}
+
+function CSV-Format
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $data,
+        [Parameter(Mandatory)]
+        [String] $path
+    )
+    $Devicearray = @()
+    foreach($device in $DeviceData)
+    {
+        $DirPermissions = New-Object -TypeName PSObject -Property @{
+        ID = $Device.Id
+        Identifier = $Device.Identifier
+        DeviceServiceTag = $Device.DeviceServiceTag
+        ChassisServiceTag = $Device.ChassisServiceTag
+        Model = $Device.Model
+        DeviceName = $Device.DeviceName
+        }
+        $Devicearray += $DirPermissions
+    }
+    $Devicearray | Export-Csv -Path $path -NoTypeInformation
+    return $Devicearray
+}
+
+function Get-uniquefilename
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.IO.FileInfo] $filepath,
+    
+        [Parameter(Mandatory)]
+        [String] $formatextension
+    )
+
+    if(Test-Path -LiteralPath $filepath -PathType Container)
+    {
+        Write-Error "Unable to get the file name, please provide the filename"
+    }
+    else
+    {
+        $folder = Split-Path -Path ([io.path]::GetFullPath($filepath)) -Parent
+        $formatfilename = $filepath.BaseName
+        $i = 1
+        while(Test-Path $filepath)
+        {
+            $filename = $formatfilename+"($i)"
+            $newfilename = $filename+"."+$formatextension
+            $filepath = Join-Path $folder $newfilename
+            $i++
+        }
+    }
+    return $filepath
+}
+
+
+Try
+{
     Set-CertPolicy
     $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
     $BaseUri = "https://$($IpAddress)"
@@ -85,43 +175,74 @@ Try {
     $Headers     = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
+    if($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201)
+    {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         $DeviceData = @()
         $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($DevCountResp.StatusCode -eq 200) {
+        if ($DevCountResp.StatusCode -eq 200)
+        {
             $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
             $DeviceData += $DeviceCountData.'value'
-            if ($DeviceCountData.'@odata.nextLink'){
+            if($DeviceCountData.'@odata.nextLink')
+            {
                 $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
             }
-            while ($NextLinkUrl){
+            while($NextLinkUrl)
+            {
                 $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                if ($NextLinkResponse.StatusCode -eq 200) {
+                if($NextLinkResponse.StatusCode -eq 200)
+                {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $DeviceData += $NextLinkData.'value'
-                    if ($NextLinkData.'@odata.nextLink'){
+                    if($NextLinkData.'@odata.nextLink')
+                    {
                         $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                    }else{
+                    }
+                    else
+                    {
                         $NextLinkUrl = $null
                     }
-                }else {
+                }
+                else
+                {
                     Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
                     $NextLinkUrl = $null
                 }
-            } 
-            $DeviceData | Format-List
+            }
+
+            $filepath = Get-uniquefilename -filepath $Outfilepath -formatextension $Fileextension
+            if($Fileextension -eq "json" -or $Fileextension -eq $null)
+            {
+                Json-Format -data $DeviceData -path $filepath
+                $DeviceData | ConvertTo-Json -Depth 100
+
+            }
+            elseif($Fileextension -eq "csv")
+            {
+                $CSVData = CSV-Format -data $DeviceData -path $filepath
+                $CSVData | Format-Table
+            }       
         }
-        else {
+        else
+        {
             Write-Error "Unable to get count of managed devices .. Exiting"
         }
     }
-    else {
+    else
+    {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+Catch
+{
     Write-Error "Exception occured - $($_.Exception.Message)"
 }
+
+
+
+
+
+
