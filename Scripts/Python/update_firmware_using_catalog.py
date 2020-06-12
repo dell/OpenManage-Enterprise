@@ -91,14 +91,14 @@ def catalog_creation_payload(**kwargs):
     user = ""
     domain = ""
     password = ""
-    if type == 'DELL_ONLINE':
+    if catalog_type == 'DELL_ONLINE':
         source = "downloads.dell.com"
     else:
         source = kwargs['repo_source_ip']
         path_tuple = os.path.split(kwargs['catalog_path'])
         source_path = path_tuple[0]
         filename = path_tuple[1]
-        if type == 'CIFS':
+        if catalog_type == 'CIFS':
             user = kwargs['repo_user']
             domain = kwargs['repo_domain'] if 'repo_domain' in kwargs.keys() else ""
             password = kwargs['repo_password']
