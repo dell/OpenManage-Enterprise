@@ -60,7 +60,37 @@ param(
     [System.UInt32]$GroupId,
 
     [Parameter(ParameterSetName = 'Device_Update')]
-    [System.UInt32]$DeviceId
+    [System.UInt32]$DeviceId,
+	
+    [Parameter(ParameterSetName = 'servicetags',Mandatory)]
+    [string[]]$servicetags,
+ 
+    [Parameter(Mandatory)]
+    [ValidateSet('upgrade','downgrade','flash-all')]
+    [String[]]$Updateactions,
+
+    [Parameter(Mandatory)]
+    [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
+    [String]$repotype,
+
+    [Parameter(Mandatory = $False)]
+    [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
+    [System.Net.IPAddress]$reposourceip,
+
+    [Parameter(Mandatory=$false)]
+    [String]$catalogpath,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repouser,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repodomain,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repopassword,
+
+    [Parameter(Mandatory=$false)]
+    [String]$force
 )
 
 function Set-CertPolicy() {
