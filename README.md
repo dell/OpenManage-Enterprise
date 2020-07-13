@@ -1,32 +1,16 @@
-## OME API Samples / Cookbooks
+## OME/OME-M and Plugin API Samples / Cookbooks
 
-Example cookbooks to use the OpenManage Enterprise REST APIs to perform common customer use cases
-
-## Targeted Use Cases
-
-* Add IP / Hosts to discovery range 
-* Get list of groups
-* Get list of devices
-* Get device Inventory
-* Get group details (including devices in this group)
-* Get group details using Filter constructs
-* Get list of alerts by group
-* Get list of alerts by device
-* Get list of pre-canned reports
-* Run a pre-defined report
-* Create a static group
-* Set power state for the target system
-* Perform firmware update on devices / groups using a single DUP file
-* Perform firmware update on devices / groups using a catalog
-* Clone configuration from a reference server to a target server
-
+This repository hosts cookbooks for OME/OME-M and associated plugins
+For script samples specific to OME/OME-M please look for script samples contained in "Core"
+Plugin script samples are in the "Plugin" folder and categorized further by plugin name
 
 ## Authors
 
 * **Raajeev Kalyanaraman** - *Initial work*
 * **Vittal Reddy**
 * **Laxmi Joshi** 
-
+* **Trevor Squillario**
+* **Prasad Rao**
 
 ## License
 
