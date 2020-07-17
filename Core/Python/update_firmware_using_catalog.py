@@ -68,10 +68,9 @@ def get_device_from_uri(uri,headers):
     json_data = {}
     status, device_response = request(uri, headers, method='GET')
     if status == 200:
-        json_data = device_response.json()
+        json_data = device_response
     else:
         print("Unable to retrieve device list from %s" % uri)
-
     return json_data
 
 def get_device_list(ip_address, headers):
