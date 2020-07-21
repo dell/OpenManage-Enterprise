@@ -32,7 +32,7 @@ DESCRIPTION:
 
 EXAMPLE:
     python get_device_inventory.py -i <ip addr> -u admin
-        -p <password> -fby Name -f "iDRAC-abcdef" -inventorytype os
+        -p <password> -fby Name -f "iDRAC-abcdef" -invtype os
 
 """
 import sys
