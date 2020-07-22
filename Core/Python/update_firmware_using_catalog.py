@@ -64,21 +64,44 @@ def get_group_list(ip_address, headers):
         print("No groups found at ", ip_address)
     return group_list
 
+def get_device_from_uri(uri,headers):
+    json_data = {}
+    status, device_response = request(uri, headers, method='GET')
+    if status == 200:
+        json_data = device_response
+    else:
+        print("Unable to retrieve device list from %s" % uri)
+    return json_data
+
 def get_device_list(ip_address, headers):
     """ Get list of devices from OME """
+    base_uri = 'https://%s' % ip_address
+    next_link_url = base_uri + '/api/DeviceService/Devices'
+    
     ome_device_list = None
     ome_service_tags = None
-    device_url = 'https://%s/api/DeviceService/Devices' % ip_address
-    status, dev_json_response = request(device_url, headers, method='GET')
-    if status == 200:
-        if dev_json_response['@odata.count'] > 0:
-            ome_device_list = [x['Id'] for x in dev_json_response['value']]
-            ome_service_tags = [x['DeviceServiceTag'] for x in dev_json_response['value']]
+    json_data = None
+
+    while next_link_url is not None:
+        data = get_device_from_uri(next_link_url, headers)
+        next_link_url = None
+        if data['@odata.count'] > 0:
+            if '@odata.nextLink' in data:
+                next_link_url = base_uri + data['@odata.nextLink']
+            if json_data is None:
+                json_data = data
+            else:
+                json_data['value'] += data['value']
         else:
-            print("No devices found at ", ip_address)
+            print('No devices managed by %s' % ip_address)
+
+    if json_data is None:
+        pass
     else:
-        print("No devices found at ", ip_address)
+        ome_device_list = [x['Id'] for x in json_data['value']]
+        ome_service_tags = [x['DeviceServiceTag'] for x in json_data['value']]
     return dict(zip(ome_service_tags, ome_device_list))
+
 
 def catalog_creation_payload(**kwargs):
     """
