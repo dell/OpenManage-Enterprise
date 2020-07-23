@@ -60,13 +60,15 @@ import json
 import time
 import requests
 import urllib3
+import csv
+import os
 
 
 class OMEReportExecutor(object):
     """ Execute an existing OME Report including custom reports """
 
     def __init__(self, ip_address, user_name, password,
-                 report_id, group_id=0):
+                 report_id, group_id=0, output_file = None):
         """ Constructor for class OMEReportExecutor """
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.ip_address = ip_address
@@ -74,6 +76,7 @@ class OMEReportExecutor(object):
         self.password = password
         self.report_id = report_id
         self.group_id = group_id
+        self.output_file = output_file
         self.base_url = 'https://%s/api/' % (self.ip_address)
         self.result_base = 'https://%s' %(self.ip_address)
 
@@ -150,7 +153,8 @@ class OMEReportExecutor(object):
             column_info_arr = report_details_info['ColumnNames']
 
             column_names = [x['Name'] for x in column_info_arr]
-            print (",".join(column_names))
+            if (self.output_file == None):
+                print (",".join(column_names))
             result_url = report_details_url + "/ReportResults/ResultRows"
             report_result = requests.get(result_url,
                                          headers=headers,
@@ -172,15 +176,39 @@ class OMEReportExecutor(object):
                                 next_link_url = None
                         else:
                             print("Unable to get full set of report results.. Exiting")
-                            next_link_url = None        
-                    for result in report_info['value']:
-                        print (",".join(result['Values']))
+                            next_link_url = None
+                    if (self.output_file == None):
+                        for result in report_info['value']:
+                            print (",".join(result['Values']))
+
+                    if (self.output_file != None):
+                        self.output_file = self.__get_unique_filename()
+                        print("Writing the report on CSV file: " + self.output_file)
+                        with open(self.output_file, 'w', newline='') as f:
+                            thewriter = csv.writer(f)
+                            thewriter.writerow(column_names)
+                            for result in report_info['value']:
+                                thewriter.writerow(result['Values'])
                 else:
                     print ("No report data found for %s" % (self.report_id))
             else:
                 print ("No result data for report %s", self.report_id)
         else:
             print ("Unable to extract report definitions from ", self.ip_address)
+
+
+    def __get_unique_filename(self):
+        i = 1
+        new_filepath = self.output_file
+        exists = os.path.isfile(new_filepath)
+        while os.path.isfile(new_filepath):
+            (root, ext) = os.path.splitext(self.output_file)
+            new_filepath = root + "({0})".format(i) + ext
+            i += 1
+        if exists:
+            print("Output file exists. Writing to {}".format(new_filepath))
+        return new_filepath
+
 
 if __name__ == '__main__':
     PARSER = argparse.ArgumentParser(description=__doc__,
@@ -197,13 +225,17 @@ if __name__ == '__main__':
     PARSER.add_argument("--groupid", "-g", required=False,
                         default=0,
                         help="Optional param - Group id to run report against")
+    PARSER.add_argument("--outputfile", "-f", required=False,
+                        help="Optional param - redirect the output to file")
+
     ARGS = PARSER.parse_args()
 
     try:
         REPORT_EXEC = OMEReportExecutor(ARGS.ip, ARGS.user,
                                         ARGS.password,
                                         ARGS.reportid,
-                                        ARGS.groupid)
+                                        ARGS.groupid,
+                                        ARGS.outputfile)
         AUTH_STATUS, SESS_HEADERS = REPORT_EXEC.authenticate_with_ome()
         if AUTH_STATUS:
             REPORT_EXEC.execute_report(SESS_HEADERS)
