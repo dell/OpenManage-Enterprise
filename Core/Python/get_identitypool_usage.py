@@ -187,7 +187,7 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    PARSER.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
