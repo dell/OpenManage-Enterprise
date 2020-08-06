@@ -2,6 +2,8 @@
 
 Example cookbooks to use the OpenManage Enterprise REST APIs to perform common customer use cases
 
+See the [RESTful API Guide](https://topics-cdn.dell.com/pdf/dell-openmanage-enterprise_api-guide5_en-us.pdf) for a full reference.
+
 ## Targeted Use Cases
 
 * Add IP / Hosts to discovery range 
