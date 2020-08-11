@@ -105,7 +105,7 @@ def get_template_status(ip_address, headers, tmpl_id):
 	max_retries = 20
 	sleep_interval = 60
 	failed_job_status = [2070, 2090, 2100, 2101, 2102, 2103]
-	tmpl_url = 'https://%s/api/TemplateService/Templates?$filter=Id+eq+%s' % (ip_address, tmpl_id)
+	tmpl_url = 'https://%s/api/TemplateService/Templates?$filter=Id%seq%s%s' % (ip_address, '%20', '%20', tmpl_id)
 	loop_ctr = 0
 	job_incomplete = True
 	print ("Polling %s to completion ..." % tmpl_id)
