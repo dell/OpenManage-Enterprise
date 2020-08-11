@@ -43,7 +43,8 @@ import sys
 import urllib3
 
 class GetDeviceList:
-
+    AUTH_SUCCESS = None
+    HEADERS = None
     """ Authenticate with OME and enumerate devices """
     def __init__(self, session_input, output_details):
         self.__session_input = session_input
@@ -54,8 +55,8 @@ class GetDeviceList:
         self.__base_uri = 'https://%s' % self.__session_input["ip"]
 
         try:
-            AUTH_SUCCESS, HEADERS = self.__authenticate_with_ome()
-            if not AUTH_SUCCESS:
+            self.AUTH_SUCCESS, self.HEADERS = self.__authenticate_with_ome()
+            if not self.AUTH_SUCCESS:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd")
                 return
         except OSError:
@@ -64,7 +65,7 @@ class GetDeviceList:
             return
 
         try:
-            if self.__get_device_list(HEADERS) is False:
+            if self.__get_device_list() is False:
                 print("Get device list failed.")
                 return
         except OSError as get_ex:
@@ -77,9 +78,9 @@ class GetDeviceList:
         elif self.__output_details["format"] == 'csv':
             self.__format_csv()
 
-    def __request(self,url, header, payload=None, method='GET'):
+    def __request(self,url, payload=None, method='GET'):
         """ Returns status and data """
-        request_obj = pool.urlopen(method, url, headers=header, body=json.dumps(payload))
+        request_obj = pool.urlopen(method, url, headers=self.HEADERS, body=json.dumps(payload))
         if request_obj.data and request_obj.status != 400:
             data = json.loads(request_obj.data)
         else:
@@ -104,22 +105,22 @@ class GetDeviceList:
             print(error_msg.format(self.__session_input["ip"], session_response.status_code))
         return auth_success, headers
 
-    def __get_device_from_uri(self,uri, headers):
+    def __get_device_from_uri(self,uri):
         json_data = {}
-        status, device_response = self.__request(uri, headers, method='GET')
+        status, device_response = self.__request(uri, method='GET')
         if status == 200:
             json_data = device_response
         else:
             print("Unable to retrieve device list from %s" % uri)
         return json_data
 
-    def __get_device_list(self, headers):
+    def __get_device_list(self):
 
         next_link_url = self.__base_uri + '/api/DeviceService/Devices'
         self.json_data = None
 
         while next_link_url is not None:
-            data = self.__get_device_from_uri(next_link_url, headers)
+            data = self.__get_device_from_uri(next_link_url)
             next_link_url = None
             if data['@odata.count'] <= 0:
                 print("No devices managed by %s" % self.__session_input["ip"])
