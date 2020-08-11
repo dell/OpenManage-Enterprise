@@ -20,33 +20,164 @@
 #
 """
 SYNOPSIS:
-   Add a host to a static group
+   Add one or more hosts to an existing static group.
 
 DESCRIPTION:
-   This script exercises the OME REST API to create a new static
-   group. The user is responsible for adding devices to the
-   group once the group has been successfully created.
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+   This script exercises the OME REST API to add one or more
+   hosts to an existing static group. For authentication X-Auth
+   is used over Basic Authentication. Note: The credentials entered
+   are not stored to disk.
 
 EXAMPLE:
-   python create_static_group.py --ip <xx> --user <username>
-        --password <pwd> --groupname "Random Test Group" --devicename "cmc1"
+   python add_device_to_static_group.py --ip <xx> --user <username>
+        --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"
 """
 
 import json
-import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import urllib3
 import requests
 
 
-def add_device_to_static_group(ome_ip_address, ome_username, ome_password, group_name):
-    """ Authenticate with OME and enumerate groups """
+def get_device_list(ome_ip_address: str, headers: dict) -> dict:
+    """
+    Retrieves a list of all devices being handled by this OME server
+
+    Args:
+        ome_ip_address: The IP address of the OME server
+        headers: Headers used for authentication to the OME server
+
+    Returns: A list of all devices managed by the this OME server
+
+    """
+
+    print("Retrieving a list of all devices...")
+    next_link_url = "https://%s/api/DeviceService/Devices" % ome_ip_address
+    device_data = None
+
+    while next_link_url is not None:
+        device_response = requests.get(next_link_url, headers=headers, verify=False)
+        next_link_url = None
+        if device_response.status_code == 200:
+            data = device_response.json()
+            if data['@odata.count'] <= 0:
+                print("No devices are managed by OME server: " + ome_ip_address + ". Exiting.")
+                return {}
+            if '@odata.nextLink' in data:
+                next_link_url = "https://%s" + data['@odata.nextLink']
+            if device_data is None:
+                device_data = data["value"]
+            else:
+                device_data += data["value"]
+        else:
+            print("Unable to retrieve device list from %s" % ome_ip_address)
+            return {}
+
+    # Create id - service tag index to avoid O(n) lookups on each search
+    # This is relevant when operating on hundreds of devices
+    id_service_tag_dict = {}
+    for device in device_data:
+        id_service_tag_dict[device["DeviceServiceTag"]] = device["Id"]
+
+    return id_service_tag_dict
+
+
+def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) -> int:
+    """
+    Retrieves the ID of a group given its name.
+
+    Args:
+        ome_ip_address: The IP address of the OME server
+        group_name: The name of the group whose ID you want to resolve.
+        headers: Headers used for authentication to the OME server
+
+    Returns: Returns the ID of the group as an integer.
+
+    """
+
+    print("Searching for the requested group.")
+    groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, group_name)
+
+    group_response = requests.get(groups_url, headers=headers, verify=False)
+
+    if group_response.status_code == 200:
+        json_data = json.loads(group_response.content)
+
+        if json_data['@odata.count'] > 1:
+            print("WARNING: We found more than one name that matched the group name: " + group_name +
+                  ". We are picking the first entry.")
+        if json_data['@odata.count'] == 1 or json_data['@odata.count'] > 1:
+            group_id = json_data['value'][0]['Id']
+            if not isinstance(group_id, int):
+                print("The server did not return an integer ID. Something went wrong.")
+                return -1
+            return group_id
+        else:
+            print("Error: We could not find the group " + group_name + ". Exiting.")
+            return -1
+    else:
+        print("Unable to retrieve groups. Exiting.")
+        return -1
+
+
+def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) -> int:
+    """
+    Resolves the name of a server to an OME ID
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        device_name: Name of the device whose ID you want to resolve
+        headers: Headers used for authentication to the OME server
+
+    Returns:
+        The ID of the server or 0 if it couldn't find it
+    """
+
+    url = "https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'%s\'" % (ome_ip_address, device_name)
+
+    response = requests.get(url, headers=headers, verify=False)
+    print("Getting the device ID for system with name " + device_name + "...")
+
+    if response.status_code == 200:
+        json_data = response.json()
+
+        if json_data['@odata.count'] > 1:
+            print("WARNING: We found more than one name that matched the device name: " + device_name +
+                  ". We are skipping this entry.")
+        elif json_data['@odata.count'] == 1:
+            server_id = json_data['value'][0]['Id']
+            if not isinstance(server_id, int):
+                print("The server did not return an integer ID. Something went wrong.")
+                return -1
+            return server_id
+        else:
+            print("WARNING: No results returned for device ID look up for name " + device_name + ". Skipping it.")
+            return 0
+    else:
+        print("Connection failed with response code " + str(response.status_code) + " while we were retrieving a "
+              "device ID from the server.")
+        return -1
+
+
+def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_password: str, group_name: str,
+                               device_names: list = None, device_tags: list = None):
+    """
+    Adds a device to an existing static group
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        ome_username:  Username for OME
+        ome_password: OME password
+        group_name: The group name to which you want to add servers
+        device_names: A list of device names which you want added to the group
+        device_tags: A list of device service tags which you want added to the group
+
+    """
+
     try:
         session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
-        group_url = "https://%s/api/GroupService/Actions/GroupService.AddMemberDevices" % ome_ip_address
+        group_add_device_url = "https://%s/api/GroupService/Actions/GroupService.AddMemberDevices" % ome_ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': ome_username,
                         'Password': ome_password,
@@ -57,32 +188,58 @@ def add_device_to_static_group(ome_ip_address, ome_username, ome_password, group
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            response = requests.get(group_url, headers=headers, verify=False)
-            if response.status_code == 200:
-                json_data = response.json()
-                if json_data['@odata.count'] > 0:
-                    # Technically there should be only one result in the filter
-                    group_id = json_data['value'][0]['Id']
-                    group_payload = {"GroupModel": {
-                        "Name": group_name,
-                        "Description": "",
-                        "MembershipTypeId": 12,
-                        "ParentId": int(group_id)}
-                    }
-                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % (ome_ip_address)
-                    create_resp = requests.post(create_url, headers=headers,
-                                                verify=False,
-                                                data=json.dumps(group_payload))
-                    if create_resp.status_code == 200:
-                        print("New group created : ID =", create_resp.text)
-                    elif create_resp.status_code == 400:
-                        print("Failed group creation ...See error info below")
-                        print(json.dumps(create_resp.json(), indent=4,
-                                         sort_keys=False))
-            else:
-                print("Unable to retrieve group list from %s" % ome_ip_address)
-        else:
-            print("Unable to create a session with appliance %s" % ome_ip_address)
+
+            group_id = get_group_id_by_name(ome_ip_address, group_name, headers)
+
+            if group_id == -1:
+                exit(1)
+
+            device_ids = []
+            if device_names:
+                for device in device_names:
+                    device_id = get_device_id_by_name(ome_ip_address, device, headers)
+                    if device_id > 0:
+                        device_ids.append(device_id)
+                    elif device_id == -1:
+                        exit(1)
+            elif device_tags:
+                id_service_tag_dict = get_device_list(ome_ip_address, headers)
+
+                if len(id_service_tag_dict) == 0:
+                    exit(1)
+
+                # Check for each service tag in our index
+                for device_tag in device_tags:
+                    if device_tag in id_service_tag_dict:
+                        device_ids.append(id_service_tag_dict[device_tag])
+                    else:
+                        print("WARNING: Could not find the service tag " + device_tag + ". Skipping.")
+
+            if len(device_ids) > 0:
+                # Add devices to the group
+                payload = {
+                    "GroupId": group_id,
+                    "MemberDeviceIds": device_ids
+                }
+                create_resp = requests.post(group_add_device_url, headers=headers,
+                                            verify=False, data=json.dumps(payload))
+                if create_resp.status_code == 200 or create_resp.status_code == 204:
+                    if create_resp.text != "":
+                        print("Finished adding devices to group. Response returned was: ", create_resp.text)
+                    else:
+                        print("Finished adding devices to group.")
+                elif create_resp.status_code == 400 \
+                        and "Unable to update group members because the entered ID(s)" in \
+                        json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["Message"]:
+                    print("The IDs " +
+                          str(json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["MessageArgs"]) +
+                          " were invalid. This usually means the servers were already in the requested group.")
+                elif create_resp.status_code == 400:
+                    print("Device add failed. Error:")
+                    print(json.dumps(create_resp.json(), indent=4, sort_keys=False))
+                else:
+                    print("Unknown error occurred. Received HTTP response code: " + str(create_resp.status_code) +
+                          " with error: " + create_resp.text)
     except Exception as e:
         print("Unexpected error:", str(e))
 
@@ -93,11 +250,22 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
-                        help="Username for OME Appliance", default="admin")
+    PARSER.add_argument("--user", "-u", required=False,
+                        help="Username for the OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
-                        help="Password for OME Appliance")
+                        help="Password for the OME Appliance")
     PARSER.add_argument("--groupname", "-g", required=True,
-                        help="A valid name for the group")
+                        help="The name of the group to which you want to add servers.")
+    exclusive_group = PARSER.add_mutually_exclusive_group(required=True)
+    exclusive_group.add_argument("--devicenames", "-n", help="The names of the device you want to add to the group in "
+                                                             "format: \'device1,device2,device3,etc\'")
+    exclusive_group.add_argument("--devicetags", "-t", help="A list of service tags which you want to add to the group "
+                                                            "in format: \'tag1,tag2,tag3,etc\'")
     ARGS = PARSER.parse_args()
-    add_device_to_static_group(ARGS.ome_ip_address, ARGS.user, ARGS.password, ARGS.groupname)
+
+    if ARGS.devicetags:
+        add_device_to_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname,
+                                   device_tags=ARGS.devicetags.split(","))
+    elif ARGS.devicenames:
+        add_device_to_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname,
+                                   device_names=ARGS.devicenames.split(","))
