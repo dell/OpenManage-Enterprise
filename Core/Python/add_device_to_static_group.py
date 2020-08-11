@@ -40,7 +40,7 @@ import urllib3
 import requests
 
 
-def get_device_list(ome_ip_address: str, headers: dict) -> list:
+def get_device_list(ome_ip_address: str, headers: dict) -> dict:
     """
     Retrieves a list of all devices being handled by this OME server
 
@@ -63,7 +63,7 @@ def get_device_list(ome_ip_address: str, headers: dict) -> list:
             data = device_response.json()
             if data['@odata.count'] <= 0:
                 print("No devices are managed by OME server: " + ome_ip_address + ". Exiting.")
-                exit(1)
+                return {}
             if '@odata.nextLink' in data:
                 next_link_url = "https://%s" + data['@odata.nextLink']
             if device_data is None:
@@ -72,9 +72,15 @@ def get_device_list(ome_ip_address: str, headers: dict) -> list:
                 device_data += data["value"]
         else:
             print("Unable to retrieve device list from %s" % ome_ip_address)
-            exit(1)
+            return {}
 
-    return device_data
+    # Create id - service tag index to avoid O(n) lookups on each search
+    # This is relevant when operating on hundreds of devices
+    id_service_tag_dict = {}
+    for device in device_data:
+        id_service_tag_dict[device["DeviceServiceTag"]] = device["Id"]
+
+    return id_service_tag_dict
 
 
 def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) -> int:
@@ -105,14 +111,14 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
             group_id = json_data['value'][0]['Id']
             if not isinstance(group_id, int):
                 print("The server did not return an integer ID. Something went wrong.")
-                exit(1)
+                return -1
             return group_id
         else:
             print("Error: We could not find the group " + group_name + ". Exiting.")
-            exit(1)
+            return -1
     else:
         print("Unable to retrieve groups. Exiting.")
-        exit(1)
+        return -1
 
 
 def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) -> int:
@@ -143,7 +149,7 @@ def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) 
             server_id = json_data['value'][0]['Id']
             if not isinstance(server_id, int):
                 print("The server did not return an integer ID. Something went wrong.")
-                exit(1)
+                return -1
             return server_id
         else:
             print("WARNING: No results returned for device ID look up for name " + device_name + ". Skipping it.")
@@ -151,7 +157,7 @@ def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) 
     else:
         print("Connection failed with response code " + str(response.status_code) + " while we were retrieving a "
               "device ID from the server.")
-        exit(1)
+        return -1
 
 
 def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_password: str, group_name: str,
@@ -185,20 +191,22 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
 
             group_id = get_group_id_by_name(ome_ip_address, group_name, headers)
 
+            if group_id == -1:
+                exit(1)
+
             device_ids = []
             if device_names:
                 for device in device_names:
                     device_id = get_device_id_by_name(ome_ip_address, device, headers)
-                    if device_id != 0:
+                    if device_id > 0:
                         device_ids.append(device_id)
+                    elif device_id == -1:
+                        exit(1)
             elif device_tags:
-                device_list = get_device_list(ome_ip_address, headers)
+                id_service_tag_dict = get_device_list(ome_ip_address, headers)
 
-                # Create id - service tag index to avoid O(n) lookups on each search
-                # This is relevant when operating on hundreds of devices
-                id_service_tag_dict = {}
-                for device in device_list:
-                    id_service_tag_dict[device["DeviceServiceTag"]] = device["Id"]
+                if len(id_service_tag_dict) == 0:
+                    exit(1)
 
                 # Check for each service tag in our index
                 for device_tag in device_tags:
