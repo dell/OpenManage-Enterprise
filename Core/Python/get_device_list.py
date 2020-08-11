@@ -55,7 +55,6 @@ class GetDeviceList:
 
         try:
             AUTH_SUCCESS, HEADERS = self.__authenticate_with_ome()
-            print(HEADERS)
             if not AUTH_SUCCESS:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd")
                 return
@@ -117,7 +116,6 @@ class GetDeviceList:
     def __get_device_list(self, headers):
 
         next_link_url = self.__base_uri + '/api/DeviceService/Devices'
-        print (next_link_url)
         self.json_data = None
 
         while next_link_url is not None:

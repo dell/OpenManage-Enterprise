@@ -54,7 +54,7 @@ def authenticate_with_ome(ip_address, user_name, password):
 
 def get_device_list(ip_address, headers):
 	""" Get list of devices from OME """
-	ome_device_list = None
+	ome_device_list = []
 	next_link_url = 'https://%s/api/DeviceService/Devices' % ip_address
 	while next_link_url is not None:
 		device_response = requests.get(next_link_url, headers=headers, verify=False)
@@ -69,7 +69,7 @@ def get_device_list(ip_address, headers):
 				next_link_url = 'https://%s/' %ip_address + dev_json_response['@odata.nextLink']
 
 			if dev_json_response['@odata.count'] > 0:
-				ome_device_list = [x['Id'] for x in dev_json_response['value']]
+				ome_device_list = ome_device_list + [x['Id'] for x in dev_json_response['value']]
 		else:
 			print("No devices found at ", ip_address)
 
