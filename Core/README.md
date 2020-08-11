@@ -28,6 +28,7 @@ See the [RESTful API Guide](https://topics-cdn.dell.com/pdf/dell-openmanage-ente
 * **Raajeev Kalyanaraman** - *Initial work*
 * **Vittal Reddy**
 * **Laxmi Joshi** 
+* **Grant Curell**
 
 
 ## License

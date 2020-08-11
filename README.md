@@ -11,10 +11,8 @@ Plugin script samples are in the "Plugin" folder and categorized further by plug
 * **Laxmi Joshi** 
 * **Trevor Squillario**
 * **Prasad Rao**
+* **Grant Curell**
 
 ## License
 
 Copyright Dell EMC
-
-
-## Acknowledgments
