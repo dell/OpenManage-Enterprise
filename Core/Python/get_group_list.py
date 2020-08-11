@@ -2,9 +2,9 @@
 #  Python script using OME API to get list of groups
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
-# _version_ = 0.1
+# _version_ = 0.2
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,38 +32,54 @@ EXAMPLE:
    python get_group_list.py --ip <xx> --user <username> --password <pwd>
 """
 import json
-import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import urllib3
 import requests
+import pprint
 
 
-def get_group_list(ip_address, user_name, password):
+def get_group_list(ome_ip_address, user_name, password):
     """ Authenticate with OME and enumerate groups """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        group_url = 'https://%s/api/GroupService/Groups' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
                         'SessionType': 'API'}
+        group_data = None
+        next_link_url = 'https://%s/api/GroupService/Groups' % ome_ip_address
 
         session_info = requests.post(session_url, verify=False,
                                      data=json.dumps(user_details),
                                      headers=headers)
         if session_info.status_code == 201:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            print (headers['X-Auth-Token'])
-            response = requests.get(group_url, headers=headers, verify=False)
-            if response.status_code == 200:
-                print (json.dumps(response.json(), indent=4, sort_keys=True))
-            else:
-                print ("Unable to retrieve group list from %s" % (ip_address))
-        else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+
+            while next_link_url is not None:
+                group_response = requests.get(next_link_url, headers=headers, verify=False)
+                next_link_url = None
+
+                if group_response.status_code == 200:
+                    data = group_response.json()
+                    if data['@odata.count'] <= 0:
+                        print("No subgroups of static groups found on OME server: " + ome_ip_address)
+                        return 0
+                    if '@odata.nextLink' in data:
+                        next_link_url = "https://%s" + data['@odata.nextLink']
+                    if group_data is None:
+                        group_data = data["value"]
+                    else:
+                        group_data += data["value"]
+                else:
+                    print("Unable to retrieve group list from %s" % ome_ip_address)
+                    exit(1)
+
+        pprint.pprint(group_data)
+
+    except Exception as e:
+        print("Encountered an error: " + str(e))
+        exit(1)
 
 
 if __name__ == '__main__':
