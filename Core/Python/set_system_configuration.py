@@ -51,22 +51,31 @@ def authenticate_with_ome(ip_address, user_name, password):
 		print(error_msg.format(ip_address, session_info.status_code))
 	return (auth_success, headers)
 	
-	
+
 def get_device_list(ip_address, headers):
 	""" Get list of devices from OME """
-	ome_device_list = None
-	device_url = 'https://%s/api/DeviceService/Devices' % ip_address
-	device_response = requests.get(device_url, headers=headers, verify=False)
-	if device_response.status_code == 200:
-		dev_json_response = device_response.json()
-		if dev_json_response['@odata.count'] > 0:
-			ome_device_list = [x['Id'] for x in dev_json_response['value']]
+	ome_device_list = []
+	next_link_url = 'https://%s/api/DeviceService/Devices' % ip_address
+	while next_link_url is not None:
+		device_response = requests.get(next_link_url, headers=headers, verify=False)
+		next_link_url = None
+		if device_response.status_code == 200:
+			dev_json_response = device_response.json()
+			if dev_json_response['@odata.count'] <= 0:
+				print("No devices found at ", ip_address)
+				return
+
+			if '@odata.nextLink' in dev_json_response:
+				next_link_url = 'https://%s/' %ip_address + dev_json_response['@odata.nextLink']
+
+			if dev_json_response['@odata.count'] > 0:
+				ome_device_list = ome_device_list + [x['Id'] for x in dev_json_response['value']]
 		else:
 			print("No devices found at ", ip_address)
-	else:
-		print("No devices found at ", ip_address)
+
 	return ome_device_list
-	
+
+
 def get_group_list(ip_address, headers):
     """ Get list of groups from OME """
     group_list = None
