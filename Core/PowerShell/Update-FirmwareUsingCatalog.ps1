@@ -1,15 +1,11 @@
-<#
+﻿<#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
 _version_ = 0.1
-
 Copyright (c) 2018 Dell EMC Corporation
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
       http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +17,9 @@ limitations under the License.
  .SYNOPSIS
    Script to update firmware using catalog for a device or applicable devices
    within a group
-
  .DESCRIPTION
-
    This script exercises the OME REST API to allow updating
    a device or a group of devices by using a single DUP file.
-
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
  .PARAMETER Credentials
@@ -35,16 +28,13 @@ limitations under the License.
    The Id of the Group to be updated using the Catalog.
  .PARAMETER DeviceId
    The Id of the device to be updated using the Catalog.
-
  .EXAMPLE
    $cred = Get-Credential
    .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -DeviceId 25234
-
  .EXAMPLE
    .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -GroupId 1010
-
    In this instance you will be prompted for credentials to use to
    connect to the appliance
 #>
@@ -60,7 +50,35 @@ param(
     [System.UInt32]$GroupId,
 
     [Parameter(ParameterSetName = 'Device_Update')]
-    [System.UInt32]$DeviceId
+    [System.UInt32]$DeviceId,
+	
+    [Parameter(ParameterSetName = 'servicetags',Mandatory)]
+    [string[]]$servicetags,
+ 
+    [Parameter(Mandatory)]
+    [ValidateSet('upgrade','downgrade','flash-all')]
+    [String[]]$Updateactions,
+
+    [Parameter(Mandatory)]
+    [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
+    [String]$repotype,
+
+    [Parameter(Mandatory = $False)]
+    [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
+    [System.Net.IPAddress]$reposourceip,
+
+    [Parameter(Mandatory=$false)]
+    [String]$catalogpath,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repouser,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repodomain,
+
+    [Parameter(Mandatory=$false)]
+    [String]$repopassword
+
 )
 
 function Set-CertPolicy() {
@@ -96,13 +114,40 @@ function Get-GroupList($IpAddress, $Headers, $Type) {
     return $GroupList
 }
 
-function Get-DeviceList($IpAddress, $Headers, $Type) {
+function Get-DeviceList($IpAddress,$Headers,$Type){
+    $NextLinkUrl = $null
+    $BaseUri = "https://$($IpAddress)"
     $DeviceList = @()
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
     $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         $DevInfo.'value' |  Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
+
+        if($DevInfo.'@odata.nextLink'){
+             $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+        }
+        while($NextLinkUrl){
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if($NextLinkResponse.StatusCode -eq 200)
+                    {
+                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
+                        if($NextLinkData.'@odata.nextLink')
+                        {
+                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                        }
+                        else
+                        {
+                            $NextLinkUrl = $null
+                        }
+                    }
+                    else
+                    {
+                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                        $NextLinkUrl = $null
+                    }
+         }
     }
     return $DeviceList
 }

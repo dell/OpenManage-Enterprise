@@ -1,13 +1,11 @@
-<#
+﻿<#
  .SYNOPSIS
    Script to perform power control on device
-
  .DESCRIPTION
     This script exercises the OME REST API to power on
     /power off/reset(warm boot)/power cycle (cold boot)/shutdown
     devices managed by OME.
     Note that the credentials entered are not stored to disk.
-
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
  .PARAMETER Credentials
@@ -17,7 +15,6 @@
  .PARAMETER State
    The desired power state for the device - One of
    off/on/warm boot/cold boot/shutdown
-
  .EXAMPLE
    $cred = Get-Credential
    .\Set-PowerState.ps1 -IpAddress "10.xx.xx.xx" -Credentials
@@ -74,12 +71,38 @@ Catch {
 
 function Get-DeviceIdList($IpAddress, $Headers, $Type) {
     $DeviceIdList = @()
+    $NextLinkUrl = $null
+    $BaseUri = "https://$($IpAddress)"
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
     $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         if ($DevInfo.'@odata.count' -gt 0 ) {
             $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id}
+            if($DevInfo.'@odata.nextLink'){
+               $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+            }
+            while($NextLinkUrl){
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if($NextLinkResponse.StatusCode -eq 200)
+                    {
+                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceIdList += , $_.Id}
+                        if($NextLinkData.'@odata.nextLink')
+                        {
+                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                        }
+                        else
+                        {
+                            $NextLinkUrl = $null
+                        }
+                    }
+                    else
+                    {
+                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                        $NextLinkUrl = $null
+                    }
+            }
         }
     }
     return $DeviceIdList
