@@ -247,10 +247,7 @@ if __name__ == '__main__':
 		if AUTH_SUCCESS:
 			DEVICE_LIST = get_device_list(IP_ADDRESS, HEADERS)
 			if DEVICE_LIST:
-				if int(DEVICE_ID) in DEVICE_LIST:
-					print("Device found: " + str(DEVICE_ID))
-					pass
-				else:
+				if int(DEVICE_ID) not in DEVICE_LIST:
 					raise ValueError(
 						"Device with id %s not found on %s ... Exiting" % (DEVICE_ID, IP_ADDRESS))
 			else:
