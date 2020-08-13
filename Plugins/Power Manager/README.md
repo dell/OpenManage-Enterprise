@@ -19,6 +19,7 @@ Example cookbooks to perform use cases with respect to Power Manager Plugin rela
 
 ## Authors
 Mahendran Panneerselvam
+Ashish Singh
 
 ## License
 
