@@ -185,19 +185,26 @@ def get_execution_detail(job_hist_resp, headers, job_hist_url):
 
 def get_device_list(ip_address, headers):
 	""" Get list of devices from OME """
-	ome_device_list = None
-	device_url = 'https://%s/api/DeviceService/Devices' % ip_address
-	device_response = requests.get(device_url, headers=headers, verify=False)
-	if device_response.status_code == 200:
-		dev_json_response = device_response.json()
-		if dev_json_response['@odata.count'] > 0:
-			ome_device_list = [x['Id'] for x in dev_json_response['value']]
+	ome_device_list = []
+	next_link_url = 'https://%s/api/DeviceService/Devices' % ip_address
+	while next_link_url is not None:
+		device_response = requests.get(next_link_url, headers=headers, verify=False)
+		next_link_url = None
+		if device_response.status_code == 200:
+			dev_json_response = device_response.json()
+			if dev_json_response['@odata.count'] <= 0:
+				print("No devices found at ", ip_address)
+				return
+
+			if '@odata.nextLink' in dev_json_response:
+				next_link_url = 'https://%s/' %ip_address + dev_json_response['@odata.nextLink']
+
+			if dev_json_response['@odata.count'] > 0:
+				ome_device_list = ome_device_list + [x['Id'] for x in dev_json_response['value']]
 		else:
 			print("No devices found at ", ip_address)
-	else:
-		print("No devices found at ", ip_address)
-	return ome_device_list
 
+	return ome_device_list
 
 def get_power_states(ip_address, device_id, headers):
 	power_state = None
@@ -240,13 +247,12 @@ if __name__ == '__main__':
 		if AUTH_SUCCESS:
 			DEVICE_LIST = get_device_list(IP_ADDRESS, HEADERS)
 			if DEVICE_LIST:
-				if int(DEVICE_ID) in DEVICE_LIST:
-					pass
-				else:
+				if int(DEVICE_ID) not in DEVICE_LIST:
 					raise ValueError(
 						"Device with id %s not found on %s ... Exiting" % (DEVICE_ID, IP_ADDRESS))
 			else:
 				raise ValueError("Device not found on %s ... Exiting" % IP_ADDRESS)
+
 			POWER_STATE = get_power_states(IP_ADDRESS, DEVICE_ID, HEADERS)
 			if POWER_CONTROL_STATE_MAP[STATE] == POWER_STATE:
 				print("Device is already in the desired state")
@@ -266,6 +272,7 @@ if __name__ == '__main__':
 					track_job_to_completion(IP_ADDRESS, HEADERS, JOB_ID, STATE)
 				else:
 					print("Unable to create job")
+
 		else:
 			print("Unable to create a session with appliance %s" % (IP_ADDRESS))
 	except OSError:

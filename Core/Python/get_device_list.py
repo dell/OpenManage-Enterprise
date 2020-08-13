@@ -40,13 +40,11 @@ import json
 import csv
 import os
 import sys
-import requests
 import urllib3
-from urllib3.exceptions import InsecureRequestWarning
-urllib3.disable_warnings(InsecureRequestWarning)
-
 
 class GetDeviceList:
+    AUTH_SUCCESS = None
+    HEADERS = None
     """ Authenticate with OME and enumerate devices """
     def __init__(self, session_input, output_details):
         self.__session_input = session_input
@@ -55,56 +53,67 @@ class GetDeviceList:
             return
 
         self.__base_uri = 'https://%s' % self.__session_input["ip"]
-        self.__headers = {'content-type': 'application/json'}
 
         try:
-            if self.__authenticate_with_ome() is False:
+            self.AUTH_SUCCESS, self.HEADERS = self.__authenticate_with_ome()
+            if not self.AUTH_SUCCESS:
+                print("Unable to authenticate with OME .. Check IP/Username/Pwd")
                 return
-        except requests.exceptions.RequestException as auth_ex:
+        except Exception:
             print("Unable to connect to OME appliance %s" % self.__session_input["ip"])
-            print(auth_ex)
             return
 
         try:
             if self.__get_device_list() is False:
+                print("Get device list failed.")
                 return
-        except requests.exceptions.RequestException as get_ex:
+        except Exception as get_ex:
             print("Unable to get device list from OME appliance %s" % self.__session_input["ip"])
             print(get_ex)
             return
-
         if self.__output_details["format"] == 'json':
             self.__format_json()
         elif self.__output_details["format"] == 'csv':
             self.__format_csv()
 
+    def __request(self,url, payload=None, method='GET'):
+        """ Returns status and data """
+        request_obj = pool.urlopen(method, url, headers=self.HEADERS, body=json.dumps(payload))
+        if request_obj.data and request_obj.status != 400:
+            data = json.loads(request_obj.data)
+        else:
+            data = request_obj.data
+        return request_obj.status, data
+
     def __authenticate_with_ome(self):
-        session_url = self.__base_uri + '/api/SessionService/Sessions'
+        """ Authenticate with OME and X-auth session creation """
+        auth_success = False
+        session_url = "https://%s/api/SessionService/Sessions" % self.__session_input["ip"]
         user_details = {'UserName': self.__session_input["user"],
                         'Password': self.__session_input["password"],
                         'SessionType': 'API'}
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=self.__headers)
-        if session_info.status_code == 201:
-            self.__headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            return True
+        headers = {'content-type': 'application/json'}
+        session_response = pool.urlopen('POST', session_url, headers=headers,
+                                        body=json.dumps(user_details))
+        if session_response.status == 201:
+            headers['X-Auth-Token'] = session_response.headers['X-Auth-Token']
+            auth_success = True
         else:
-            print("Unable to create a session with appliance %s" % self.__session_input["ip"])
-            return False
+            error_msg = "Failed create of session with {0} - Status code = {1}"
+            print(error_msg.format(self.__session_input["ip"], session_response.status_code))
+        return auth_success, headers
 
-    def __get_device_from_uri(self, uri):
+    def __get_device_from_uri(self,uri):
         json_data = {}
-        device_response = requests.get(uri, headers=self.__headers, verify=False)
-
-        if device_response.status_code == 200:
-            json_data = device_response.json()
+        status, device_response = self.__request(uri, method='GET')
+        if status == 200:
+            json_data = device_response
         else:
-            print("Unable to retrieve device list from %s" % self.__session_input["ip"])
-
+            print("Unable to retrieve device list from %s" % uri)
         return json_data
 
     def __get_device_list(self):
+
         next_link_url = self.__base_uri + '/api/DeviceService/Devices'
         self.json_data = None
 
@@ -178,6 +187,7 @@ class GetDeviceList:
 
 
 if __name__ == '__main__':
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
@@ -192,5 +202,8 @@ if __name__ == '__main__':
                         help="Path to output file")
     ARGS = PARSER.parse_args()
 
+    pool = urllib3.HTTPSConnectionPool('100.96.20.174', port=443,
+                                       cert_reqs='CERT_NONE', assert_hostname=False)
+
     GetDeviceList({"ip":ARGS.ip, "user":ARGS.user, "password":ARGS.password},
-                  {"format":ARGS.outformat, "path":ARGS.outpath})
+                 {"format":ARGS.outformat, "path":ARGS.outpath})

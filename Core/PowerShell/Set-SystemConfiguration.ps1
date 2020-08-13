@@ -1,11 +1,9 @@
-<#
+﻿<#
  .SYNOPSIS
    Script to deploy template
-
  .DESCRIPTION
     This script exercises the OME REST API to depoy template.
     Note that the credentials entered are not stored to disk.
-
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
  .PARAMETER Credentials
@@ -23,7 +21,6 @@
    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
     In this instance you will be prompted for credentials.
-
     .EXAMPLE
    $cred = Get-Credential
    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
@@ -322,15 +319,43 @@ function Get-AssignedIdentities($IpAddress, $Type, $Headers, $TemplateId, $Targe
 
 function Get-DeviceIdList($IpAddress, $Headers, $Type, $Url) {
     $DeviceIdList = @()
+    $NextLinkUrl = $null
+    $BaseUri = "https://$($IpAddress)"
     $DevResp = Invoke-WebRequest -Uri $Url -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         if ($DevInfo.'@odata.count' -gt 0 ) {
             $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id}
+            if($DevInfo.'@odata.nextLink'){
+                 $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+            }
+            while($NextLinkUrl){
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                    if($NextLinkResponse.StatusCode -eq 200)
+                    {
+                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceIdList += , $_.Id}
+                        if($NextLinkData.'@odata.nextLink')
+                        {
+                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                        }
+                        else
+                        {
+                            $NextLinkUrl = $null
+                        }
+                    }
+                    else
+                    {
+                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                        $NextLinkUrl = $null
+                    }
+           }
         }
     }
     return $DeviceIdList
 }
+
+
 function New-Template($IpAddress, $Headers, $Type, $SourceId, $Component ) {
     $TemplateUrl = "https://$($IpAddress)/api/TemplateService/Templates"
     $TemplatePayload = Get-TemplatePayload $SourceId $Component
