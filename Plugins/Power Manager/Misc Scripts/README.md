@@ -14,6 +14,7 @@ Example cookbooks to perform use cases with respect to Power Manager - Miscellan
 
 ## Authors
 Mahendran Panneerselvam
+
 Ashish Singh
 
 ## License
