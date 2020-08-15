@@ -22,6 +22,8 @@ Mahendran Panneerselvam
 
 Ashish Singh
 
+Rishi Mukherjee
+
 ## License
 
 Copyright Dell EMC
