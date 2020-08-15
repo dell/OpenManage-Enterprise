@@ -13,7 +13,6 @@ OpenManage Power Manager facilitates importing the existing hierarchy of a data 
 
 3.	Prefilled with the desired inputs in physicalgroups.csv file. The inputs can be incremental. A sample is depicted as below:
 
-
 DC1,Room1,Aisle1,Rack1,100,42,1,GMJ3GL2
 DC1,Room1,Aisle1,Rack1,100,42,3,BN1JR42
 DC1,,Aisle1,Rack1,100,21,4,D4QBBS2
@@ -27,9 +26,9 @@ DC1,,,Rack1,100,21,10,6SM09X2
 4.	The console specific parameters need to be configured in configfile.properties. A sample is depicted as below:
 
 [consoleaccessdetails]
-ipaddress = 100.96.33.208
+ipaddress = 10.10.10.10
 username = admin
-password = linux
+password = admin
 
 
 Usage
