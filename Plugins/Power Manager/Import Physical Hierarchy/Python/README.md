@@ -51,7 +51,6 @@ that reveals which all physical groups are created, failed and result on device 
 ## Authors
 
 Rishi Mukherjee
-rishi_mukherjee@dell.com
 
 ## License
 
