@@ -14,7 +14,6 @@ PowerShell implemenation is yet to be scoped
 ## Authors
 
 Rishi Mukherjee
-rishi_mukherjee@dell.com
 
 ## License
 
