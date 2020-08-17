@@ -3,6 +3,11 @@
 Considering the fact that recreation of physical group hierarchies are a painful and time taking activities for the users, 
 OpenManage Power Manager facilitates importing the existing hierarchy of a data center from a csv file.
 
+## Prerequisites
+OpenManage Enterprise v3.4 or later
+Power Manager plugin v1.2 or later
+
+## Steps
 1.	It is expected that this script run on Python version 3.x.
 
 2.	Download the following files to your local system
