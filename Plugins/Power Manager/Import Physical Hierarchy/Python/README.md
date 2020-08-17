@@ -5,6 +5,7 @@ OpenManage Power Manager facilitates importing the existing hierarchy of a data 
 
 ## Prerequisites
 OpenManage Enterprise v3.4 or later
+
 Power Manager plugin v1.2 or later
 
 ## Steps
