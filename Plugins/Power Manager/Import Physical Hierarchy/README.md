@@ -19,6 +19,9 @@ Rishi Mukherjee
 
 Copyright Dell EMC
 
+## Support
+
+Engagement and support on this repository is on best-efforts basis. If you encounter any product related issues, please reach out to www.dell.com/contactus.
 
 ## Acknowledgments
 
