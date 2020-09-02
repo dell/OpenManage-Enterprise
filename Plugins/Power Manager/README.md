@@ -1,6 +1,6 @@
 ## Power Manager Plugin Samples / Cookbooks
 
-Example cookbooks to perform use cases with respect to Power Manager Plugin related features
+Example cookbooks to perform use cases with respect to Power Manager Plugin related features within OpenManage Enterprise.
 
 ## Use Cases
 
@@ -27,5 +27,9 @@ Rishi Mukherjee
 ## License
 
 Copyright Dell EMC
+
+## Support
+
+Engagement and support on this repository is on best-efforts basis. If you encounter any product related issues, please reach out to www.dell.com/contactus.
 
 ## Acknowledgments
