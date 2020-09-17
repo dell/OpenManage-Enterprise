@@ -170,7 +170,7 @@ def create_or_refresh_catalog(ip_address, headers, **kwargs):
         raise Exception("Unable to get the catalog", data)
     else:
         allrepoProfiles  = data["value"]
-        if allrepoProfiles is not None and data["@odata.count"] != 0:
+        if allrepoProfiles and data["@odata.count"] != 0:
             for repoProfile in allrepoProfiles:
                 repositoryType = repoProfile["Repository"]["RepositoryType"]
                 if(repositoryType == kwargs['repo_type']):
