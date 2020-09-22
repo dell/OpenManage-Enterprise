@@ -23,6 +23,16 @@ import os
 from argparse import RawTextHelpFormatter
 import urllib3
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def request(url, header, payload=None, method='GET'):
     """ Returns status and data """
     request_obj = pool.urlopen(method, url, headers=header, body=json.dumps(payload))
@@ -144,7 +154,40 @@ def catalog_creation_payload(**kwargs):
         }
     }
 
-def catalog_creation(ip_address, headers, **kwargs):
+def catalog_refresh_payload(repoId):
+    refresh_payload = {
+            "CatalogIds": [repoId],
+            "AllCatalogs": "false"
+    }
+    return refresh_payload
+
+
+def create_or_refresh_catalog(ip_address, headers, **kwargs):
+    """Get all catalogs first"""
+    url = 'https://%s/api/UpdateService/Catalogs' % ip_address
+    status, data = request(url=url, header=headers, method='GET')
+    if status != 200:
+        raise Exception("Unable to get the catalog", data)
+    else:
+        allrepoProfiles  = data["value"]
+        if allrepoProfiles and data["@odata.count"] != 0:
+            for repoProfile in allrepoProfiles:
+                repositoryType = repoProfile["Repository"]["RepositoryType"]
+                if(repositoryType == kwargs['repo_type']):
+                    if kwargs['refresh']:
+                        url = 'https://%s/api/UpdateService/Actions/UpdateService.RefreshCatalogs' % ip_address
+                        refresh_payload = catalog_refresh_payload(repoProfile["Id"])
+                        status, data = request(url=url,
+                                               header=headers,  payload=refresh_payload,method='POST')
+                        if status != 204:
+                            raise Exception("Unable to refresh the catalog of " + repositoryType, data)
+                        else:
+                            time.sleep(60)
+                            print("Catalog refreshed ")
+                            return repoProfile["Id"], repoProfile["Repository"]["Id"]
+                    else:
+                        return repoProfile["Id"], repoProfile["Repository"]["Id"]
+
     """ Create new catalog """
     url = 'https://%s/api/UpdateService/Catalogs' % ip_address
     print("Creating new catalog.!")
@@ -583,9 +626,8 @@ if __name__ == '__main__':
                         help="domian for CIFS repository credentials")
     PARSER.add_argument("--repopassword", required=False,
                         help="password for CIFS repository")
-    PARSER.add_argument("--force", required=False, default=False,
-                        help="deletes online catalog and associated "
-                             "baselines before creating afresh")
+    PARSER.add_argument("--refresh", required=False, default=False, type=str2bool,
+                        help="refresh/create online catalog or use existing one.")
     ARGS = PARSER.parse_args()
     if ARGS.repotype == 'CIFS' and (ARGS.reposourceip is None or ARGS.catalogpath is None
                                     or ARGS.repouser is None or ARGS.repopassword is None):
@@ -655,16 +697,13 @@ if __name__ == '__main__':
 
             PARAM_MAP['device_ids'] = DEVICE_IDS
 
-        if ARGS.force and ARGS.repotype == 'DELL_ONLINE':
-            delete_online_catalog(IP_ADDRESS, HEADERS)
-
         CATALOG_ID, REPO_ID = \
-            catalog_creation(ip_address=IP_ADDRESS, headers=HEADERS, repo_type=ARGS.repotype,
+            create_or_refresh_catalog(ip_address=IP_ADDRESS, headers=HEADERS, repo_type=ARGS.repotype,
                              repo_source_ip=ARGS.reposourceip, catalog_path=ARGS.catalogpath,
                              repo_user=ARGS.repouser, repo_password=ARGS.repopassword,
-                             repo_domain=ARGS.repodomain)
+                             repo_domain=ARGS.repodomain, refresh=ARGS.refresh)
         if CATALOG_ID:
-            print("Successfully created the catalog")
+            print("Successfully created or refreshed the catalog")
         else:
             raise Exception("Unable to create Catalog")
         BASELINE_ID, BASELINE_JOB_ID = baseline_creation(ip_address=IP_ADDRESS,
@@ -675,6 +714,7 @@ if __name__ == '__main__':
         if BASELINE_ID == 0:
             raise Exception("Unable to create baseline")
         print("Successfully created baseline")
+
         COMPLIANCE_LIST = \
             check_device_compliance_report(ip_address=IP_ADDRESS, headers=HEADERS,
                                            id_baseline=BASELINE_ID, required_action=UPDATE_ACTIONS)
@@ -693,5 +733,6 @@ if __name__ == '__main__':
                 print("No components found for update")
         else:
             print("No components found for update...skipping firmware update")
+
     except OSError:
         print("Unexpected error:", sys.exc_info())

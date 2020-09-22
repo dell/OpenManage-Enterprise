@@ -202,7 +202,7 @@ if __name__ == '__main__':
                         help="Path to output file")
     ARGS = PARSER.parse_args()
 
-    pool = urllib3.HTTPSConnectionPool('100.96.20.174', port=443,
+    pool = urllib3.HTTPSConnectionPool(ARGS.ip, port=443,
                                        cert_reqs='CERT_NONE', assert_hostname=False)
 
     GetDeviceList({"ip":ARGS.ip, "user":ARGS.user, "password":ARGS.password},

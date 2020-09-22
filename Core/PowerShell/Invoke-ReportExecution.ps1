@@ -56,7 +56,14 @@ param(
     [uint64] $ReportId,
 
     [Parameter(Mandatory=$false)]
-    [uint64] $GroupId = 0        
+    [uint64] $GroupId = 0,
+    
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("csv", "table")]
+    [string]$OutputFormat="csv",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$OutputFilePath=""    
 )
 
 function Set-CertPolicy() {
@@ -81,12 +88,44 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 
+function Get-uniquefilename
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.IO.FileInfo] $filepath,
+    
+        [Parameter(Mandatory)]
+        [String] $formatextension
+    )
+
+    if(Test-Path -LiteralPath $filepath -PathType Container)
+    {
+        Write-Error "Unable to get the file name, please provide the filename"
+    }
+    else
+    {
+        $folder = Split-Path -Path ([io.path]::GetFullPath($filepath)) -Parent
+        $formatfilename = $filepath.BaseName
+        $i = 1
+        while(Test-Path $filepath)
+        {
+            $filename = $formatfilename+"($i)"
+            $newfilename = $filename+"."+$formatextension
+            $filepath = Join-Path $folder $newfilename
+            $i++
+        }
+    }
+    return $filepath
+}
+
 function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
     $BaseUri = "https://$($IpAddress)"
     $ReportDeets = $BaseUri + "/api/ReportService/ReportDefs($($ReportId))"
     $NextLinkUrl = $null
     $OutputArray = @()
     $ColumnNames = @()
+    [psobject[]]$objlist = @()
     $DeetsResp = Invoke-WebRequest -Uri $ReportDeets -UseBasicParsing -Headers $Headers -Method Get -ContentType $Type
     if ($DeetsResp.StatusCode -eq 200){
         $DeetsInfo = $DeetsResp.Content | ConvertFrom-Json
@@ -120,13 +159,26 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
                 }
                 foreach ($value in $ReportResultList) {
                     $resultVals = $value.Values
+
                     $tempHash = @{}
                     for ($i =0; $i -lt $ColumnNames.Count; $i++) {
                         $tempHash[$ColumnNames[$i]] = $resultVals[$i]
                     }
                     $outputArray += , $tempHash
+                    if($outputformat -eq "csv")
+                    {
+                        $objlist += New-Object -TypeName psobject -Property $tempHash
+                    }
                 }
-                $outputArray.Foreach({[PSCustomObject]$_}) | Format-Table -AutoSize
+                if($outputformat -eq "csv")
+                {
+                    $filepath = Get-uniquefilename -filepath $outputfilepath -formatextension "csv"
+                    $objlist | Export-Csv -Path $filepath
+                }
+                else
+                {
+                    $outputArray.Foreach({[PSCustomObject]$_}) | Format-Table -AutoSize
+                }
             }
             else {
                 Write-Warning "No result data retrieved from $($IpAddress) for report ($($ReportId))"
@@ -142,6 +194,11 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
 }
 
 Try {
+    if(($outputformat -like "csv") -and ($outputfilepath -eq ""))
+    {
+        Write-Error "CSV Filepath is not provided." -ErrorAction Stop
+    }
+
     Set-CertPolicy
     $SessionUrl    = "https://$($IpAddress)/api/SessionService/Sessions"
     $ExecRepUrl    = "https://$($IpAddress)/api/ReportService/Actions/ReportService.RunReport"
@@ -152,7 +209,8 @@ Try {
     $RepPayload    = @{"ReportDefId"=$ReportId; "FilterGroupId"=$GroupId} | ConvertTo-Json
     $Headers       = @{}
     $JobDoneStatus = @("completed","failed","warning","aborted","canceled")
-    $RetryCount    = 90  
+    $RetryCount    = 90 
+
     
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
