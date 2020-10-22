@@ -1,7 +1,7 @@
 #
 #  Python script using OME API to create a Network
 #
-# _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
+# _author_ = Greg Bowersock <Greg.Bowersock@Dell.com> and Trevor Squillario <Trevor.Squillario@Dell.com>
 # _version_ = 0.1
 #
 # Copyright (c) 2018 Dell EMC Corporation
@@ -20,23 +20,20 @@
 #
 """
 SYNOPSIS:
-   Script to create a new network with VLAN
-
+   Script to save all networks to a csv file
 DESCRIPTION:
-   This script exercises the OME REST API to create a new network
-   A network consists of a Minimum and Maximum VLAN ID to create a range
-   Set Minimum and Maximum to the same value to a single VLAN
+   This script exercises the OME REST API to save a copy of the 
+   defined VLANS to a csv file.
    
    For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
-
 EXAMPLE:
-   python create_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+   python get_network.py --ip <xx> --user <username> --password <pwd> --out_file <exported csv file>
 """
 import sys
-import traceback
 import argparse
 from argparse import RawTextHelpFormatter
+import traceback
 import json
 import requests
 import urllib3
@@ -77,28 +74,33 @@ def delete_session(ip_address, headers, id):
         print ("Unable to delete session %s" % id)
         return False
 
-def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maximum, network_type):
-    try:
-        # Create Network
-        network_payload = {
-            "Name": name,
-            "Description": description,
-            "VlanMinimum": int(vlan_maximum),
-            "VlanMaximum": int(vlan_minimum),
-            "Type": int(network_type)
-        }
-        create_url = base_uri + '/api/NetworkConfigurationService/Networks'
-        create_resp = requests.post(create_url, headers=headers,
-                                    verify=False,
-                                    data=json.dumps(network_payload))
-        if create_resp.status_code == 201:
-            print ("New network created %s" %(name))
-        elif create_resp.status_code == 400:
-            print ("Failed creation... ")
-            print (json.dumps(create_resp.json(), indent=4,
-                                sort_keys=False))
-    except Exception as e:
-        print(traceback.format_exc())
+def get_networktypes(base_uri, headers):
+    # Display Network Types
+    networktype_url = base_uri + '/api/NetworkConfigurationService/NetworkTypes'
+    networktype_response = requests.get(networktype_url, headers=headers, verify=False)
+    if networktype_response.status_code == 200 or networktype_response.status_code == 201:
+        networktype_data = networktype_response.json()
+        networktype_data = networktype_data['value']
+        for i in networktype_data:
+            print("Id: %s, Name: %s, Description: %s" %(i["Id"], i["Name"], i["Description"]))
+    else:
+        print("Unable to retrieve list from %s" % (networktype_url))
+
+def get_networks(base_uri, headers, out_file):
+    # Display Network Types
+    network_url = base_uri + '/api/NetworkConfigurationService/Networks'
+    network_response = requests.get(network_url, headers=headers, verify=False)
+    if network_response.status_code == 200 or network_response.status_code == 201:
+        network_data = network_response.json()
+        network_data = network_data['value']
+        f = open(out_file, "w")
+        f.write("ID,Name,Description,VlanMaximum,VlanMinimum,NetworkType\n")
+        for i in network_data:
+            print("Id: %s, Name: %s, Description: %s, VLAN Min: %s, VLAN Max: %s, Type: %s, Created By: %s" %(i["Id"], i["Name"], i["Description"], i["VlanMinimum"], i["VlanMaximum"], i["Type"], i["CreatedBy"]))
+            f.write("%s,%s,%s,%s,%s,%s\n" %(i["Id"],i["Name"], i["Description"], i["VlanMaximum"], i["VlanMinimum"], i["Type"]))
+        f.close()
+    else:
+        print("Unable to retrieve list from %s" % (network_url))
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -110,25 +112,18 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--name", "-n", required=False,
-                        help="Name of VLAN")
-    PARSER.add_argument("--description", "-d", required=False,
-                        help="Description of VLAN")
-    PARSER.add_argument("--vlan-minimum", "-vmin", required=False,
-                        help="Minimum VLAN (Integer)")    
-    PARSER.add_argument("--vlan-maximum", "-vmax", required=False,
-                        help="Maximum VLAN (Integer)")                    
-    PARSER.add_argument("--vlan-type", "-vt", required=False,
-                        help="Type of VLAN (Integer) Use get_network.py --list-networktypes")
-    PARSER.add_argument("--in-file", "-f", required=False,
+    PARSER.add_argument("--list-networktypes", "-lt", required=False, action='store_true',
+                        help="List available Network Types")
+    PARSER.add_argument("--out-file", "-f", required=False, default="Networks.csv",
                         help="""Path to CSV file
 *Must include header row with at least the rows in the example below
-*NetworkType must be an integer value. Use get_network.py --list-networktypes
+*NetworkType must be an integer value. Use --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
 Example:
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
     ARGS = PARSER.parse_args()
+
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
     headers = {'content-type': 'application/json'}
@@ -139,18 +134,10 @@ VLAN 800,Description for VLAN 800,800,800,1""")
         quit()
 
     try:
-        if ARGS.name != None and ARGS.vlan_minimum != None and ARGS.vlan_maximum != None and ARGS.vlan_type != None:
-            create_network(base_uri, headers, ARGS.name, ARGS.description, ARGS.vlan_minimum, ARGS.vlan_maximum, ARGS.vlan_type)
-        elif ARGS.in_file != None and path.exists(ARGS.in_file):
-            with open(ARGS.in_file) as f:
-                records = csv.DictReader(f)
-                for row in records:
-                    print ("Creating network from data: %s" %(row))
-                    try:
-                        create_network(base_uri, headers, row["Name"], row["Description"], row["VlanMinimum"], row["VlanMaximum"], row["NetworkType"])
-                    except(KeyError):
-                        print ("Unexpected error:", sys.exc_info())
-                        print ("KeyError: Missing or improperly named columns. File must contain the following headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
+        if ARGS.list_networktypes:
+            get_networktypes(base_uri, headers)
+        else:
+            get_networks(base_uri, headers, ARGS.out_file)
     except Exception as e:
         print(traceback.format_exc())
     finally:

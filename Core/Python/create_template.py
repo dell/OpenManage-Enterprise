@@ -1,8 +1,9 @@
 #
-#  Python script using OME API to create a Network
+#  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 # _version_ = 0.1
+#
 #
 # Copyright (c) 2018 Dell EMC Corporation
 #
@@ -18,21 +19,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 SYNOPSIS:
-   Script to create a new network with VLAN
+   Script to manage templates in OpenManage Enterprise
 
 DESCRIPTION:
-   This script exercises the OME REST API to create a new network
-   A network consists of a Minimum and Maximum VLAN ID to create a range
-   Set Minimum and Maximum to the same value to a single VLAN
-   
+   This script uses the OME REST API to export, import, assign vlans or identity pool to templates
+   Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
    For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python create_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+    python .\create_template.py ---ip <xx> --user <username> --password <pwd> --name "TestTemplate" --in-file "Template.xml"
 """
+
 import sys
 import traceback
 import argparse
@@ -41,7 +42,6 @@ import json
 import requests
 import urllib3
 import os
-from os import path
 import csv
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -49,11 +49,10 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 session_auth_token = {}
 
-def get_session(ip_address, user_name, password):
+def get_session(ip_address, username, password):
     session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-    base_uri = 'https://%s' %(ip_address)
     headers = {'content-type': 'application/json'}
-    user_details = {'UserName': user_name,
+    user_details = {'UserName': username,
                     'Password': password,
                     'SessionType': 'API'}
     session_info = requests.post(session_url, verify=False,
@@ -77,22 +76,24 @@ def delete_session(ip_address, headers, id):
         print ("Unable to delete session %s" % id)
         return False
 
-def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maximum, network_type):
+def import_template(base_uri, auth_token, name, filename):
     try:
-        # Create Network
-        network_payload = {
-            "Name": name,
-            "Description": description,
-            "VlanMinimum": int(vlan_maximum),
-            "VlanMaximum": int(vlan_minimum),
-            "Type": int(network_type)
+        payload = {
+            "Name": "Template Import",
+            "Type": 2,
+            "ViewTypeId": 2,
+            "Content" : ""
         }
-        create_url = base_uri + '/api/NetworkConfigurationService/Networks'
-        create_resp = requests.post(create_url, headers=headers,
+        url = base_uri + '/api/TemplateService/Actions/TemplateService.Import'
+        payload["Name"] = name
+        f = open(filename, "r")
+        content = f.read()
+        payload["Content"] = content
+        create_resp = requests.post(url, headers=headers,
                                     verify=False,
-                                    data=json.dumps(network_payload))
-        if create_resp.status_code == 201:
-            print ("New network created %s" %(name))
+                                    data=json.dumps(payload))
+        if create_resp.status_code == 200:
+            print ("New template created %s" %(name))
         elif create_resp.status_code == 400:
             print ("Failed creation... ")
             print (json.dumps(create_resp.json(), indent=4,
@@ -101,8 +102,6 @@ def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maxi
         print(traceback.format_exc())
 
 if __name__ == '__main__':
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
     PARSER = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
@@ -110,24 +109,11 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     PARSER.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--name", "-n", required=False,
-                        help="Name of VLAN")
-    PARSER.add_argument("--description", "-d", required=False,
-                        help="Description of VLAN")
-    PARSER.add_argument("--vlan-minimum", "-vmin", required=False,
-                        help="Minimum VLAN (Integer)")    
-    PARSER.add_argument("--vlan-maximum", "-vmax", required=False,
-                        help="Maximum VLAN (Integer)")                    
-    PARSER.add_argument("--vlan-type", "-vt", required=False,
-                        help="Type of VLAN (Integer) Use get_network.py --list-networktypes")
-    PARSER.add_argument("--in-file", "-f", required=False,
-                        help="""Path to CSV file
-*Must include header row with at least the rows in the example below
-*NetworkType must be an integer value. Use get_network.py --list-networktypes
-*For a single VLAN set VlanMinimum=VlanMaximum
-Example:
-Name,Description,VlanMaximum,VlanMinimum,NetworkType
-VLAN 800,Description for VLAN 800,800,800,1""")
+    PARSER.add_argument("--name", "-n", required=True,
+                        help="Name of Template")
+    PARSER.add_argument("--in-file", "-f", required=True,
+                        help="Path of Template File to Import")
+
     ARGS = PARSER.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
@@ -137,20 +123,10 @@ VLAN 800,Description for VLAN 800,800,800,1""")
     else:
         print("Unable to create a session with appliance %s" % (base_uri))
         quit()
-
-    try:
-        if ARGS.name != None and ARGS.vlan_minimum != None and ARGS.vlan_maximum != None and ARGS.vlan_type != None:
-            create_network(base_uri, headers, ARGS.name, ARGS.description, ARGS.vlan_minimum, ARGS.vlan_maximum, ARGS.vlan_type)
-        elif ARGS.in_file != None and path.exists(ARGS.in_file):
-            with open(ARGS.in_file) as f:
-                records = csv.DictReader(f)
-                for row in records:
-                    print ("Creating network from data: %s" %(row))
-                    try:
-                        create_network(base_uri, headers, row["Name"], row["Description"], row["VlanMinimum"], row["VlanMaximum"], row["NetworkType"])
-                    except(KeyError):
-                        print ("Unexpected error:", sys.exc_info())
-                        print ("KeyError: Missing or improperly named columns. File must contain the following headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
+    
+    try: 
+        if ARGS.in_file:
+            import_template(base_uri, headers, ARGS.name, ARGS.in_file)
     except Exception as e:
         print(traceback.format_exc())
     finally:
