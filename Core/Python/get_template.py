@@ -110,47 +110,7 @@ def export_template(base_uri, headers, template_id, name, directory):
             print ("Exported template to %s" %(filename))
         elif create_resp.status_code == 400:
             print ("Failed to export template... ")
-            print (json.dumps(create_resp.json(), indent=4,
-                                sort_keys=False))
-    except Exception as e:
-        print(traceback.format_exc())
-
-def export_template_metadata(base_uri, headers, template_id, name, directory):
-    try:
-        url = base_uri + "/api/TemplateService/Templates({0})/Views({1})/AttributeViewDetails".format(template_id, 4)
-        template_meta = {}
-        vlan_resp = requests.get(url, headers=headers,
-                                    verify=False)
-        if vlan_resp.status_code == 200:
-            resp_data = vlan_resp.json()
-            template_meta["VlanAttributes"] = []
-            for attribute_group in resp_data["AttributeGroups"]:
-                if attribute_group["DisplayName"] == "NICModel":
-                    for nics in attribute_group["SubAttributeGroups"]: # Loop through NICs
-                        for ports in nics["SubAttributeGroups"]: # Loop through Ports
-                            vlan_attribute = {}
-                            vlan_attribute["NIC"] = nics["DisplayName"]
-                            vlan_attribute["Port"] = ports["GroupNameId"]
-                            for partitions in ports["SubAttributeGroups"]: # Loop through Partitions
-                                for attribute in partitions["Attributes"]:
-                                    if attribute["DisplayName"] == "Vlan Tagged":
-                                        vlan_attribute["VlanTagged"] = attribute["Value"]
-                                    if attribute["DisplayName"] == "Vlan UnTagged":
-                                        vlan_attribute["VlanUnTagged"] = attribute["Value"]
-                            template_meta["VlanAttributes"].append(vlan_attribute)
-                    
-            print(json.dumps(template_meta, indent=4))
-
-        elif vlan_resp.status_code == 400:
-            print ("Failed to export template... ")
-            print (json.dumps(vlan_resp.json(), indent=4,
-                                sort_keys=False))
-
-        #filename = os.path.join(directory, name + '.xml')
-        #f = open(filename, 'w' )
-        #f.write(resp_data["Content"])
-        #f.close()
-        #print ("Exported template to %s" %(filename))
+            print (json.dumps(create_resp.json(), indent=4, sort_keys=False))
     except Exception as e:
         print(traceback.format_exc())
 
@@ -192,8 +152,6 @@ if __name__ == '__main__':
                         help="Name of Template")
     PARSER.add_argument("--out-directory", "-d", required=True,
                         help="Directory to export Templates")
-    PARSER.add_argument("--export-metadata", "-m", required=False, action='store_true',
-                        help="Export template metadata such as Vlans and Identity Pool")
     ARGS = PARSER.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
@@ -209,11 +167,6 @@ if __name__ == '__main__':
             templates = get_template(base_uri, headers, ARGS.name)
             for template in templates:
                 export_template(base_uri, headers, template["Id"], template["Name"], ARGS.out_directory)
-        
-        if ARGS.export_metadata:
-            templates = get_template(base_uri, headers, ARGS.name)
-            for template in templates:
-                export_template_metadata(base_uri, headers, template["Id"], template["Name"], ARGS.out_directory)
     except Exception as e:
         print(traceback.format_exc())
     finally:

@@ -76,7 +76,22 @@ def delete_session(ip_address, headers, id):
         print ("Unable to delete session %s" % id)
         return False
 
-def template_assign_identitypool(base_uri, headers, template_id, identitypool_id):
+def get_indentity_pools(base_uri, headers):
+    url = base_uri + '/api/IdentityPoolService/IdentityPools'
+    response = requests.get(url, headers=headers, verify=False)
+    if response.status_code == 200 or response.status_code == 201:
+        data = response.json()
+        data = data['value']
+        return data
+    else:
+        print ('Unable to retrieve list from %s' % url)
+
+def get_identitypool_id(identitypools, name):
+    for identitypool in identitypools:
+        if identitypool["Name"] == name:
+            return identitypool["Id"]
+
+def template_assign_identitypool(base_uri, headers, template_id, name):
     try:
         payload = {
             "TemplateId": 0, 
@@ -84,16 +99,21 @@ def template_assign_identitypool(base_uri, headers, template_id, identitypool_id
         }
         url = base_uri + '/api/TemplateService/Actions/TemplateService.UpdateNetworkConfig'
         payload["TemplateId"] = template_id
-        payload["IdentityPoolId"] = identitypool_id
-        create_resp = requests.post(url, headers=headers,
-                                    verify=False,
-                                    data=json.dumps(payload))
-        if create_resp.status_code == 200:
-            print ("Assigned identity pool {0} to template {1}".format(identitypool_id, template_id))
-        elif create_resp.status_code == 400:
-            print ("Failed creation... ")
-            print (json.dumps(create_resp.json(), indent=4,
-                                sort_keys=False))
+        identitypools = get_indentity_pools(base_uri, headers)
+        identitypool_id = get_identitypool_id(identitypools, name)
+        if identitypool_id:
+            payload["IdentityPoolId"] = identitypool_id
+            create_resp = requests.post(url, headers=headers,
+                                        verify=False,
+                                        data=json.dumps(payload))
+            if create_resp.status_code == 200:
+                print ("Assigned identity pool {0} to template {1}".format(identitypool_id, template_id))
+            elif create_resp.status_code == 400:
+                print ("Failed creation... ")
+                print (json.dumps(create_resp.json(), indent=4,
+                                    sort_keys=False))
+        else:
+            print ("Identity Pool %s not found" % name)
     except Exception as e:
         print(traceback.format_exc())
 
@@ -119,7 +139,7 @@ if __name__ == '__main__':
                         help="Password for OME Appliance")
     PARSER.add_argument("--name", "-n", required=True,
                         help="Name of Template")
-    PARSER.add_argument("--identitypool-id", required=True,
+    PARSER.add_argument("--identitypool-name", required=True,
                         help="Identity Pool to Assign to Template")
 
     ARGS = PARSER.parse_args()
@@ -133,10 +153,10 @@ if __name__ == '__main__':
         quit()
 
     try: 
-        if ARGS.identitypool_id and ARGS.name:
+        if ARGS.identitypool_name and ARGS.name:
             templates = get_template(base_uri, headers, ARGS.name)
             for template in templates:
-                template_assign_identitypool(base_uri, headers, template["Id"], ARGS.identitypool_id)
+                template_assign_identitypool(base_uri, headers, template["Id"], ARGS.identitypool_name)
     except Exception as e:
         print(traceback.format_exc())
     finally:

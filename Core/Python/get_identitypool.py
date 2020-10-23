@@ -94,7 +94,7 @@ def get_indentity_pools(base_uri, headers, out_file):
             'FcSettings Wwnn IdentityCount',
             'FcSettings Wwnn StartingAddress',
             'FcSettings Wwpn IdentityCount',
-            'FcSettings Wwpn StartingAddress',
+            'FcSettings Wwpn StartingAddress'
             ]
         if network_data:
             print ('Exporting Identity Pools')
