@@ -25,6 +25,8 @@ import time
 import argparse
 from argparse import RawTextHelpFormatter
 import traceback
+import codecs
+import binascii
 import json
 import requests
 import urllib3
@@ -65,6 +67,28 @@ def delete_session(ip_address, headers, id):
     else: 
         print ("Unable to delete session %s" % id)
         return False
+
+def mac_to_base64_conversion(mac_address):
+    try:
+        if mac_address:
+            allowed_mac_separators = [':', '-', '.']
+            for sep in allowed_mac_separators:
+                if sep in mac_address:
+                    b64_mac_address = codecs.encode(codecs.decode(
+                        mac_address.replace(sep, ''), 'hex'), 'base64')
+                    address = codecs.decode(b64_mac_address, 'utf-8').rstrip()
+                    return address
+    except binascii.Error:
+        print ('Encoding of MAC address {0} to base64 failed'.format(mac_address))
+
+def base64_to_mac_conversion(base64):
+    try:
+        if base64:
+            b64_mac_address = codecs.encode(codecs.decode(bytes(base64, 'utf-8'), 'base64'), 'hex')
+            address = codecs.decode(b64_mac_address, 'utf-8').rstrip()
+            return ':'.join(address[i:i+2] for i in range(0,len(address),2))
+    except binascii.Error:
+        print ('Decoding of MAC address {0} from base64 failed'.format(mac_address))
 
 def get_indentity_pools(base_uri, headers, out_file):
 
@@ -112,8 +136,7 @@ def get_indentity_pools(base_uri, headers, out_file):
                     enet_IdentityCount = i['EthernetSettings']['Mac'
                             ]['IdentityCount']
                     print ('IdentityCount: %s' % enet_IdentityCount)
-                    enet_StartingMacAddress = i['EthernetSettings'
-                            ]['Mac']['StartingMacAddress']
+                    enet_StartingMacAddress = base64_to_mac_conversion(i['EthernetSettings']['Mac']['StartingMacAddress'])
                     print ('StartingMacAddress: %s' \
                         % i['EthernetSettings']['Mac'
                             ]['StartingMacAddress'])
@@ -128,8 +151,7 @@ def get_indentity_pools(base_uri, headers, out_file):
                     iscsi_IdentityCount = i['IscsiSettings']['Mac'
                             ]['IdentityCount']
                     print ('IdentityCount: %s' % iscsi_IdentityCount)
-                    iscsi_StartingMacAddress = i['IscsiSettings']['Mac'
-                            ]['StartingMacAddress']
+                    iscsi_StartingMacAddress = base64_to_mac_conversion(i['IscsiSettings']['Mac']['StartingMacAddress'])
                     print ('StartingMacAddress: %s' \
                         % iscsi_StartingMacAddress)
                     if i['IscsiSettings']['InitiatorConfig'] \
@@ -199,8 +221,7 @@ def get_indentity_pools(base_uri, headers, out_file):
                     fcoe_IdentityCount = i['FcoeSettings']['Mac'
                             ]['IdentityCount']
                     print ('IdentityCount: %s' % fcoe_IdentityCount)
-                    fcoe_StartingMacAddress = i['FcoeSettings']['Mac'
-                            ]['StartingMacAddress']
+                    fcoe_StartingMacAddress = base64_to_mac_conversion(i['FcoeSettings']['Mac']['StartingMacAddress'])
                     print ('StartingMacAddress: %s' \
                         % fcoe_StartingMacAddress)
                 else:
@@ -213,15 +234,13 @@ def get_indentity_pools(base_uri, headers, out_file):
                     fc_Wwnn_IdentityCount = i['FcSettings']['Wwnn'
                             ]['IdentityCount']
                     print ('IdentityCount: %s' % fc_Wwnn_IdentityCount)
-                    fc_Wwnn_StartingAddress = i['FcSettings']['Wwnn'
-                            ]['StartingAddress']
+                    fc_Wwnn_StartingAddress = base64_to_mac_conversion(i['FcSettings']['Wwnn']['StartingAddress'])
                     print ('StartingAddress: %s' \
                         % fc_Wwnn_StartingAddress)
                     fc_Wwpn_IdentityCount = i['FcSettings']['Wwpn'
                             ]['IdentityCount']
                     print ('IdentityCount: %s' % fc_Wwpn_IdentityCount)
-                    fc_Wwpn_StartingAddress = i['FcSettings']['Wwpn'
-                            ]['StartingAddress']
+                    fc_Wwpn_StartingAddress = base64_to_mac_conversion(i['FcSettings']['Wwpn']['StartingAddress'])
                     print ('StartingAddress: %s' \
                         % fc_Wwpn_StartingAddress)
                 else:

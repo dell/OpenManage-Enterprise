@@ -25,6 +25,8 @@ import time
 import argparse
 from argparse import RawTextHelpFormatter
 import traceback
+import codecs
+import binascii
 import json
 import requests
 import urllib3
@@ -66,6 +68,18 @@ def delete_session(ip_address, headers, id):
         print ("Unable to delete session %s" % id)
         return False
 
+def mac_to_base64_conversion(mac_address):
+    try:
+        if mac_address:
+            allowed_mac_separators = [':', '-', '.']
+            for sep in allowed_mac_separators:
+                if sep in mac_address:
+                    b64_mac_address = codecs.encode(codecs.decode(
+                        mac_address.replace(sep, ''), 'hex'), 'base64')
+                    address = codecs.decode(b64_mac_address, 'utf-8').rstrip()
+                    return address
+    except binascii.Error:
+        print ('Encoding of MAC address {0} to base64 failed'.format(mac_address))
 
 def create_id_pool(
     base_uri,
@@ -154,31 +168,30 @@ def create_id_pool(
     if IscsiSettings_IdentityCount != '' \
         and (IscsiSettings_InitiatorConfig_IqnPrefix == ''
              or IscsiSettings_InitiatorIpPoolSettings_IpRange == ''):
-        print ('Update your Identity Pool file entry for %s because the when the iSCSI Initiator configuration is enabled, the IQN prefix must be non-empty' \
-            % Name)
-        print ('The iSCSI IP pool identities cannot be enabled until an IP address range is entered.')
         print ('Skipping creation of ID pool %s' % Name)
+        print ('When the iSCSI Initiator configuration is enabled, the IQN prefix and IP Range must be non-empty')
         id_pool_id = 'skip'
-    else:
-        network_url = base_uri \
-            + '/api/IdentityPoolService/IdentityPools'
-        network_response = requests.post(network_url, headers=headers,
-                verify=False, data=json.dumps(network_payload))
+        exit()
 
-        # print ("network_response = %s" % (network_response))
+    network_url = base_uri \
+        + '/api/IdentityPoolService/IdentityPools'
+    network_response = requests.post(network_url, headers=headers,
+            verify=False, data=json.dumps(network_payload))
 
-        if network_response.status_code == 201 \
-            or network_response.status_code == 200:
-            network_data = network_response.json()
-            id_pool_id = network_data['Id']
-        elif network_response.status_code == 400 \
-            or network_response.status_code == 500:
-            print ('Failed ID pool creation... ')
-            print ('Network Payload:')
-            print (network_payload)
-            print ('')
-            print ('json dump...')
-            print (json.dumps(network_response.json(), indent=4, sort_keys=False))
+    # print ("network_response = %s" % (network_response))
+
+    if network_response.status_code == 201 \
+        or network_response.status_code == 200:
+        network_data = network_response.json()
+        id_pool_id = network_data['Id']
+    elif network_response.status_code == 400 \
+        or network_response.status_code == 500:
+        print ('Failed ID pool creation... ')
+        print ('Network Payload:')
+        print (network_payload)
+        print ('')
+        print ('json dump...')
+        print (json.dumps(network_response.json(), indent=4, sort_keys=False))
 
     return id_pool_id
 
@@ -196,9 +209,9 @@ def put_indentity_pool(base_uri, headers, outfile):
                         headers,
                         row['Name'],
                         row['EthernetSettings IdentityCount'],
-                        row['EthernetSettings StartingMacAddress'],
+                        mac_to_base64_conversion(row['EthernetSettings StartingMacAddress']),
                         row['IscsiSettings IdentityCount'],
-                        row['IscsiSettings StartingMacAddress'],
+                        mac_to_base64_conversion(row['IscsiSettings StartingMacAddress']),
                         row['IscsiSettings InitiatorConfig IqnPrefix'],
                         row['IscsiSettings InitiatorIpPoolSettings IpRange'
                             ],
@@ -211,11 +224,11 @@ def put_indentity_pool(base_uri, headers, outfile):
                         row['IscsiSettings InitiatorIpPoolSettings SecondaryDnsServer'
                             ],
                         row['FcoeSettings IdentityCount'],
-                        row['FcoeSettings StartingMacAddress'],
+                        mac_to_base64_conversion(row['FcoeSettings StartingMacAddress']),
                         row['FcSettings Wwnn IdentityCount'],
-                        row['FcSettings Wwnn StartingAddress'],
+                        mac_to_base64_conversion(row['FcSettings Wwnn StartingAddress']),
                         row['FcSettings Wwpn IdentityCount'],
-                        row['FcSettings Wwpn StartingAddress'],
+                        mac_to_base64_conversion(row['FcSettings Wwpn StartingAddress']),
                         )
 
                     if pool_id == None:
@@ -254,8 +267,8 @@ if __name__ == '__main__':
 *Must include header row with at least the rows in the example below
 *Use get_identitypool.py to export CSV file
 Example:
-ID,Name,EthernetSettings IdentityCount,EthernetSettings StartingMacAddress,IscsiSettings IdentityCount,IscsiSettings StartingMacAddress,IscsiSettings InitiatorConfig IqnPrefix,IscsiSettings InitiatorIpPoolSettings IpRange,IscsiSettings InitiatorIpPoolSettings SubnetMask,IscsiSettings InitiatorIpPoolSettings Gateway,IscsiSettings InitiatorIpPoolSettings PrimaryDnsServer,IscsiSettings InitiatorIpPoolSettings SecondaryDnsServer,FcoeSettings IdentityCount,FcoeSettings StartingMacAddress,FcSettings Wwnn IdentityCount,FcSettings Wwnn StartingAddress,FcSettings Wwpn IdentityCount,FcSettings Wwpn StartingAddress
-4,TestPool01,30,AAAAAAAB,30,AAAAAAEA,geeb,,,,,,,,30,IAAAAAABAAA=,30,IAEAAAABAAA=""")
+Name,EthernetSettings IdentityCount,EthernetSettings StartingMacAddress,IscsiSettings IdentityCount,IscsiSettings StartingMacAddress,IscsiSettings InitiatorConfig IqnPrefix,IscsiSettings InitiatorIpPoolSettings IpRange,IscsiSettings InitiatorIpPoolSettings SubnetMask,IscsiSettings InitiatorIpPoolSettings Gateway,IscsiSettings InitiatorIpPoolSettings PrimaryDnsServer,IscsiSettings InitiatorIpPoolSettings SecondaryDnsServer,FcoeSettings IdentityCount,FcoeSettings StartingMacAddress,FcSettings Wwnn IdentityCount,FcSettings Wwnn StartingAddress,FcSettings Wwpn IdentityCount,FcSettings Wwpn StartingAddress
+TestPool01,30,04:00:00:00:01:00,30,04:00:00:00:02:00,iqn01,192.168.1.100/24,,,,,30,04:00:00:00:03:00,30,20:00:04:00:00:00:04:00,30,20:01:04:00:00:00:04:00""")
     
     ARGS = PARSER.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
