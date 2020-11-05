@@ -1,10 +1,10 @@
 #
-#  Python script using OME API to run a pre-defined report
+# Python script using OME API to run a pre-defined report
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 SYNOPSIS:
     Allow execution of a pre-defined report in OME
@@ -68,7 +69,7 @@ class OMEReportExecutor(object):
     """ Execute an existing OME Report including custom reports """
 
     def __init__(self, ip_address, user_name, password,
-                 report_id, group_id=0, output_file = None):
+                 report_id, group_id=0, output_file=None):
         """ Constructor for class OMEReportExecutor """
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.ip_address = ip_address
@@ -77,8 +78,8 @@ class OMEReportExecutor(object):
         self.report_id = report_id
         self.group_id = group_id
         self.output_file = output_file
-        self.base_url = 'https://%s/api/' % (self.ip_address)
-        self.result_base = 'https://%s' %(self.ip_address)
+        self.base_url = 'https://%s/api/' % self.ip_address
+        self.result_base = 'https://%s' % self.ip_address
 
     def authenticate_with_ome(self):
         """ X-auth session creation """
@@ -97,8 +98,8 @@ class OMEReportExecutor(object):
             auth_success = True
         else:
             error_msg = "Failed create of session with {0} - Status code = {1}"
-            print (error_msg.format(ip_address, session_info.status_code))
-        return (auth_success, headers)
+            print(error_msg.format(ip_address, session_info.status_code))
+        return auth_success, headers
 
     def execute_report(self, headers):
         """ Execute a given report id for the user and track job """
@@ -109,18 +110,18 @@ class OMEReportExecutor(object):
         job_done_status = ["completed", "failed", "warning",
                            "aborted", "canceled"]
         max_retry_count = 90
-        print ("Executing report", self.report_id)
+        print("Executing report", self.report_id)
         report_exec_resp = requests.post(report_exec_url,
                                          headers=headers,
                                          data=json.dumps(report_body),
                                          verify=False)
         if report_exec_resp.status_code == 200:
-            print ("Executed report %s successfully ..." % self.report_id)
+            print("Executed report %s successfully ..." % self.report_id)
             job_id = report_exec_resp.json()
-            job_url = self.base_url + "JobService/Jobs(%s)" % (job_id)
+            job_url = self.base_url + "JobService/Jobs(%s)" % job_id
             curr_job_status = ""
             counter = 0
-            print ("Tracking job id %s for report execution ... " % (job_id))
+            print("Tracking job id %s for report execution ... " % job_id)
             while counter < max_retry_count and \
                     curr_job_status not in job_done_status:
                 counter += 1
@@ -131,18 +132,18 @@ class OMEReportExecutor(object):
                 if job_response.status_code == 200:
                     job_info = job_response.json()
                     curr_job_status = job_info['LastRunStatus']['Name'].lower()
-                    print ("Job status : ", curr_job_status)
+                    print("Job status : ", curr_job_status)
                 else:
-                    print ("Unable to get status for job ", job_id)
+                    print("Unable to get status for job ", job_id)
             if curr_job_status == "completed":
-                print ("Job %s completed successfully ... " % (job_id))
+                print("Job %s completed successfully ... " % job_id)
                 self.format_output_report(headers)
         else:
-            print ("Unable to execute report ", self.report_id)
+            print("Unable to execute report ", self.report_id)
 
     def format_output_report(self, headers):
         """ Pretty print report and associated column names """
-        report_url_suffix = "ReportService/ReportDefs(%s)" % (self.report_id)
+        report_url_suffix = "ReportService/ReportDefs(%s)" % self.report_id
         report_details_url = self.base_url + report_url_suffix
         next_link_url = None
         report_details_resp = requests.get(report_details_url,
@@ -153,8 +154,8 @@ class OMEReportExecutor(object):
             column_info_arr = report_details_info['ColumnNames']
 
             column_names = [x['Name'] for x in column_info_arr]
-            if (self.output_file == None):
-                print (",".join(column_names))
+            if self.output_file is None:
+                print(",".join(column_names))
             result_url = report_details_url + "/ReportResults/ResultRows"
             report_result = requests.get(result_url,
                                          headers=headers,
@@ -177,11 +178,11 @@ class OMEReportExecutor(object):
                         else:
                             print("Unable to get full set of report results.. Exiting")
                             next_link_url = None
-                    if (self.output_file == None):
+                    if self.output_file is None:
                         for result in report_info['value']:
-                            print (",".join(result['Values']))
+                            print(",".join(result['Values']))
 
-                    if (self.output_file != None):
+                    if self.output_file is not None:
                         self.output_file = self.__get_unique_filename()
                         print("Writing the report on CSV file: " + self.output_file)
                         with open(self.output_file, 'w', newline='') as f:
@@ -190,12 +191,11 @@ class OMEReportExecutor(object):
                             for result in report_info['value']:
                                 thewriter.writerow(result['Values'])
                 else:
-                    print ("No report data found for %s" % (self.report_id))
+                    print("No report data found for %s" % self.report_id)
             else:
-                print ("No result data for report %s", self.report_id)
+                print("No result data for report %s", self.report_id)
         else:
-            print ("Unable to extract report definitions from ", self.ip_address)
-
+            print("Unable to extract report definitions from ", self.ip_address)
 
     def __get_unique_filename(self):
         i = 1
@@ -211,33 +211,32 @@ class OMEReportExecutor(object):
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True,
                         help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--reportid", "-r", required=True,
+    parser.add_argument("--reportid", "-r", required=True,
                         help="a valid report id to execute")
-    PARSER.add_argument("--groupid", "-g", required=False,
+    parser.add_argument("--groupid", "-g", required=False,
                         default=0,
                         help="Optional param - Group id to run report against")
-    PARSER.add_argument("--outputfile", "-f", required=False,
+    parser.add_argument("--outputfile", "-f", required=False,
                         help="Optional param - redirect the output to file")
 
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
 
     try:
-        REPORT_EXEC = OMEReportExecutor(ARGS.ip, ARGS.user,
-                                        ARGS.password,
-                                        ARGS.reportid,
-                                        ARGS.groupid,
-                                        ARGS.outputfile)
-        AUTH_STATUS, SESS_HEADERS = REPORT_EXEC.authenticate_with_ome()
+        REPORT_EXEC = OMEReportExecutor(args.ip, args.user,
+                                        args.password,
+                                        args.reportid,
+                                        args.groupid,
+                                        args.outputfile)
+        AUTH_STATUS, SESS_headers = REPORT_EXEC.authenticate_with_ome()
         if AUTH_STATUS:
-            REPORT_EXEC.execute_report(SESS_HEADERS)
-    except:
-        print ("Unexpected error:", sys.exc_info())
+            REPORT_EXEC.execute_report(SESS_headers)
+    except Exception as error:
+        print("Unexpected error:", str(error))

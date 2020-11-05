@@ -1,5 +1,5 @@
 #
-#  Python script using OME API to create a new static group
+# Python script using OME API to create a new static group
 #
 # _author_ = Grant Curell <grant_curell@dell.com>
 # _version_ = 0.1
@@ -33,9 +33,10 @@ EXAMPLE:
         --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"
 """
 
+from argparse import RawTextHelpFormatter
+import sys
 import json
 import argparse
-from argparse import RawTextHelpFormatter
 import urllib3
 import requests
 
@@ -107,18 +108,19 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
         if json_data['@odata.count'] > 1:
             print("WARNING: We found more than one name that matched the group name: " + group_name +
                   ". We are picking the first entry.")
+
         if json_data['@odata.count'] == 1 or json_data['@odata.count'] > 1:
             group_id = json_data['value'][0]['Id']
             if not isinstance(group_id, int):
                 print("The server did not return an integer ID. Something went wrong.")
                 return -1
             return group_id
-        else:
-            print("Error: We could not find the group " + group_name + ". Exiting.")
-            return -1
-    else:
-        print("Unable to retrieve groups. Exiting.")
+
+        print("Error: We could not find the group " + group_name + ". Exiting.")
         return -1
+
+    print("Unable to retrieve groups. Exiting.")
+    return -1
 
 
 def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) -> int:
@@ -156,8 +158,10 @@ def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) 
             return 0
     else:
         print("Connection failed with response code " + str(response.status_code) + " while we were retrieving a "
-              "device ID from the server.")
+                                                                                    "device ID from the server.")
         return -1
+
+    return -1
 
 
 def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_password: str, group_name: str,
@@ -192,7 +196,7 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
             group_id = get_group_id_by_name(ome_ip_address, group_name, headers)
 
             if group_id == -1:
-                exit(1)
+                sys.exit(1)
 
             device_ids = []
             if device_names:
@@ -201,12 +205,12 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
                     if device_id > 0:
                         device_ids.append(device_id)
                     elif device_id == -1:
-                        exit(1)
+                        sys.exit(1)
             elif device_tags:
                 id_service_tag_dict = get_device_list(ome_ip_address, headers)
 
                 if len(id_service_tag_dict) == 0:
-                    exit(1)
+                    sys.exit(1)
 
                 # Check for each service tag in our index
                 for device_tag in device_tags:
@@ -240,32 +244,31 @@ def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_passw
                 else:
                     print("Unknown error occurred. Received HTTP response code: " + str(create_resp.status_code) +
                           " with error: " + create_resp.text)
-    except Exception as e:
-        print("Unexpected error:", str(e))
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for the OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for the OME Appliance")
-    PARSER.add_argument("--groupname", "-g", required=True,
+    parser.add_argument("--groupname", "-g", required=True,
                         help="The name of the group to which you want to add servers.")
-    exclusive_group = PARSER.add_mutually_exclusive_group(required=True)
-    exclusive_group.add_argument("--devicenames", "-n", help="The names of the device you want to add to the group in "
-                                                             "format: \'device1,device2,device3,etc\'")
-    exclusive_group.add_argument("--devicetags", "-t", help="A list of service tags which you want to add to the group "
-                                                            "in format: \'tag1,tag2,tag3,etc\'")
-    ARGS = PARSER.parse_args()
+    mutex_group = parser.add_mutually_exclusive_group(required=True)
+    mutex_group.add_argument("--devicenames", "-n", help="The names of the device you want to add to the group in "
+                                                         "format: \'device1,device2,device3,etc\'")
+    mutex_group.add_argument("--devicetags", "-t", help="A list of service tags which you want to add to the group "
+                                                        "in format: \'tag1,tag2,tag3,etc\'")
+    args = parser.parse_args()
 
-    if ARGS.devicetags:
-        add_device_to_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname,
-                                   device_tags=ARGS.devicetags.split(","))
-    elif ARGS.devicenames:
-        add_device_to_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname,
-                                   device_names=ARGS.devicenames.split(","))
+    if args.devicetags:
+        add_device_to_static_group(args.ip, args.user, args.password, args.groupname,
+                                   device_tags=args.devicetags.split(","))
+    elif args.devicenames:
+        add_device_to_static_group(args.ip, args.user, args.password, args.groupname,
+                                   device_names=args.devicenames.split(","))

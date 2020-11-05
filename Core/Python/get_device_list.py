@@ -1,11 +1,11 @@
 #
-#  Python script using OME API to get device list.
+# Python script using OME API to get device list.
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,10 +42,12 @@ import os
 import sys
 import urllib3
 
+
 class GetDeviceList:
-    AUTH_SUCCESS = None
-    HEADERS = None
+    auth_success = None
+    headers = None
     """ Authenticate with OME and enumerate devices """
+
     def __init__(self, session_input, output_details):
         self.__session_input = session_input
         self.__output_details = output_details
@@ -55,8 +57,8 @@ class GetDeviceList:
         self.__base_uri = 'https://%s' % self.__session_input["ip"]
 
         try:
-            self.AUTH_SUCCESS, self.HEADERS = self.__authenticate_with_ome()
-            if not self.AUTH_SUCCESS:
+            self.auth_success, self.headers = self.__authenticate_with_ome()
+            if not self.auth_success:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd")
                 return
         except Exception:
@@ -76,9 +78,9 @@ class GetDeviceList:
         elif self.__output_details["format"] == 'csv':
             self.__format_csv()
 
-    def __request(self,url, payload=None, method='GET'):
+    def __request(self, url, payload=None, method='GET'):
         """ Returns status and data """
-        request_obj = pool.urlopen(method, url, headers=self.HEADERS, body=json.dumps(payload))
+        request_obj = pool.urlopen(method, url, headers=self.headers, body=json.dumps(payload))
         if request_obj.data and request_obj.status != 400:
             data = json.loads(request_obj.data)
         else:
@@ -103,7 +105,7 @@ class GetDeviceList:
             print(error_msg.format(self.__session_input["ip"], session_response.status_code))
         return auth_success, headers
 
-    def __get_device_from_uri(self,uri):
+    def __get_device_from_uri(self, uri):
         json_data = {}
         status, device_response = self.__request(uri, method='GET')
         if status == 200:
@@ -188,22 +190,21 @@ class GetDeviceList:
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--outformat", "-of", required=False, default="json",
+    parser.add_argument("--outformat", "-of", required=False, default="json",
                         choices=('json', 'csv'),
                         help="Output format type")
-    PARSER.add_argument("--outpath", "-op", required=False, default="",
+    parser.add_argument("--outpath", "-op", required=False, default="",
                         help="Path to output file")
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
 
-    pool = urllib3.HTTPSConnectionPool(ARGS.ip, port=443,
+    pool = urllib3.HTTPSConnectionPool(args.ip, port=443,
                                        cert_reqs='CERT_NONE', assert_hostname=False)
 
-    GetDeviceList({"ip":ARGS.ip, "user":ARGS.user, "password":ARGS.password},
-                 {"format":ARGS.outformat, "path":ARGS.outpath})
+    GetDeviceList({"ip": args.ip, "user": args.user, "password": args.password},
+                  {"format": args.outformat, "path": args.outpath})

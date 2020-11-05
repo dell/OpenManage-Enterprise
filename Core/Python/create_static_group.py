@@ -1,10 +1,10 @@
 #
-#  Python script using OME API to create a new static group
+# Python script using OME API to create a new static group
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ EXAMPLE:
         --password <pwd> --groupname "Random Test Group"
 """
 import json
-import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import urllib3
@@ -44,8 +43,8 @@ import requests
 def create_static_group(ip_address, user_name, password, group_name):
     """ Authenticate with OME and enumerate groups """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
+        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -63,40 +62,39 @@ def create_static_group(ip_address, user_name, password, group_name):
                     # Technically there should be only one result in the filter
                     group_id = json_data['value'][0]['Id']
                     group_payload = {"GroupModel": {
-                                        "Name": group_name,
-                                        "Description": "",
-                                        "MembershipTypeId": 12,
-                                        "ParentId": int(group_id)}
-                                    }
-                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % (ip_address)
+                        "Name": group_name,
+                        "Description": "",
+                        "MembershipTypeId": 12,
+                        "ParentId": int(group_id)}
+                    }
+                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % ip_address
                     create_resp = requests.post(create_url, headers=headers,
                                                 verify=False,
                                                 data=json.dumps(group_payload))
                     if create_resp.status_code == 200:
-                        print ("New group created : ID =", create_resp.text)
+                        print("New group created : ID =", create_resp.text)
                     elif create_resp.status_code == 400:
-                        print ("Failed group creation ...See error info below")
-                        print (json.dumps(create_resp.json(), indent=4,
+                        print("Failed group creation ...See error info below")
+                        print(json.dumps(create_resp.json(), indent=4,
                                          sort_keys=False))
             else:
-                print ("Unable to retrieve group list from %s" % (ip_address))
+                print("Unable to retrieve group list from %s" % ip_address)
         else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+            print("Unable to create a session with appliance %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--groupname", "-g", required=True,
+    parser.add_argument("--groupname", "-g", required=True,
                         help="A valid name for the group")
-    ARGS = PARSER.parse_args()
-    create_static_group(ARGS.ip, ARGS.user, ARGS.password, ARGS.groupname)
+    args = parser.parse_args()
+    create_static_group(args.ip, args.user, args.password, args.groupname)

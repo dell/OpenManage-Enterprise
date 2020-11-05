@@ -1,16 +1,32 @@
+#
+# Python script using OME API to create a new static group
+#
+# _version_ = 0.1
+#
+# Copyright (c) 2020 Dell EMC Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-SYNOPSIS
----------------------------------------------------------------------
+SYNOPSIS:
  Script to update firmware using catalog
 
-DESCRIPTION
----------------------------------------------------------------------
+Description: 
  This script exercises the OME REST API to allow updating a firmware using catalog.
 
  Note that the credentials entered are not stored to disk.
 
-EXAMPLE
----------------------------------------------------------------------
+Example:
 python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
     --password <passwd> --groupid 25315
 """
@@ -23,15 +39,17 @@ import os
 from argparse import RawTextHelpFormatter
 import urllib3
 
+
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 def request(url, header, payload=None, method='GET'):
     """ Returns status and data """
@@ -41,6 +59,7 @@ def request(url, header, payload=None, method='GET'):
     else:
         data = request_obj.data
     return request_obj.status, data
+
 
 def authenticate_with_ome(ip_address, user_name, password):
     """ Authenticate with OME and X-auth session creation """
@@ -60,6 +79,7 @@ def authenticate_with_ome(ip_address, user_name, password):
         print(error_msg.format(ip_address, session_response.status_code))
     return auth_success, headers
 
+
 def get_group_list(ip_address, headers):
     """ Get list of groups from OME """
     group_list = None
@@ -74,7 +94,8 @@ def get_group_list(ip_address, headers):
         print("No groups found at ", ip_address)
     return group_list
 
-def get_device_from_uri(uri,headers):
+
+def get_device_from_uri(uri, headers):
     json_data = {}
     status, device_response = request(uri, headers, method='GET')
     if status == 200:
@@ -83,11 +104,12 @@ def get_device_from_uri(uri,headers):
         print("Unable to retrieve device list from %s" % uri)
     return json_data
 
+
 def get_device_list(ip_address, headers):
     """ Get list of devices from OME """
     base_uri = 'https://%s' % ip_address
     next_link_url = base_uri + '/api/DeviceService/Devices'
-    
+
     ome_device_list = None
     ome_service_tags = None
     json_data = None
@@ -154,10 +176,11 @@ def catalog_creation_payload(**kwargs):
         }
     }
 
-def catalog_refresh_payload(repoId):
+
+def catalog_refresh_payload(repo_id):
     refresh_payload = {
-            "CatalogIds": [repoId],
-            "AllCatalogs": "false"
+        "CatalogIds": [repo_id],
+        "AllCatalogs": "false"
     }
     return refresh_payload
 
@@ -169,18 +192,18 @@ def create_or_refresh_catalog(ip_address, headers, **kwargs):
     if status != 200:
         raise Exception("Unable to get the catalog", data)
     else:
-        allrepoProfiles  = data["value"]
-        if allrepoProfiles and data["@odata.count"] != 0:
-            for repoProfile in allrepoProfiles:
-                repositoryType = repoProfile["Repository"]["RepositoryType"]
-                if(repositoryType == kwargs['repo_type']):
+        all_repo_profiles = data["value"]
+        if all_repo_profiles and data["@odata.count"] != 0:
+            for repoProfile in all_repo_profiles:
+                repository_type = repoProfile["Repository"]["RepositoryType"]
+                if repository_type == kwargs['repo_type']:
                     if kwargs['refresh']:
                         url = 'https://%s/api/UpdateService/Actions/UpdateService.RefreshCatalogs' % ip_address
                         refresh_payload = catalog_refresh_payload(repoProfile["Id"])
                         status, data = request(url=url,
-                                               header=headers,  payload=refresh_payload,method='POST')
+                                               header=headers, payload=refresh_payload, method='POST')
                         if status != 204:
-                            raise Exception("Unable to refresh the catalog of " + repositoryType, data)
+                            raise Exception("Unable to refresh the catalog of " + repository_type, data)
                         else:
                             time.sleep(60)
                             print("Catalog refreshed ")
@@ -205,6 +228,7 @@ def create_or_refresh_catalog(ip_address, headers, **kwargs):
                 return repo_entry.get("Id"), repo_entry.get("Repository").get('Id')
     raise Exception("Exiting the code, Unable to create catalog : System Info ", sys.exc_info())
 
+
 def get_group_details(ip_address, headers, group_id):
     """ Get  group details  from OME """
     group_service_url = 'https://%s/api/GroupService/Groups(%s)' % (ip_address, group_id)
@@ -216,6 +240,7 @@ def get_group_details(ip_address, headers, group_id):
             return group_type, group_name
         raise Exception("Unable to find group id")
     raise Exception("Unable to fetch group details")
+
 
 def baseline_creation_payload(id_cat, repository_id, target_name, **kwargs):
     """ Return payload for Baseline creation """
@@ -243,6 +268,7 @@ def baseline_creation_payload(id_cat, repository_id, target_name, **kwargs):
             baseline_payload['Targets'].append(target_payload)
     return baseline_payload
 
+
 def get_device_details(ip_address, headers, device_ids):
     """ Get device details  from OME """
     query_string = ""
@@ -264,6 +290,7 @@ def get_device_details(ip_address, headers, device_ids):
     print("Unable to fetch device details")
     return 0
 
+
 def get_execution_detail(job_hist_resp, headers, job_hist_url):
     """ Get execution details """
     job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
@@ -274,6 +301,7 @@ def get_execution_detail(job_hist_resp, headers, job_hist_url):
         print(job_hist_det_resp)
     else:
         print("Unable to parse job execution history .. Exiting")
+
 
 def track_job_to_completion(ip_address, headers, job_id, job_name):
     """ Tracks the update job to completion / error """
@@ -323,6 +351,7 @@ def track_job_to_completion(ip_address, headers, job_id, job_name):
     if job_incomplete:
         print("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
 
+
 def get_baseline_id(ip_address, headers, id_repo, id_cat):
     """ Get Baseline id """
     url = 'https://%s/api/UpdateService/Baselines' % ip_address
@@ -343,6 +372,7 @@ def get_baseline_id(ip_address, headers, id_repo, id_cat):
             return 0
     print("unable to get baseline id")
     return 0
+
 
 def baseline_creation(ip_address, headers, param_map, catalog_id, repo_id):
     """ Create new baseline """
@@ -366,6 +396,7 @@ def baseline_creation(ip_address, headers, param_map, catalog_id, repo_id):
         return get_baseline_id(ip_address, headers, repo_id, catalog_id)
     raise Exception("Unable to create baseline, Job status : ", baseline_status)
 
+
 def check_response_type(comp_val_list):
     """ Checks whether response contains ComponentComplianceReports or not """
     flag = False
@@ -373,6 +404,7 @@ def check_response_type(comp_val_list):
         if 'ComponentComplianceReports' in val:
             flag = True
     return flag
+
 
 def check_device_compliance_report(ip_address, headers, id_baseline, required_action):
     """ Checks device compliances """
@@ -426,6 +458,7 @@ def check_device_compliance_report(ip_address, headers, id_baseline, required_ac
         raise Exception("Unable to get compliance data")
     return compliance_report_list
 
+
 def create_target_payload(compliance_data_list):
     """ Create target for firmware payload """
     my_dist = {}
@@ -447,10 +480,12 @@ def create_target_payload(compliance_data_list):
         return target_list
     return 0
 
+
 def get_job_types(ip_address, header):
     """ Get job type """
     url = "https://{0}/api/JobService/JobTypes".format(ip_address)
     return request(url=url, header=header)
+
 
 def get_job_type_id(values, job_type_response_data):
     """ Return the id of Job Type which has name Update Task """
@@ -461,6 +496,7 @@ def get_job_type_id(values, job_type_response_data):
             return job_type_id
         i += 1
     return 0
+
 
 def create_payload_for_firmware_update(job_type_id, id_baseline,
                                        id_cat, repository_id, target_data):
@@ -499,6 +535,7 @@ def create_payload_for_firmware_update(job_type_id, id_baseline,
         "Targets": target_data
     }
 
+
 def firmware_update(ip_address, headers, repository_id, id_cat, id_baseline, target_data):
     """ Updates Firmware """
     status, job_type_response_data = get_job_types(ip_address, headers)
@@ -518,6 +555,7 @@ def firmware_update(ip_address, headers, repository_id, id_cat, id_baseline, tar
             print("unsuccessful or Unable to get job id")
     else:
         print("unable to get job types")
+
 
 def refresh_compliance_data(ip_address, headers, baseline_job_id):
     """ Reruns baseline job to refresh inventory data """
@@ -542,11 +580,13 @@ def refresh_compliance_data(ip_address, headers, baseline_job_id):
         print("Baseline rerun job created")
         track_job_to_completion(ip_address, headers, baseline_job_id, 'Baseline job')
 
+
 def baseline_deletion_payload(baseline_list):
     """ Returns payload to delete baseline """
     return {
         "BaselineIds": baseline_list
     }
+
 
 def delete_baseline(ip_address, headers, baseline_list):
     """ Delete existing baseline from dell repo """
@@ -557,11 +597,13 @@ def delete_baseline(ip_address, headers, baseline_list):
     if status != 204:
         raise Exception("Failure in deleting baselines associated to dell online catalog")
 
+
 def catalog_deletion_payload(catalog_list):
     """  Returns payload to delete catalog """
     return {
         "CatalogIds": catalog_list
     }
+
 
 def delete_catalog(ip_address, headers, catalog_id):
     """ Delete existing catalog from dell repo """
@@ -572,6 +614,7 @@ def delete_catalog(ip_address, headers, catalog_id):
                            header=headers, payload=payload, method='POST')
     if status != 204:
         raise Exception("Failure in deleting dell online catalog")
+
 
 def delete_online_catalog(ip_address, headers):
     target_catalog_id = None
@@ -593,54 +636,54 @@ def delete_online_catalog(ip_address, headers):
         return
     raise Exception("Failed to retrieve dell online catalog")
 
+
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    PARSER.add_argument("--password", required=True,
+    parser.add_argument("--password", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--updateactions", required=True, nargs="*",
+    parser.add_argument("--updateactions", required=True, nargs="*",
                         help="Update action required",
                         choices=['upgrade', 'downgrade', 'flash-all'])
-    MUTEX_GROUP = PARSER.add_mutually_exclusive_group(required=True)
-    MUTEX_GROUP.add_argument("--groupid", type=int,
+    mutex_group = parser.add_mutually_exclusive_group(required=True)
+    mutex_group.add_argument("--groupid", type=int,
                              help="Id of the group to update")
-    MUTEX_GROUP.add_argument("--deviceid", type=int,
+    mutex_group.add_argument("--deviceid", type=int,
                              help="Id of the device to update")
-    MUTEX_GROUP.add_argument("--servicetags", nargs="*",
+    mutex_group.add_argument("--servicetags", nargs="*",
                              help="Servicetags of devices to update")
-    PARSER.add_argument("--repotype", required=True, help="Repository type",
+    parser.add_argument("--repotype", required=True, help="Repository type",
                         default='DELL_ONLINE',
                         choices=['DELL_ONLINE', 'NFS', 'CIFS'])
-    PARSER.add_argument("--reposourceip", required=False,
+    parser.add_argument("--reposourceip", required=False,
                         help="fully qualified repo path")
-    PARSER.add_argument("--catalogpath", required=False,
+    parser.add_argument("--catalogpath", required=False,
                         help="fully qualified repo path")
-    PARSER.add_argument("--repouser", required=False,
+    parser.add_argument("--repouser", required=False,
                         help="username for CIFS repository")
-    PARSER.add_argument("--repodomain", required=False,
+    parser.add_argument("--repodomain", required=False,
                         help="domian for CIFS repository credentials")
-    PARSER.add_argument("--repopassword", required=False,
+    parser.add_argument("--repopassword", required=False,
                         help="password for CIFS repository")
-    PARSER.add_argument("--refresh", required=False, default=False, type=str2bool,
+    parser.add_argument("--refresh", required=False, default=False, type=str2bool,
                         help="refresh/create online catalog or use existing one.")
-    ARGS = PARSER.parse_args()
-    if ARGS.repotype == 'CIFS' and (ARGS.reposourceip is None or ARGS.catalogpath is None
-                                    or ARGS.repouser is None or ARGS.repopassword is None):
-        PARSER.error("CIFS repository requires --reposourceip, --catalogpath, "
+    args = parser.parse_args()
+    if args.repotype == 'CIFS' and (args.reposourceip is None or args.catalogpath is None
+                                    or args.repouser is None or args.repopassword is None):
+        parser.error("CIFS repository requires --reposourceip, --catalogpath, "
                      "--repouser and --repopassword.")
-    if ARGS.repotype == 'NFS' and (ARGS.reposourceip is None or ARGS.catalogpath is None):
-        PARSER.error("NFS repository requires --reposourceip, --catalogpath.")
+    if args.repotype == 'NFS' and (args.reposourceip is None or args.catalogpath is None):
+        parser.error("NFS repository requires --reposourceip, --catalogpath.")
 
-    IP_ADDRESS = ARGS.ip
-    USER_NAME = ARGS.user
-    PASSWORD = ARGS.password
+    ip_address = args.ip
+    user_name = args.user
+    password = args.password
     UPDATE_ACTIONS = set()
-    for action in ARGS.updateactions:
+    for action in args.updateactions:
         if action == "flash-all":
             UPDATE_ACTIONS.add('UPGRADE')
             UPDATE_ACTIONS.add('DOWNGRADE')
@@ -650,22 +693,22 @@ if __name__ == '__main__':
     PARAM_MAP = {'group_id': None, 'device_ids': None}
     TARGET_DATA = []
     try:
-        pool = urllib3.HTTPSConnectionPool(IP_ADDRESS, port=443,
+        pool = urllib3.HTTPSConnectionPool(ip_address, port=443,
                                            cert_reqs='CERT_NONE', assert_hostname=False)
-        AUTH_SUCCESS, HEADERS = authenticate_with_ome(IP_ADDRESS, USER_NAME,
-                                                      PASSWORD)
-        if not AUTH_SUCCESS:
+        auth_success, headers = authenticate_with_ome(ip_address, user_name,
+                                                      password)
+        if not auth_success:
             print("Unable to authenticate with OME .. Check IP/Username/Pwd")
             sys.exit(-1)
-        elif ARGS.groupid:
-            GROUP_ID = ARGS.groupid
+        elif args.groupid:
+            GROUP_ID = args.groupid
             PARAM_MAP['group_id'] = GROUP_ID
-            GROUP_LIST = get_group_list(IP_ADDRESS, HEADERS)
+            GROUP_LIST = get_group_list(ip_address, headers)
             if GROUP_LIST:
                 if GROUP_ID in GROUP_LIST:
                     GROUP_URL = "https://%s/api/GroupService/Groups(%s)/Devices" % \
-                                (IP_ADDRESS, GROUP_ID)
-                    STATUS, DEV_RESPONSE = request(GROUP_URL, HEADERS)
+                                (ip_address, GROUP_ID)
+                    STATUS, DEV_RESPONSE = request(GROUP_URL, headers)
                     if STATUS == 200:
                         if DEV_RESPONSE['@odata.count'] == 0:
                             raise Exception("No devices associated with this group id")
@@ -675,12 +718,12 @@ if __name__ == '__main__':
                                         "See error information below \n{}".format(formatted_error))
                 else:
                     raise ValueError("Group %s not found on %s ... Exiting" % (
-                        GROUP_ID, IP_ADDRESS))
+                        GROUP_ID, ip_address))
         else:
-            mapping = get_device_list(IP_ADDRESS, HEADERS)
+            mapping = get_device_list(ip_address, headers)
             DEVICE_IDS = None
-            if ARGS.servicetags:
-                servicetags = ARGS.servicetags
+            if args.servicetags:
+                servicetags = args.servicetags
                 intersection_set = set(mapping.keys()).intersection(set(servicetags))
                 if len(intersection_set) <= 0:
                     raise ValueError("None of the devices are managed through OME... Exiting")
@@ -689,25 +732,25 @@ if __name__ == '__main__':
                     raise ValueError("Devices {} not managed through OME ... Exiting" %
                                      unmanaged_devices)
                 DEVICE_IDS = [mapping[tag] for tag in intersection_set]
-            elif ARGS.deviceid:
-                if ARGS.deviceid not in mapping.values():
+            elif args.deviceid:
+                if args.deviceid not in mapping.values():
                     raise ValueError("Device %s not found on %s ... Exiting" % (
-                        ARGS.deviceid, IP_ADDRESS))
-                DEVICE_IDS = [ARGS.deviceid]
+                        args.deviceid, ip_address))
+                DEVICE_IDS = [args.deviceid]
 
             PARAM_MAP['device_ids'] = DEVICE_IDS
 
         CATALOG_ID, REPO_ID = \
-            create_or_refresh_catalog(ip_address=IP_ADDRESS, headers=HEADERS, repo_type=ARGS.repotype,
-                             repo_source_ip=ARGS.reposourceip, catalog_path=ARGS.catalogpath,
-                             repo_user=ARGS.repouser, repo_password=ARGS.repopassword,
-                             repo_domain=ARGS.repodomain, refresh=ARGS.refresh)
+            create_or_refresh_catalog(ip_address=ip_address, headers=headers, repo_type=args.repotype,
+                                      repo_source_ip=args.reposourceip, catalog_path=args.catalogpath,
+                                      repo_user=args.repouser, repo_password=args.repopassword,
+                                      repo_domain=args.repodomain, refresh=args.refresh)
         if CATALOG_ID:
             print("Successfully created or refreshed the catalog")
         else:
             raise Exception("Unable to create Catalog")
-        BASELINE_ID, BASELINE_JOB_ID = baseline_creation(ip_address=IP_ADDRESS,
-                                                         headers=HEADERS,
+        BASELINE_ID, BASELINE_job_id = baseline_creation(ip_address=ip_address,
+                                                         headers=headers,
                                                          param_map=PARAM_MAP,
                                                          catalog_id=CATALOG_ID,
                                                          repo_id=REPO_ID)
@@ -716,19 +759,18 @@ if __name__ == '__main__':
         print("Successfully created baseline")
 
         COMPLIANCE_LIST = \
-            check_device_compliance_report(ip_address=IP_ADDRESS, headers=HEADERS,
+            check_device_compliance_report(ip_address=ip_address, headers=headers,
                                            id_baseline=BASELINE_ID, required_action=UPDATE_ACTIONS)
         print("Compliance List: %s" % COMPLIANCE_LIST)
         if COMPLIANCE_LIST:
             TARGET_PAYLOAD = create_target_payload(compliance_data_list=COMPLIANCE_LIST)
-            # sys.exit(0)
             if TARGET_PAYLOAD != 0:
-                firmware_update(ip_address=IP_ADDRESS, headers=HEADERS, repository_id=REPO_ID,
+                firmware_update(ip_address=ip_address, headers=headers, repository_id=REPO_ID,
                                 id_cat=CATALOG_ID,
                                 id_baseline=BASELINE_ID, target_data=TARGET_PAYLOAD)
                 # Initiate compliance refresh
-                refresh_compliance_data(ip_address=IP_ADDRESS, headers=HEADERS,
-                                        baseline_job_id=BASELINE_JOB_ID)
+                refresh_compliance_data(ip_address=ip_address, headers=headers,
+                                        baseline_job_id=BASELINE_job_id)
             else:
                 print("No components found for update")
         else:
