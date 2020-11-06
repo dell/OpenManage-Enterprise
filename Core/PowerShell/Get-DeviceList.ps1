@@ -56,7 +56,25 @@ limitations under the License.
    Get-DeviceList -IpAddress 100.96.20.132 -OutFormat json -UserName admin -Outfilepath C:\Users\Desktop\test.json
    In this instance you will be prompted for credentials to use
 #>
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory=$true)]
+    [System.Net.IPAddress] $IPAddress,
 
+    [Parameter(Mandatory=$False)]
+    [ValidateSet('CSV','Json')]
+    [String] $OutFormat = "json",
+
+    [Parameter(Mandatory=$false)]
+    [AllowEmptyString()]
+    [String] $Outfilepath = "",
+
+    [Parameter(Mandatory = $true)]
+    $UserName = "admin",
+
+    [Parameter(Mandatory=$True)]
+    [SecureString]$Password
+)
 function Set-CertPolicy() 
 {
     ## Trust all certs - for sample usage only
@@ -173,103 +191,82 @@ function Get-uniquefilename
     return $filepath
 }
 
-function Get-DeviceList
+
+
+try
 {
+    Set-CertPolicy
+    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
+    $BaseUri = "https://$($IpAddress)"
+    $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
+    $NextLinkUrl = $null
+    $Type        = "application/json"
+    #$UserName    = $Credentials.username
+    $PlainPassword = [System.Net.NetworkCredential]::new("", $Password).Password
+    #$password = ConvertFrom-SecureString -SecureString $Password
+    #$Password    = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName"=$UserName;"Password"=$PlainPassword;"SessionType"="API"} | ConvertTo-Json
+    $Headers     = @{}
 
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [System.Net.IPAddress] $IPAddress,
-    
-        [Parameter(Mandatory=$False)]
-        [ValidateSet('CSV','Json')]
-        [String] $OutFormat = "json",
-
-        [Parameter(Mandatory=$false)]
-        [AllowEmptyString()]
-        [String] $Outfilepath = "",
-
-        [Parameter(Mandatory = $true)]
-        $UserName = "admin",
-
-        [Parameter(Mandatory=$True)]
-        [SecureString]$Password
-     )
-     try
-     {
-        Set-CertPolicy
-        $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-        $BaseUri = "https://$($IpAddress)"
-        $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
-        $NextLinkUrl = $null
-        $Type        = "application/json"
-        #$UserName    = $Credentials.username
-        $PlainPassword = [System.Net.NetworkCredential]::new("", $Password).Password
-        #$password = ConvertFrom-SecureString -SecureString $Password
-        #$Password    = $Credentials.GetNetworkCredential().password
-        $UserDetails = @{"UserName"=$UserName;"Password"=$PlainPassword;"SessionType"="API"} | ConvertTo-Json
-        $Headers     = @{}
-
-        $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-        if($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201)
+    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    if($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201)
+    {
+        ## Successfully created a session - extract the auth token from the response
+        ## header and update our headers for subsequent requests
+        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+        $DeviceData = @()
+        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        if ($DevCountResp.StatusCode -eq 200)
         {
-            ## Successfully created a session - extract the auth token from the response
-            ## header and update our headers for subsequent requests
-            $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-            $DeviceData = @()
-            $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-            if ($DevCountResp.StatusCode -eq 200)
+            $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
+            $DeviceData += $DeviceCountData.'value'
+            if($DeviceCountData.'@odata.nextLink')
             {
-                $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
-                $DeviceData += $DeviceCountData.'value'
-                if($DeviceCountData.'@odata.nextLink')
+                $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
+            }
+            while($NextLinkUrl)
+            {
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                if($NextLinkResponse.StatusCode -eq 200)
                 {
-                    $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
-                }
-                while($NextLinkUrl)
-                {
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($NextLinkResponse.StatusCode -eq 200)
+                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                    $DeviceData += $NextLinkData.'value'
+                    if($NextLinkData.'@odata.nextLink')
                     {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $DeviceData += $NextLinkData.'value'
-                        if($NextLinkData.'@odata.nextLink')
-                        {
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }
-                        else
-                        {
-                            $NextLinkUrl = $null
-                        }
+                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
                     }
                     else
                     {
-                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
                         $NextLinkUrl = $null
                     }
                 }
-                
-                if($OutFormat -eq "json")
+                else
                 {
-                    Json-Format -data $DeviceData -path $Outfilepath
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    $NextLinkUrl = $null
                 }
-                elseif($OutFormat -eq "csv")
-                {
-                    CSV-Format -data $DeviceData -path $Outfilepath
-                }       
             }
-            else
+            
+            if($OutFormat -eq "json")
             {
-                Write-Error "Unable to get count of managed devices .. Exiting"
+                Json-Format -data $DeviceData -path $Outfilepath
             }
+            elseif($OutFormat -eq "csv")
+            {
+                CSV-Format -data $DeviceData -path $Outfilepath
+            }       
         }
         else
         {
-            Write-Error "Unable to create a session with appliance $($IpAddress)"
+            Write-Error "Unable to get count of managed devices .. Exiting"
         }
-     }
-     catch
-     {
-         Write-Error "Exception occured - $($_.Exception.Message)"
-     }
+    }
+    else
+    {
+        Write-Error "Unable to create a session with appliance $($IpAddress)"
+    }
+}
+catch
+{
+    Write-Error "Exception occured - $($_.Exception.Message)"
 }
