@@ -1,11 +1,11 @@
 #
-#  Python script using OME API to get alerts for a device.
+# Python script using OME API to get alerts for a device.
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ EXAMPLE:
         --password <pwd> --filterby Name --field "idrac-abcdef"
 
 """
-import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import json
@@ -47,7 +46,7 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
     """ Get alerts from OME filtered by name or asset tag """
     filter_map = {'Name': 'AlertDeviceName', 'DeviceIdentifier': 'AlertDeviceIdentifier'}
     try:
-        base_uri = 'https://%s' %(ip_address)
+        base_uri = 'https://%s' % ip_address
         session_url = base_uri + "/api/SessionService/Sessions"
         alert_svc = "https://%s/api/AlertService/Alerts?$filter=%s eq '%s'" % (ip_address, filter_map[filter_by], field)
         next_link_url = None
@@ -78,36 +77,35 @@ def get_alerts_by_device(ip_address, user_name, password, filter_by, field):
                             else:
                                 next_link_url = None
                         else:
-                            print ("Unable to get full set of alerts ... ")
+                            print("Unable to get full set of alerts ... ")
                             next_link_url = None
                     # Technically there should be only one result in the filter
-                    print ("\n*** Alerts for device (%s) ***" % (field))
-                    print (json.dumps(json_data, indent=4, sort_keys=True))
+                    print("\n*** Alerts for device (%s) ***" % field)
+                    print(json.dumps(json_data, indent=4, sort_keys=True))
                 else:
-                    print ("No alerts for device (%s) from %s" % (field, ip_address))
+                    print("No alerts for device (%s) from %s" % (field, ip_address))
             else:
-                print ("No alert data retrieved from %s" % (ip_address))
+                print("No alert data retrieved from %s" % ip_address)
         else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+            print("Unable to create a session with appliance %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--filterby", "-fby", required=True,
+    parser.add_argument("--filterby", "-fby", required=True,
                         choices=('Name', 'DeviceIdentifier'),
                         help="Filter by device identifier or name")
-    PARSER.add_argument("--field", "-f", required=True,
+    parser.add_argument("--field", "-f", required=True,
                         help="Field to filter by (a valid device identifier or name)")
-    ARGS = PARSER.parse_args()
-    get_alerts_by_device(ARGS.ip, ARGS.user, ARGS.password,
-                         ARGS.filterby, str(ARGS.field))
+    args = parser.parse_args()
+    get_alerts_by_device(args.ip, args.user, args.password,
+                         args.filterby, str(args.field))

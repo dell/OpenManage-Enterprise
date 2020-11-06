@@ -1,5 +1,5 @@
 #
-#  Python script using OME API to get device list.
+# Python script using OME API to get device list.
 #
 # _author_ = Prasad Rao <prasad_rao1@Dell.com>
 # _version_ = 0.1
@@ -39,25 +39,25 @@ import sys
 import argparse
 from argparse import RawTextHelpFormatter
 import json
-import enum
 import time
 import copy
-import traceback
 import urllib3
 
+
 class InventoryJobController:
-    AUTH_SUCCESS = None
-    HEADERS = {'content-type': 'application/json'}
+    auth_success = None
+    headers = {'content-type': 'application/json'}
     """ Authenticate with OME"""
+
     def __init__(self, session_input):
         self.__session_input = session_input
         self.__base_uri = 'https://%s' % self.__session_input["ip"]
 
         try:
-            self.AUTH_SUCCESS = self.__authenticate_with_ome()
-            if not self.AUTH_SUCCESS:
+            self.auth_success = self.__authenticate_with_ome()
+            if not self.auth_success:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd", file=sys.stderr)
-                return None
+                sys.exit(0)
         except Exception as e:
             print(e, file=sys.stderr)
             print("Unable to connect to OME appliance %s" % self.__session_input["ip"], file=sys.stderr)
@@ -70,35 +70,35 @@ class InventoryJobController:
         user_details = {'UserName': self.__session_input["user"],
                         'Password': self.__session_input["password"],
                         'SessionType': 'API'}
-        session_response = pool.urlopen('POST', session_url, headers=self.HEADERS,
+        session_response = pool.urlopen('POST', session_url, headers=self.headers,
                                         body=json.dumps(user_details))
         if session_response.status == 201:
-            self.HEADERS['X-Auth-Token'] = session_response.headers['X-Auth-Token']
+            self.headers['X-Auth-Token'] = session_response.headers['X-Auth-Token']
             auth_success = True
         else:
             error_msg = "Failed create of session with {0} - Status code = {1}"
             print(error_msg.format(self.__session_input["ip"], session_response.status_code), file=sys.stderr)
         return auth_success
 
-    def __request(self,url, payload=None, method='GET'):
+    def __request(self, url, payload=None, method='GET'):
         """ Returns status and data """
-        request_obj = pool.urlopen(method, url, headers=self.HEADERS, body=json.dumps(payload))
+        request_obj = pool.urlopen(method, url, headers=self.headers, body=json.dumps(payload))
         if request_obj.data and request_obj.status != 400:
             data = json.loads(request_obj.data)
         else:
             data = request_obj.data
         return request_obj.status, data
 
-    def createJob(self, targets, jobname = None, jobdesc = None):
+    def create_job(self, targets, jobname=None, jobdesc=None):
         url = 'https://%s/api/JobService/Jobs' % self.__session_input["ip"]
         try:
-            status, device_response = self.__request(url, payload=self._getJobPayload(targets, jobname, jobdesc), method='POST')
+            self.__request(url, payload=self._get_job_payload(targets, jobname, jobdesc), method='POST')
         except Exception as e:
             print(e, file=sys.stderr)
             print("Failed to schedule the inventory job", file=sys.stderr)
             raise
 
-    def _getJobPayload(self, targets, jobname, jobdesc):
+    def _get_job_payload(self, targets, jobname, jobdesc):
         target_template = {
             "Id": "<device or group id>",
             "Data": "",
@@ -107,8 +107,8 @@ class InventoryJobController:
                 "Name": "GROUP"
             }
         }
-        payload={
-            "Id":0,
+        payload = {
+            "Id": 0,
             "JobName": jobname if jobname else "Inventory Job - " + time.strftime(":%Y:%m:%d-%H:%M:%S"),
             "JobDescription": jobdesc if jobdesc else "",
             "Schedule": "startnow",
@@ -170,9 +170,7 @@ class InventoryJobController:
             return device_details
         raise Exception("Unable to fetch device details")
 
-
     def get_device_from_uri(self, uri):
-        json_data = {}
         status, device_response = self.__request(uri, method='GET')
         if status == 200:
             json_data = device_response
@@ -188,8 +186,6 @@ class InventoryJobController:
         base_uri = 'https://%s' % self.__session_input["ip"]
         next_link_url = base_uri + '/api/DeviceService/Devices'
 
-        ome_device_list = None
-        ome_service_tags = None
         json_data = None
 
         while next_link_url is not None:
@@ -219,38 +215,37 @@ class InventoryJobController:
                 raise ValueError("Devices {} not managed through OME ... Exiting".format(unmanaged_devices))
             return [mapping[tag] for tag in intersection_set]
 
+
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--name", "-n", required=False,
+    parser.add_argument("--name", "-n", required=False,
                         help="Name for the job")
-    PARSER.add_argument("--desc", "-d", required=False,
+    parser.add_argument("--desc", "-d", required=False,
                         help="Description for the job")
-    MUTEX_GROUP = PARSER.add_mutually_exclusive_group(required=True)
-    MUTEX_GROUP.add_argument("--groupid", type=int,
+    mutex_group = parser.add_mutually_exclusive_group(required=True)
+    mutex_group.add_argument("--groupid", type=int,
                              help="Id of the group to run inventory on")
-    MUTEX_GROUP.add_argument("--deviceid", type=int,
+    mutex_group.add_argument("--deviceid", type=int,
                              help="Id of the device to run inventory on")
-    MUTEX_GROUP.add_argument("--servicetags", nargs="*",
+    mutex_group.add_argument("--servicetags", nargs="*",
                              help="Servicetags of devices to run inventory on")
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
 
-    pool = urllib3.HTTPSConnectionPool(ARGS.ip, port=443,
+    pool = urllib3.HTTPSConnectionPool(args.ip, port=443,
                                        cert_reqs='CERT_NONE', assert_hostname=False)
 
     try:
-        controller = InventoryJobController({"ip":ARGS.ip, "user":ARGS.user, "password":ARGS.password})
+        controller = InventoryJobController({"ip": args.ip, "user": args.user, "password": args.password})
         targets = {
-            "group_id": ARGS.groupid,
-            "device_ids": [ARGS.deviceid] if ARGS.deviceid else controller.get_device_list(ARGS.servicetags)
+            "group_id": args.groupid,
+            "device_ids": [args.deviceid] if args.deviceid else controller.get_device_list(args.servicetags)
         }
-        controller.createJob(targets, ARGS.name, ARGS.desc)
-    except:
-        traceback.print_exc()
-        print("Script execution unsuccessful", file=sys.stderr)
+        controller.create_job(targets, args.name, args.desc)
+    except Exception as error:
+        print("Unexpected error:", str(error))

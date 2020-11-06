@@ -1,10 +1,10 @@
 #
-#  Python script using OME API to get list of reports
+# Python script using OME API to get list of reports
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 SYNOPSIS:
    Script to get the list of reports defined in OM Enterprise
@@ -42,7 +43,7 @@ import urllib3
 def get_report_list(ip_address, user_name, password):
     """ Authenticate with OME and enumerate reports """
     try:
-        base_uri = 'https://%s'%(ip_address)
+        base_uri = 'https://%s' % ip_address
         session_url = base_uri + '/api/SessionService/Sessions'
         report_svc = base_uri + '/api/ReportService/ReportDefs'
         next_link_url = None
@@ -57,7 +58,7 @@ def get_report_list(ip_address, user_name, password):
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
             report_response = requests.get(report_svc, headers=headers, verify=False)
             if report_response.status_code == 200:
-                report_info = report_response.json() 
+                report_info = report_response.json()
                 total_reports = report_info['@odata.count']
                 if total_reports > 0:
                     if '@odata.nextLink' in report_info:
@@ -72,28 +73,28 @@ def get_report_list(ip_address, user_name, password):
                             else:
                                 next_link_url = None
                         else:
-                            print("Unable to retrieve device list from nextLink %s" % (next_link_url))
+                            print("Unable to retrieve device list from nextLink %s" % next_link_url)
                             next_link_url = None
-                    print ("*** List of pre-defined reports ***")
-                    print (json.dumps(report_info, indent=4, sort_keys=True))
+                    print("*** List of pre-defined reports ***")
+                    print(json.dumps(report_info, indent=4, sort_keys=True))
                 else:
-                    print ("No pre-defined reports found on %s" % (ip_address))
+                    print("No pre-defined reports found on %s" % ip_address)
             else:
-                print ("Unable to retrieve reports from %s" % (ip_address))
+                print("Unable to retrieve reports from %s" % ip_address)
         else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+            print("Unable to create a session with appliance %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
+
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    ARGS = PARSER.parse_args()
-    get_report_list(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    get_report_list(args.ip, args.user, args.password)

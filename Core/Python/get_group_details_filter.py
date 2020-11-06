@@ -1,10 +1,10 @@
 #
-#  Python script using OME API to get group details
+# Python script using OME API to get group details
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,18 +34,18 @@ EXAMPLE:
     python get_group_details.py --ip <xx> --user <username> --password <pwd>
         --filterby Name --field "All Devices"
 """
-import json
-import sys
 import argparse
+import json
 from argparse import RawTextHelpFormatter
-import urllib3
+
 import requests
+import urllib3
 
 
 def get_group_details(ip_address, user_name, password, filter_by, field):
     """ Get Group Details using OData filters """
     try:
-        base_uri = 'https://%s' %(ip_address)
+        base_uri = 'https://%s' % ip_address
         sess_url = base_uri + '/api/SessionService/Sessions'
         base_grp = base_uri + "/api/GroupService/Groups"
         grp_url = base_grp + "?$filter=%s eq '%s'" % (filter_by, field)
@@ -64,20 +64,20 @@ def get_group_details(ip_address, user_name, password, filter_by, field):
             if response.status_code == 200:
                 json_data = response.json()
                 if json_data['@odata.count'] > 0:
-                    print ("*** Group Details ***")
-                    print (json.dumps(json_data, indent=4, sort_keys=True))
+                    print("*** Group Details ***")
+                    print(json.dumps(json_data, indent=4, sort_keys=True))
                     # Technically there should be only one result in the filter
                     group_id = json_data['value'][0]['Id']
-                    print ("\n*** Group Device Details ***")
+                    print("\n*** Group Device Details ***")
                     dev_url = base_grp + "(" + str(group_id) + ")/Devices"
                     dev_resp = requests.get(dev_url, headers=headers,
                                             verify=False)
                     if dev_resp.status_code == 200:
-                        print (json.dumps(dev_resp.json(), indent=4,
-                                sort_keys=True))
+                        print(json.dumps(dev_resp.json(), indent=4,
+                                         sort_keys=True))
                         device_list = dev_resp.json()
                         device_count = device_list['@odata.count']
-                        if device_count>0:
+                        if device_count > 0:
                             if '@odata.nextLink' in device_list:
                                 next_link_url = base_uri + device_list['@odata.nextLink']
                             while next_link_url:
@@ -90,35 +90,34 @@ def get_group_details(ip_address, user_name, password, filter_by, field):
                                     else:
                                         next_link_url = None
                                 else:
-                                    print ("Unable to get full device list ... ")
+                                    print("Unable to get full device list ... ")
                                     next_link_url = None
                     else:
-                        print ("Unable to retrieve devices for group (%s) from %s" % (field, ip_address))
+                        print("Unable to retrieve devices for group (%s) from %s" % (field, ip_address))
                 else:
-                    print ("No group matching field (%s) retrieved from %s" % (field, ip_address))
+                    print("No group matching field (%s) retrieved from %s" % (field, ip_address))
             else:
-                print ("No group data retrieved from %s" % (ip_address))
+                print("No group data retrieved from %s" % ip_address)
         else:
-            print ("Unable to create a session with appliance %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info())
+            print("Unable to create a session with appliance %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--filterby", "-fby", required=True,
+    parser.add_argument("--filterby", "-fby", required=True,
                         choices=('Name', 'Description'),
                         help="filter by group name or description")
-    PARSER.add_argument("--field", "-f", required=True,
+    parser.add_argument("--field", "-f", required=True,
                         help="Field to filter by (group name or description)")
-    ARGS = PARSER.parse_args()
-    get_group_details(ARGS.ip, ARGS.user, ARGS.password,
-                      str(ARGS.filterby), str(ARGS.field))
+    args = parser.parse_args()
+    get_group_details(args.ip, args.user, args.password,
+                      str(args.filterby), str(args.field))

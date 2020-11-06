@@ -1,11 +1,11 @@
 #
-#  Python script using OME API to get inventory data in CSV format.
+# Python script using OME API to get inventory data in CSV format.
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.1
 #
 #
-# Copyright (c) 2019 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import csv
 def authenticate_with_ome(ip_address, user_name, password):
     """ X-auth session creation """
     auth_success = False
-    session_url = "https://%s/api/SessionService/Sessions" % (ip_address)
+    session_url = "https://%s/api/SessionService/Sessions" % ip_address
     user_details = {'UserName': user_name,
                     'Password': password,
                     'SessionType': 'API'}
@@ -57,8 +57,8 @@ def authenticate_with_ome(ip_address, user_name, password):
         auth_success = True
     else:
         error_msg = "*** ERROR: Failed create of session with {0} - Status code = {1}"
-        print (error_msg.format(ip_address, session_info.status_code))
-    return (auth_success, headers)
+        print(error_msg.format(ip_address, session_info.status_code))
+    return auth_success, headers
 
 
 def write_output_csv_file(csv_data, csv_columns):
@@ -68,32 +68,31 @@ def write_output_csv_file(csv_data, csv_columns):
             writer = csv.DictWriter(csvfile, fieldnames=csv_columns,
                                     lineterminator='\r')
             writer.writeheader()
-            #print csv_data
             for chassis in csv_data:
                 for data in csv_data[chassis]:
                     writer.writerow(data)
         print("Completed writing output to file chassis_inventory.csv")
     except IOError:
         print("I/O error.. Check if file is open in another app")
-    except:
-        print("*** UNEXPECTED ERROR:", sys.exc_info())        
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 def get_managed_device_count(ip_address, headers):
     try:
         count = 0
-        count_url = "https://%s/api/DeviceService/Devices?$count=true&$top=0" % (ip_address)
+        count_url = "https://%s/api/DeviceService/Devices?$count=true&$top=0" % ip_address
         print("Determining number of managed devices ...")
         count_resp = requests.get(count_url, headers=headers,
                                   verify=False)
         if count_resp.status_code == 200:
             count_info = count_resp.json()
             count = int(count_info['@odata.count'])
-            print("Total managed device count : %d" % (count))
+            print("Total managed device count : %d" % count)
         else:
-            print("*** ERROR: Unable to retrieve device count from %s" % (ip_address))
-    except:
-        print("*** UNEXPECTED ERROR:", sys.exc_info())
+            print("*** ERROR: Unable to retrieve device count from %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
     return count
 
 
@@ -108,8 +107,8 @@ def parse_non_server_mac_addresses(device_info):
                     curr_mac = "System_MAC_" + str(mac_ctr)
                     device_mgmt_addresses[curr_mac] = str(mgmt_node['MacAddress'])
                     mac_ctr = mac_ctr + 1
-    except:
-        print("*** UNEXPECTED ERROR:", sys.exc_info())
+    except Exception as error:
+        print("Unexpected error:", str(error))
     return device_mgmt_addresses
 
 
@@ -125,11 +124,10 @@ def parse_server_mac_addresses(device_info, ip_address, headers):
                 if mgmt_node.get('MacAddress'):
                     curr_mac = "BMC_MAC_" + str(mac_ctr)
                     device_mgmt_addresses[curr_mac] = str(mgmt_node['MacAddress'])
-                    mac_ctr = mac_ctr + 1
                     break
-        
+
         device_id = device_info['Id']
-        device_url = "https://%s/api/DeviceService/Devices" % (ip_address)
+        device_url = "https://%s/api/DeviceService/Devices" % ip_address
         device_inven_url = device_url + "(" + str(device_id) + ")/InventoryDetails('serverNetworkInterfaces')"
         device_inventory_dets = requests.get(device_inven_url, headers=headers,
                                              verify=False)
@@ -141,7 +139,7 @@ def parse_server_mac_addresses(device_info, ip_address, headers):
                     for nic_data in nic_info['Ports']:
                         curr_mac = "System_MAC_" + str(mac_ctr)
                         full_prod_name = str(nic_data['ProductName'])
-                        print("Analyzing %s" % (full_prod_name))
+                        print("Analyzing %s" % full_prod_name)
                         if "-" in full_prod_name:
                             product_name, mac_addr = full_prod_name.rsplit('-', 1)
                             device_mgmt_addresses[curr_mac] = mac_addr
@@ -153,11 +151,11 @@ def parse_server_mac_addresses(device_info, ip_address, headers):
                                     device_mgmt_addresses[curr_mac] = mac_addr
                                     mac_ctr = mac_ctr + 1
             else:
-                print("*** ERROR: No network inventory info returned for %s" %(device_info['DeviceServiceTag']))
+                print("*** ERROR: No network inventory info returned for %s" % (device_info['DeviceServiceTag']))
         else:
-            print("*** WARN: No network inventory info returned for %s" %(device_info['DeviceServiceTag']))
-    except:
-        print("*** UNEXPECTED ERROR:", sys.exc_info())        
+            print("*** WARN: No network inventory info returned for %s" % (device_info['DeviceServiceTag']))
+    except Exception as error:
+        print("Unexpected error:", str(error))
     return device_mgmt_addresses
 
 
@@ -175,7 +173,7 @@ def get_device_inventory(ip_address, headers):
                     8000: 'Storage-IOM'}
 
         csv_data = {}
-        device_url = "https://%s/api/DeviceService/Devices" % (ip_address)
+        device_url = "https://%s/api/DeviceService/Devices" % ip_address
         device_count = get_managed_device_count(ip_address, headers)
         if device_count > 0:
             all_device_url = device_url + "?$skip=0&$top=" + str(device_count)
@@ -185,7 +183,7 @@ def get_device_inventory(ip_address, headers):
             if all_device_resp.status_code == 200:
                 all_device_info = all_device_resp.json()
                 print("Iterating through devices and correlating data ...")
-                
+
                 for device_info in all_device_info['value']:
                     device_id = device_info['Id']
                     device_type = device_info['Type']
@@ -201,34 +199,30 @@ def get_device_inventory(ip_address, headers):
                     device_hostname = None
                     if device_info['DeviceName']:
                         device_hostname = str(device_info['DeviceName'])
-                    print("Processing ID: %d,Type:%s,Model:%s,SvcTag:%s,Host:%s" %(device_id,
+                    print("Processing ID: %d,Type:%s,Model:%s,SvcTag:%s,Host:%s" % (device_id,
                                                                                     device_unit_name,
                                                                                     device_model,
                                                                                     device_svc_tag,
                                                                                     device_hostname))
 
-                    ## Assemble device dictionary info
-                    temp_hash = {}
-                    temp_hash['Model'] = device_model
-                    temp_hash['SerialNumber'] = device_svc_tag
-                    temp_hash['Hostname'] = device_hostname
-                    temp_hash['Unit'] = device_unit_name
-                  
+                    # Assemble device dictionary info
+                    temp_hash = {'Model': device_model, 'SerialNumber': device_svc_tag, 'Hostname': device_hostname,
+                                 'Unit': device_unit_name}
+
                     if device_unit_name:
-                        mac_addrs = {}
                         if device_unit_name == "Chassis":
                             if device_svc_tag:
                                 if not csv_data.get(device_svc_tag):
-                                    #print("Creating new chassis entry with svc tag %s" %(device_svc_tag))
+                                    # print("Creating new chassis entry with svc tag %s" %(device_svc_tag))
                                     csv_data[device_svc_tag] = []
                             else:
                                 print("*** WARNING: Chassis service tag is NULL...")
-                            
+
                             mac_addrs = parse_non_server_mac_addresses(device_info)
-                            
+
                             for mac_addr in mac_addrs.keys():
                                 temp_hash[mac_addr] = mac_addrs[mac_addr]
-                            
+
                             csv_data[device_svc_tag].append(temp_hash)
                         else:
                             chassis_svc_tag = None
@@ -243,55 +237,57 @@ def get_device_inventory(ip_address, headers):
                                     temp_hash['Chassis_Location'] = str(device_info['SlotConfiguration']['SlotName'])
                             else:
                                 print("*** WARNING: No slot configuration information available ")
-                            
+
                             if device_unit_name != "System":
                                 mac_addrs = parse_non_server_mac_addresses(device_info)
                             else:
                                 mac_addrs = parse_server_mac_addresses(device_info, ip_address, headers)
-                            
+
                             for mac_addr in mac_addrs.keys():
                                 temp_hash[mac_addr] = mac_addrs[mac_addr]
 
                             if chassis_svc_tag:
                                 if not csv_data.get(chassis_svc_tag):
-                                    #print("Creating new chassis entry with svc tag %s" %(chassis_svc_tag))
+                                    # print("Creating new chassis entry with svc tag %s" %(chassis_svc_tag))
                                     csv_data[chassis_svc_tag] = []
 
                                 csv_data[chassis_svc_tag].append(temp_hash)
                             else:
-                                print("*** WARNING: Unable to add (%d,%s) - chassis_svc_tag is NULL" % (device_id,device_svc_tag))
+                                print("*** WARNING: Unable to add (%d,%s) - chassis_svc_tag is NULL" % (
+                                    device_id, device_svc_tag))
                     else:
-                        print("*** ERROR: Unable to find a mapping for device in unit map")   
-                #print csv_data
+                        print("*** ERROR: Unable to find a mapping for device in unit map")
+
+                # print csv_data
                 if csv_data:
                     write_output_csv_file(csv_data, csv_columns)
             else:
-                print("*** ERROR: Unable to retrieve all device info from %s .. Exiting" % (ip_address))
+                print("*** ERROR: Unable to retrieve all device info from %s .. Exiting" % ip_address)
         else:
-            print("*** ERROR: No devices retrieved from %s" % (ip_address))        
-    except:
-        print("*** UNEXPECTED ERROR:", sys.exc_info())
+            print("*** ERROR: No devices retrieved from %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
+
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    ARGS = PARSER.parse_args()
-    IP_ADDRESS = ARGS.ip
-    USER_NAME = ARGS.user
-    PASSWORD = ARGS.password
+    args = parser.parse_args()
+    ip_address = args.ip
+    user_name = args.user
+    password = args.password
     try:
-        AUTH_SUCCESS, HEADERS = authenticate_with_ome(IP_ADDRESS, USER_NAME,
-                                                      PASSWORD)
-        if AUTH_SUCCESS:
-            get_device_inventory(IP_ADDRESS, HEADERS)
+        auth_success, headers = authenticate_with_ome(ip_address, user_name,
+                                                      password)
+        if auth_success:
+            get_device_inventory(ip_address, headers)
         else:
-            print ("*** ERROR: Unable to authenticate with endpoint .. Check IP/Username/Pwd")
-    except:
-        print ("*** UNEXPECTED ERROR:", sys.exc_info())
+            print("*** ERROR: Unable to authenticate with endpoint .. Check IP/Username/Pwd")
+    except Exception as error:
+        print("Unexpected error:", str(error))

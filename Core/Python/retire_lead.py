@@ -1,17 +1,33 @@
+#
+# Python script using OME API to create a new static group
+#
+# _version_ = 0.1
+#
+# Copyright (c) 2020 Dell EMC Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-SYNOPSIS
----------------------------------------------------------------------
+SYNOPSIS:
  Script to retire lead of MCM group and promote the exising backup lead as lead
 
-DESCRIPTION
----------------------------------------------------------------------
+Description: 
 This script retires the current lead and the backup lead gets promoted as the new lead
 
  Note:
  1. Credentials entered are not stored to disk.
  
-EXAMPLE
----------------------------------------------------------------------
+Example:
 python retire_lead.py --ip <lead ip> --user <username> --password <password>
 
 retires the current lead and promotes the backup lead
@@ -34,34 +50,34 @@ import urllib3
 from argparse import RawTextHelpFormatter
 import random
 import time
-import sys
 
 
 def authenticate_with_ome(ip_address, user_name, password):
-	""" X-auth session creation """
-	auth_success = False
-	session_url = "https://%s/api/SessionService/Sessions" % (ip_address)
-	user_details = {'UserName': user_name,
-				 'Password': password,
-				 'SessionType': 'API'}
-	headers = {'content-type': 'application/json'}
-	session_info = requests.post(session_url, verify=False,
-							  data=json.dumps(user_details),
-							  headers=headers)
-	if session_info.status_code == 201:
-		headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-		auth_success = True
-	else:
-		error_msg = "Failed create of session with {0} - Status code = {1}"
-		print(error_msg.format(ip_address, session_info.status_code))
-	return (auth_success, headers)
+    """ X-auth session creation """
+    auth_success = False
+    session_url = "https://%s/api/SessionService/Sessions" % ip_address
+    user_details = {'UserName': user_name,
+                    'Password': password,
+                    'SessionType': 'API'}
+    headers = {'content-type': 'application/json'}
+    session_info = requests.post(session_url, verify=False,
+                                 data=json.dumps(user_details),
+                                 headers=headers)
+    if session_info.status_code == 201:
+        headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        auth_success = True
+    else:
+        error_msg = "Failed create of session with {0} - Status code = {1}"
+        print(error_msg.format(ip_address, session_info.status_code))
+    return auth_success, headers
+
 
 # Helper methods
 def get_domains(ip_address, headers):
     members = []
     backup_lead = None
     lead = None
-    url = 'https://%s/api/ManagementDomainService/Domains' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/Domains' % ip_address
     response = requests.get(url, headers=headers, verify=False)
     if response.status_code == 200:
         response = response.json()
@@ -78,7 +94,7 @@ def get_domains(ip_address, headers):
             elif role == 'MEMBER':
                 members.append(member_device)
     else:
-        print ('Failed to get domains and status code returned is %s', response.status_code)
+        print('Failed to get domains and status code returned is %s', response.status_code)
     return {
         'lead': lead,
         'backup_lead': backup_lead,
@@ -87,7 +103,7 @@ def get_domains(ip_address, headers):
 
 
 def assign_backup_lead(ip_address, headers):
-    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead' % ip_address
     members = get_domains(ip_address, headers)
     job_id = None
     if members:
@@ -98,7 +114,7 @@ def assign_backup_lead(ip_address, headers):
         }]
         print("members found")
         response = requests.post(url, headers=headers,
-                             data=json.dumps(body), verify=False)
+                                 data=json.dumps(body), verify=False)
         if response.status_code == 200:
             response = response.json()
             job_id = response.get('JobId')
@@ -123,7 +139,7 @@ def retire_lead(ip_address, headers):
         if job_id:
             print('Polling for assign backup lead job status')
             get_job_status(ip_address, headers, job_id)
-    
+
     # Make sure the backup sync is healthy before retire
     if assign_backup_lead_required:
         print("Waiting for sync operation to complete for assign backup lead")
@@ -135,14 +151,14 @@ def retire_lead(ip_address, headers):
         print("Backup lead health is CRITICAL or WARNING.")
         print("Please ensure backup lead is healty before retiring the lead")
         return
-    
-    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.RetireLead' % (ip_address)
+
+    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.RetireLead' % ip_address
     body = {
         'PostRetirementRoleType': 'Member'
     }
     response = requests.post(url, headers=headers,
                              data=json.dumps(body), verify=False)
-    
+
     if response.status_code == 200:
         response = response.json()
         job_id = response.get('JobId')
@@ -175,21 +191,21 @@ def get_job_status(ip_address, headers, job_id):
     job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, job_id)
     loop_ctr = 0
     job_incomplete = True
-    print ("Polling %s to completion ..." % job_id)
+    print("Polling %s to completion ..." % job_id)
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
         job_resp = requests.get(job_url, headers=headers, verify=False)
         if job_resp.status_code == 200:
             job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            print ("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
+            print("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
             if int(job_status) == 2060:
                 job_incomplete = False
-                print ("Completed job successfully ... Exiting")
+                print("Completed job successfully ... Exiting")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
-                print ("Job failed ... ")
+                print("Job failed ... ")
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
                 if job_hist_resp.status_code == 200:
@@ -197,36 +213,36 @@ def get_job_status(ip_address, headers, job_id):
                     job_hist_det_url = str(job_hist_url) + "(" + job_history_id + ")/ExecutionHistoryDetails"
                     job_hist_det_resp = requests.get(job_hist_det_url, headers=headers, verify=False)
                     if job_hist_det_resp.status_code == 200:
-                        print (job_hist_det_resp.text)
+                        print(job_hist_det_resp.text)
                     else:
-                        print ("Unable to parse job execution history .. Exiting")
+                        print("Unable to parse job execution history .. Exiting")
                 break
         else:
-            print ("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
+            print("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
     if job_incomplete:
-        print ("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
+        print("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="MSM IP (Lead chassis)")
-    PARSER.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for MSM")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="MSM IP (Lead chassis)")
+    parser.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
+    parser.add_argument("--password", "-p", required=True, help="Password for MSM")
+    args = parser.parse_args()
 
-    IP_ADDRESS = ARGS.ip
-    USER_NAME = ARGS.user
-    PASSWORD = ARGS.password
+    ip_address = args.ip
+    user_name = args.user
+    password = args.password
     try:
-        AUTH_SUCCESS, HEADERS = authenticate_with_ome(IP_ADDRESS, USER_NAME,
-                                                      PASSWORD)
-        if AUTH_SUCCESS:
-            JOB_ID = retire_lead(IP_ADDRESS, HEADERS)
-            if JOB_ID:
+        auth_success, headers = authenticate_with_ome(ip_address, user_name,
+                                                      password)
+        if auth_success:
+            job_id = retire_lead(ip_address, headers)
+            if job_id:
                 print('Polling for retire lead job status')
-                get_job_status(IP_ADDRESS, HEADERS, JOB_ID)
+                get_job_status(ip_address, headers, job_id)
         else:
             print('Unable to authenticate. Check IP/username/password')
-    except:
-        print ("Unexpected error:", sys.exc_info())
+    except Exception as error:
+        print("Unexpected error:", str(error))

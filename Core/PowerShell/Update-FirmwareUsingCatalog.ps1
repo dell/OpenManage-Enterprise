@@ -1,7 +1,7 @@
 ﻿<#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
 _version_ = 0.1
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2020 Dell EMC Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -634,7 +634,7 @@ function Check-CatalogStatus($IpAddress, $Headers, $Type, $catalog_id) {
     }Until($Count -eq $MAX_RETRIES)
     if ($Count -eq $MAX_RETRIES) {
         Write-Warning "Trys $($MAX_RETRIES) times. Failed to get Catalog details."
-        Exit(1)
+        sys.exit(1)
     }
 }
 

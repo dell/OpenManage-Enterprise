@@ -1,5 +1,5 @@
 #
-#  Python script using OME API to get list of groups
+# Python script using OME API to get list of groups
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 # _version_ = 0.2
@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 SYNOPSIS:
    Script to get the list of groups managed by OM Enterprise
@@ -31,12 +32,14 @@ DESCRIPTION:
 EXAMPLE:
    python get_group_list.py --ip <xx> --user <username> --password <pwd>
 """
+
 import json
 import argparse
 from argparse import RawTextHelpFormatter
 import urllib3
 import requests
 import pprint
+import sys
 
 
 def get_group_list(ome_ip_address, user_name, password):
@@ -73,24 +76,23 @@ def get_group_list(ome_ip_address, user_name, password):
                         group_data += data["value"]
                 else:
                     print("Unable to retrieve group list from %s" % ome_ip_address)
-                    exit(1)
+                    sys.exit(1)
 
         pprint.pprint(group_data)
 
     except Exception as e:
         print("Encountered an error: " + str(e))
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    ARGS = PARSER.parse_args()
-    get_group_list(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    get_group_list(args.ip, args.user, args.password)

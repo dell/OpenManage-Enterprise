@@ -2,7 +2,7 @@
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
 _version_ = 0.1
 
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2020 Dell EMC Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -298,15 +298,15 @@ Try {
         ## This is a Powershell quirk on Invoke-WebRequest failing with an error
         # Create mcm group
         $JobId = 0
-        $BakupLeadFound = $null
+        $BackupLeadFound = $null
         Write-Host "Adding members to group ..."
         $JobId = Add-AllMembersViaLead $IpAddress $Headers
         if ($JobId) {
             Write-Host "Polling addition of members to group ..."
             Wait-OnJobStatus $IpAddress $Headers $Type $JobId
         }
-        $BakupLeadFound = Get-BackupLead $IpAddress $Headers
-        if ($null -eq $BakupLeadFound){
+        $BackupLeadFound = Get-BackupLead $IpAddress $Headers
+        if ($null -eq $BackupLeadFound){
             Write-Host "Assigning backup lead ..."
             $JobId = Assign-BackupLead $IpAddress $Headers
             if ($JobId) {
@@ -318,7 +318,7 @@ Try {
             }
         }
         else{
-            Write-Host "Bakup lead found,skipping backup lead operation ..."
+            Write-Host "Backup lead found,skipping backup lead operation ..."
         }
     }
     else {
