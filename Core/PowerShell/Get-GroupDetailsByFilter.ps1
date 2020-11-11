@@ -60,7 +60,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [ValidateSet("Name","Description")]
+    [ValidateSet("Name", "Description")]
     [String] $FilterBy,
 
     [Parameter(Mandatory)]
@@ -68,9 +68,9 @@ param(
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -84,27 +84,27 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $GroupUrl    = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
         if ($GrpResp.StatusCode -eq 200) {
             $GrpInfo = $GrpResp.Content | ConvertFrom-Json
             if ($GrpInfo.'@odata.count' -gt 0) {
@@ -114,7 +114,7 @@ Try {
                 $GrpInfo.value | Format-List
 
                 $DevUrl = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
-                $DevResp = Invoke-WebRequest -Uri $DevUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                $DevResp = Invoke-WebRequest -Uri $DevUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($DevResp.StatusCode -eq 200) {
                     $DevInfo = $DevResp.Content | ConvertFrom-Json
                     if ($DevInfo.'@odata.count' -gt 0) {
@@ -142,6 +142,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

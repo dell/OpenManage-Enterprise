@@ -56,24 +56,24 @@ limitations under the License.
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [System.Net.IPAddress] $IpAddress,
+  [Parameter(Mandatory)]
+  [System.Net.IPAddress] $IpAddress,
 
-    [Parameter(Mandatory)]
-    [pscredential] $Credentials,
+  [Parameter(Mandatory)]
+  [pscredential] $Credentials,
 
-    [Parameter(Mandatory)]
-    [ValidateSet("Name","DeviceIdentifier")]
-    [String] $FilterBy,
+  [Parameter(Mandatory)]
+  [ValidateSet("Name", "DeviceIdentifier")]
+  [String] $FilterBy,
 
-    [Parameter(Mandatory)]
-    [String] $DeviceInfo 
+  [Parameter(Mandatory)]
+  [String] $DeviceInfo 
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+  ## Trust all certs - for sample usage only
+  Try {
+    add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -84,72 +84,74 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    Catch {
-        Write-Error "Unable to add type for cert policy"
-    }
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  }
+  catch {
+    Write-Error "Unable to add type for cert policy"
+  }
 }
 
 Try {
-    Set-CertPolicy
-    $FilterMap = @{'Name'='AlertDeviceName'; 'DeviceIdentifier'='AlertDeviceIdentifier'}
-    $BaseUri     = "https://$($IpAddress)"
-    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
-    $FilterExpr  = $FilterMap[$FilterBy]
-    $AlertUrl    = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=$($FilterExpr) eq '$($DeviceInfo)'"
-    $NextLinkUrl = $null
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+  Set-CertPolicy
+  $FilterMap = @{'Name' = 'AlertDeviceName'; 'DeviceIdentifier' = 'AlertDeviceIdentifier' }
+  $BaseUri = "https://$($IpAddress)"
+  $SessionUrl = $BaseUri + "/api/SessionService/Sessions"
+  $FilterExpr = $FilterMap[$FilterBy]
+  $AlertUrl = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=$($FilterExpr) eq '$($DeviceInfo)'"
+  $NextLinkUrl = $null
+  $Type = "application/json"
+  $UserName = $Credentials.username
+  $Password = $Credentials.GetNetworkCredential().password
+  $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+  $Headers = @{}
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $AlertResp = Invoke-WebRequest -Uri $AlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($AlertResp.StatusCode -eq 200) {
-            $AlertInfo = $AlertResp.Content | ConvertFrom-Json
-            $AlertList = $AlertInfo.value
-            $TotalAlerts = $AlertInfo.'@odata.count' 
-            if ($TotalAlerts -gt 0) {
-                if ($AlertInfo.'@odata.nextLink'){
-                  $NextLinkUrl = $BaseUri + $AlertInfo.'@odata.nextLink'
-                }
-                while ($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if ($NextLinkResponse.StatusCode -eq 200) {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $AlertList += $NextLinkData.'value'
-                        if ($NextLinkData.'@odata.nextLink'){
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }else{
-                            $NextLinkUrl = $null
-                        }
-                    }else{
-                        Write-Error "Unable to get full set of Alerts ... "
-                        $NextLinkUrl = $null
-                      }
-                }
-                Write-Output "*** Alerts for device ($($DeviceInfo)) ***"
-                $AlertList | Format-List
+  $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+  if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
+    ## Successfully created a session - extract the auth token from the response
+    ## header and update our headers for subsequent requests
+    $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+    $AlertResp = Invoke-WebRequest -Uri $AlertUrl -Method Get -Headers $Headers -ContentType $Type
+    if ($AlertResp.StatusCode -eq 200) {
+      $AlertInfo = $AlertResp.Content | ConvertFrom-Json
+      $AlertList = $AlertInfo.value
+      $TotalAlerts = $AlertInfo.'@odata.count' 
+      if ($TotalAlerts -gt 0) {
+        if ($AlertInfo.'@odata.nextLink') {
+          $NextLinkUrl = $BaseUri + $AlertInfo.'@odata.nextLink'
+        }
+        while ($NextLinkUrl) {
+          $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+          if ($NextLinkResponse.StatusCode -eq 200) {
+            $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+            $AlertList += $NextLinkData.'value'
+            if ($NextLinkData.'@odata.nextLink') {
+              $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
             }
             else {
-                    Write-Warning "No alerts found for device $($DeviceInfo)"
+              $NextLinkUrl = $null
             }
+          }
+          else {
+            Write-Error "Unable to get full set of Alerts ... "
+            $NextLinkUrl = $null
+          }
         }
-        else {
-            Write-Warning "Unable to retrieve alerts for ($($DeviceInfo)) from $($IpAddress)"
-        }
+        Write-Output "*** Alerts for device ($($DeviceInfo)) ***"
+        $AlertList | Format-List
+      }
+      else {
+        Write-Warning "No alerts found for device $($DeviceInfo)"
+      }
     }
     else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+      Write-Warning "Unable to retrieve alerts for ($($DeviceInfo)) from $($IpAddress)"
     }
+  }
+  else {
+    Write-Error "Unable to create a session with appliance $($IpAddress)"
+  }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+  Write-Error "Exception occured - $($_.Exception.Message)"
 }

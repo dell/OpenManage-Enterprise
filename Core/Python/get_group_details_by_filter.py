@@ -31,7 +31,7 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-    python get_group_details_filter.py --ip <xx> --user <username> --password <pwd>
+    python get_group_details_by_filter.py --ip <xx> --user <username> --password <pwd>
         --filterby Name --field "All Devices"
 """
 import argparse

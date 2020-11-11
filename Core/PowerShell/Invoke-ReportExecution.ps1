@@ -55,21 +55,21 @@ param(
     [Parameter(Mandatory)]
     [uint64] $ReportId,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [uint64] $GroupId = 0,
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("csv", "table")]
-    [string]$OutputFormat="csv",
+    [string]$OutputFormat = "csv",
     
-    [Parameter(Mandatory=$false)]
-    [string]$OutputFilePath=""    
+    [Parameter(Mandatory = $false)]
+    [string]$OutputFilePath = ""    
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -83,13 +83,12 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
 
-function Get-uniquefilename
-{
+function Get-uniquefilename {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -99,19 +98,16 @@ function Get-uniquefilename
         [String] $formatextension
     )
 
-    if(Test-Path -LiteralPath $filepath -PathType Container)
-    {
+    if (Test-Path -LiteralPath $filepath -PathType Container) {
         Write-Error "Unable to get the file name, please provide the filename"
     }
-    else
-    {
+    else {
         $folder = Split-Path -Path ([io.path]::GetFullPath($filepath)) -Parent
         $formatfilename = $filepath.BaseName
         $i = 1
-        while(Test-Path $filepath)
-        {
-            $filename = $formatfilename+"($i)"
-            $newfilename = $filename+"."+$formatextension
+        while (Test-Path $filepath) {
+            $filename = $formatfilename + "($i)"
+            $newfilename = $filename + "." + $formatextension
             $filepath = Join-Path $folder $newfilename
             $i++
         }
@@ -119,40 +115,42 @@ function Get-uniquefilename
     return $filepath
 }
 
-function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
+function Format-OutputInfo($IpAddress, $Headers, $Type, $ReportId) {
     $BaseUri = "https://$($IpAddress)"
     $ReportDeets = $BaseUri + "/api/ReportService/ReportDefs($($ReportId))"
     $NextLinkUrl = $null
     $OutputArray = @()
     $ColumnNames = @()
     [psobject[]]$objlist = @()
-    $DeetsResp = Invoke-WebRequest -Uri $ReportDeets -UseBasicParsing -Headers $Headers -Method Get -ContentType $Type
-    if ($DeetsResp.StatusCode -eq 200){
+    $DeetsResp = Invoke-WebRequest -Uri $ReportDeets -Headers $Headers -Method Get -ContentType $Type
+    if ($DeetsResp.StatusCode -eq 200) {
         $DeetsInfo = $DeetsResp.Content | ConvertFrom-Json
         $ColumnNames = $DeetsInfo.ColumnNames.Name
         Write-Verbose "Extracting results for report ($($ReportId))"
         $ResultUrl = $BaseUri + "/api/ReportService/ReportDefs($($ReportId))/ReportResults/ResultRows"
         
-        $RepResult = Invoke-WebRequest -Uri $ResultUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $RepResult = Invoke-WebRequest -Uri $ResultUrl -Method Get -Headers $Headers -ContentType $Type
         if ($RepResult.StatusCode -eq 200) {
             $RepInfo = $RepResult.Content | ConvertFrom-Json
             $totalRepResults = [int]($RepInfo.'@odata.count')
             if ($totalRepResults -gt 0) {
                 $ReportResultList = $RepInfo.Value
-                if ($RepInfo.'@odata.nextLink'){
+                if ($RepInfo.'@odata.nextLink') {
                     $NextLinkUrl = $BaseUri + $RepInfo.'@odata.nextLink'
                 }
-                while ($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                while ($NextLinkUrl) {
+                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($NextLinkResponse.StatusCode -eq 200) {
                         $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                         $ReportResultList += $NextLinkData.'value'
-                        if ($NextLinkData.'@odata.nextLink'){
+                        if ($NextLinkData.'@odata.nextLink') {
                             $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }else{
+                        }
+                        else {
                             $NextLinkUrl = $null
                         }
-                    }else {
+                    }
+                    else {
                         Write-Error "Unable to get full set of report results"
                         $NextLinkUrl = $null
                     }
@@ -161,23 +159,20 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
                     $resultVals = $value.Values
 
                     $tempHash = @{}
-                    for ($i =0; $i -lt $ColumnNames.Count; $i++) {
+                    for ($i = 0; $i -lt $ColumnNames.Count; $i++) {
                         $tempHash[$ColumnNames[$i]] = $resultVals[$i]
                     }
                     $outputArray += , $tempHash
-                    if($outputformat -eq "csv")
-                    {
+                    if ($outputformat -eq "csv") {
                         $objlist += New-Object -TypeName psobject -Property $tempHash
                     }
                 }
-                if($outputformat -eq "csv")
-                {
+                if ($outputformat -eq "csv") {
                     $filepath = Get-uniquefilename -filepath $outputfilepath -formatextension "csv"
                     $objlist | Export-Csv -Path $filepath
                 }
-                else
-                {
-                    $outputArray.Foreach({[PSCustomObject]$_}) | Format-Table -AutoSize
+                else {
+                    $outputArray.Foreach( { [PSCustomObject]$_ }) | Format-Table -AutoSize
                 }
             }
             else {
@@ -194,22 +189,21 @@ function Format-OutputInfo($IpAddress,$Headers,$Type,$ReportId) {
 }
 
 Try {
-    if(($outputformat -like "csv") -and ($outputfilepath -eq ""))
-    {
+    if (($outputformat -like "csv") -and ($outputfilepath -eq "")) {
         Write-Error "CSV Filepath is not provided." -ErrorAction Stop
     }
 
     Set-CertPolicy
-    $SessionUrl    = "https://$($IpAddress)/api/SessionService/Sessions"
-    $ExecRepUrl    = "https://$($IpAddress)/api/ReportService/Actions/ReportService.RunReport"
-    $Type          = "application/json"
-    $UserName      = $Credentials.username
-    $Password      = $Credentials.GetNetworkCredential().password
-    $UserDetails   = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $RepPayload    = @{"ReportDefId"=$ReportId; "FilterGroupId"=$GroupId} | ConvertTo-Json
-    $Headers       = @{}
-    $JobDoneStatus = @("completed","failed","warning","aborted","canceled")
-    $RetryCount    = 90 
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $ExecRepUrl = "https://$($IpAddress)/api/ReportService/Actions/ReportService.RunReport"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $RepPayload = @{"ReportDefId" = $ReportId; "FilterGroupId" = $GroupId } | ConvertTo-Json
+    $Headers = @{}
+    $JobDoneStatus = @("completed", "failed", "warning", "aborted", "canceled")
+    $RetryCount = 90 
 
     
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
@@ -217,7 +211,7 @@ Try {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $ReportResp = Invoke-WebRequest -Uri $ExecRepUrl -UseBasicParsing -Method Post -Headers $Headers -ContentType $Type -Body $RepPayload
+        $ReportResp = Invoke-WebRequest -Uri $ExecRepUrl -Method Post -Headers $Headers -ContentType $Type -Body $RepPayload
         if ($ReportResp.StatusCode -eq 200) {
             $JobId = $ReportResp.Content
             $JobUrl = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
@@ -227,7 +221,7 @@ Try {
                 $Counter++
                 Write-Host "Polling report status ... "
                 Start-Sleep -Seconds 10                
-                $JobResp = Invoke-WebRequest -Uri $JobUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                $JobResp = Invoke-WebRequest -Uri $JobUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($JobResp.StatusCode -eq 200) {
                     $JobInfo = $JobResp.Content | ConvertFrom-Json
                     $CurrJobStatus = [string]($JobInfo.LastRunStatus.Name).ToLower()
@@ -244,7 +238,7 @@ Try {
             else {
                 Write-Warning "Job $($JobId) failed ... Unable to run report"
             }
-                }
+        }
         else {
             Write-Warning "Unable to retrieve reports from $($IpAddress)"
         }
@@ -253,6 +247,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

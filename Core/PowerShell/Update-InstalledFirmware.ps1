@@ -41,7 +41,7 @@ limitations under the License.
    In this instance you will be prompted for credentials to use to
    connect to the appliance
 #>
-[CmdletBinding(DefaultParameterSetName='Group_Update')]
+[CmdletBinding(DefaultParameterSetName = 'Group_Update')]
 param(
     [Parameter(Mandatory)]
     [System.Net.IPAddress] $IpAddress,
@@ -50,28 +50,28 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [ValidateScript({
-        if(-Not ($_ | Test-Path) ){
-            throw "File or folder does not exist" 
-        }
-        if(-Not ($_ | Test-Path -PathType Leaf) ){
-            throw "The Path argument must be a file. Folder paths are not allowed."
-        }
-        return $true
-    })]
+    [ValidateScript( {
+            if (-Not ($_ | Test-Path) ) {
+                throw "File or folder does not exist" 
+            }
+            if (-Not ($_ | Test-Path -PathType Leaf) ) {
+                throw "The Path argument must be a file. Folder paths are not allowed."
+            }
+            return $true
+        })]
     [System.IO.FileInfo]$DupFile,
 
-    [Parameter(ParameterSetName='Group_Update',Mandatory)]
+    [Parameter(ParameterSetName = 'Group_Update', Mandatory)]
     [System.UInt32]$GroupId,
 
-    [Parameter(ParameterSetName='Device_Update')]
+    [Parameter(ParameterSetName = 'Device_Update')]
     [System.UInt32]$DeviceId
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -85,64 +85,60 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
 
-function Get-GroupList($IpAddress,$Headers,$Type){
+function Get-GroupList($IpAddress, $Headers, $Type) {
     $GroupList = @()
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
     if ($GrpResp.StatusCode -eq 200) {
         $GroupInfo = $GrpResp.Content | ConvertFrom-Json
-        $GroupInfo.'value' |  Sort-Object Id | ForEach-Object {$GroupList += , $_.Id}
+        $GroupInfo.'value' |  Sort-Object Id | ForEach-Object { $GroupList += , $_.Id }
     }
     return $GroupList
 }
 
-function Get-DeviceList($IpAddress,$Headers,$Type){
+function Get-DeviceList($IpAddress, $Headers, $Type) {
     $NextLinkUrl = $null
     $BaseUri = "https://$($IpAddress)"
     $DeviceList = @()
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
-        $DevInfo.'value' |  Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
+        $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
 
-        if($DevInfo.'@odata.nextLink'){
-             $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+        if ($DevInfo.'@odata.nextLink') {
+            $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
         }
-        while($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($NextLinkResponse.StatusCode -eq 200)
-                    {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
-                        if($NextLinkData.'@odata.nextLink')
-                        {
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }
-                        else
-                        {
-                            $NextLinkUrl = $null
-                        }
-                    }
-                    else
-                    {
-                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-                        $NextLinkUrl = $null
-                    }
-         }
+        while ($NextLinkUrl) {
+            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+            if ($NextLinkResponse.StatusCode -eq 200) {
+                $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
+                if ($NextLinkData.'@odata.nextLink') {
+                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                }
+                else {
+                    $NextLinkUrl = $null
+                }
+            }
+            else {
+                Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                $NextLinkUrl = $null
+            }
+        }
     }
     return $DeviceList
 }
-function Push-DupToOME($IpAddress,$Headers, $DupFile) {
+function Push-DupToOME($IpAddress, $Headers, $DupFile) {
     $FileToken = $null
     $UploadActionUri = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.UploadFile"
     Write-Host "Uploading $($DupFile) to $($IpAddress). This action may take some time to complete."
-    $UploadResponse = Invoke-WebRequest -Uri $UploadActionUri -UseBasicParsing -Method Post -InFile $DupFile -ContentType "application/octet-stream" -Headers $Headers
+    $UploadResponse = Invoke-WebRequest -Uri $UploadActionUri -Method Post -InFile $DupFile -ContentType "application/octet-stream" -Headers $Headers
     if ($UploadResponse.StatusCode -eq 200) {
         ## Successfully uploaded the DUP file . Get the file token
         ## returned by OME on upload of the DUP file
@@ -156,14 +152,13 @@ function Push-DupToOME($IpAddress,$Headers, $DupFile) {
     return $FileToken
 }
 
-function Set-DupApplicabilityPayload($FileTokenInfo, $ParamHash)
-{
-    $BlankArray  = @()
-    $DupReportPayload = @{"SingleUpdateReportBaseline"=$BlankArray;
-                          "SingleUpdateReportGroup"=$BlankArray;
-                          "SingleUpdateReportTargets"=$BlankArray;
-                          "SingleUpdateReportFileToken"="";
-                        }
+function Set-DupApplicabilityPayload($FileTokenInfo, $ParamHash) {
+    $BlankArray = @()
+    $DupReportPayload = @{"SingleUpdateReportBaseline" = $BlankArray;
+        "SingleUpdateReportGroup"                      = $BlankArray;
+        "SingleUpdateReportTargets"                    = $BlankArray;
+        "SingleUpdateReportFileToken"                  = "";
+    }
     $DupReportPayload.SingleUpdateReportFileToken = $FileTokenInfo
     if ($ParamHash.GroupId) {
         $DupReportPayload.SingleUpdateReportGroup += $ParamHash.GroupId
@@ -176,18 +171,18 @@ function Set-DupApplicabilityPayload($FileTokenInfo, $ParamHash)
     return $DupReportPayload | ConvertTo-Json
 }
 
-function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload)
-{
-    $componentMap = @{"ComponentCurrentVersion"="Current Ver";
-                      "ComponentUpdateAction"="Action";
-                      "ComponentVersion"="Avail Ver";
-                      "ComponentCriticality"="Criticality";
-                      "ComponentRebootRequired"="Reboot Req";
-                      "ComponentName"="Name"}
+function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload) {
+    $componentMap = @{"ComponentCurrentVersion" = "Current Ver";
+        "ComponentUpdateAction"                 = "Action";
+        "ComponentVersion"                      = "Avail Ver";
+        "ComponentCriticality"                  = "Criticality";
+        "ComponentRebootRequired"               = "Reboot Req";
+        "ComponentName"                         = "Name"
+    }
 
     $RetDupPayload = $null
 
-    $DupUpdatePayload =  '{
+    $DupUpdatePayload = '{
         "Id": 0,
         "JobName": "Firmware Update Task",
         "JobDescription": "dup test",
@@ -227,7 +222,7 @@ function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload
 
     $DupReportUrl = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.GetSingleDupReport"
     try {
-        $DupResponse = Invoke-WebRequest -UseBasicParsing -Uri $DupReportUrl -Headers $Headers -ContentType $Type -Body $DupReportPayload -Method Post -ErrorAction SilentlyContinue       
+        $DupResponse = Invoke-WebRequest -Uri $DupReportUrl -Headers $Headers -ContentType $Type -Body $DupReportPayload -Method Post -ErrorAction SilentlyContinue       
         if ($DupResponse.StatusCode -eq 200) {
             $DupResponseInfo = $DupResponse.Content | ConvertFrom-Json
             if ($DupResponse.Length -gt 0) {
@@ -242,7 +237,7 @@ function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload
                             $tempHash."IpAddress" = $Device.DeviceReport.DeviceIpAddress
                             ## This is a custom object - convert to a hash
                             $dupHash = @{}
-                            $Component | Get-Member -MemberType NoteProperty | ForEach-Object {$dupHash.Add($_.Name, $Component.($_.Name))}
+                            $Component | Get-Member -MemberType NoteProperty | ForEach-Object { $dupHash.Add($_.Name, $Component.($_.Name)) }
                             foreach ($key in $dupHash.keys) {
                                 if ($componentMap.Keys -Contains $key) {
                                     $tempHash[$ComponentMap.$key] = $dupHash.$key                            
@@ -265,10 +260,10 @@ function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload
                                 Write-Host "Skipping component $($tempHash."Name") - No upgrade available"
                             }
                         }
-                        $outputArray.Foreach({[PSCustomObject]$_}) | Format-Table -AutoSize -Property "IpAddress", "Device", "Current Ver", "Avail Ver", "Action", "Reboot Req", "Criticality", "Name" -Wrap | Out-String | % {Write-Host $_}
-                   }
-                   $DupUpdatePayload."Targets" = $TargetArray                   
-                   $RetDupPayload = $DupUpdatePayload 
+                        $outputArray.Foreach( { [PSCustomObject]$_ }) | Format-Table -AutoSize -Property "IpAddress", "Device", "Current Ver", "Avail Ver", "Action", "Reboot Req", "Criticality", "Name" -Wrap | Out-String | % { Write-Host $_ }
+                    }
+                    $DupUpdatePayload."Targets" = $TargetArray                   
+                    $RetDupPayload = $DupUpdatePayload 
                 }
                 else {
                     Write-Warning "No applicable devices found for updating...Exiting"
@@ -286,24 +281,23 @@ function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload
     $RetDupPayload
 }
 
-function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId)
-{
+function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId) {
     $JOB_STATUS_MAP = @{
-        "2020"="Scheduled";
-        "2030"="Queued";
-        "2040"="Starting";
-        "2050"="Running";
-        "2060"="Completed";
-        "2070"="Failed";
-        "2090"="Warning";
-        "2080"="New";
-        "2100"="Aborted";
-        "2101"="Paused";
-        "2102"="Stopped";
-        "2103"="Canceled"
+        "2020" = "Scheduled";
+        "2030" = "Queued";
+        "2040" = "Starting";
+        "2050" = "Running";
+        "2060" = "Completed";
+        "2070" = "Failed";
+        "2090" = "Warning";
+        "2080" = "New";
+        "2100" = "Aborted";
+        "2101" = "Paused";
+        "2102" = "Stopped";
+        "2103" = "Canceled"
     }
 
-    $FailedJobStatuses = @(2070,2090,2100,2101,2102,2103)
+    $FailedJobStatuses = @(2070, 2090, 2100, 2101, 2102, 2103)
 
     $MAX_RETRIES = 20
     $SLEEP_INTERVAL = 60
@@ -313,7 +307,7 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId)
     do {        
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = $JobData.LastRunStatus.Id
@@ -326,12 +320,12 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId)
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Update job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -346,7 +340,7 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId)
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
 
@@ -354,12 +348,12 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId)
 ## Script that does the work
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
 
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
@@ -373,12 +367,12 @@ Try {
         if ($GroupId) {
             $GroupList = Get-GroupList $IpAddress $Headers $Type
             if ($GroupList -contains $GroupId) {}
-            else {throw "Group $($GroupId) not present on $($IpAddress) ... Exiting"}
+            else { throw "Group $($GroupId) not present on $($IpAddress) ... Exiting" }
         }
         else {
             $DeviceList = Get-DeviceList $IpAddress $Headers $Type
             if ($DeviceList -contains $DeviceId) {}
-            else {throw "Device $($DeviceId) not present on $($IpAddress) ... Exiting"}
+            else { throw "Device $($DeviceId) not present on $($IpAddress) ... Exiting" }
         }
 
 
@@ -388,20 +382,20 @@ Try {
         if ($DupFileLength -gt 0) {
             ## Upload the DUP file and get the file token for it from OME
             $FileTokenInfo = Push-DupToOME $IpAddress $Headers $DupFile
-            if ($FileTokenInfo){
+            if ($FileTokenInfo) {
                 if ($GroupId) {
-                    $DupReportPayload = Set-DupApplicabilityPayload $FileTokenInfo @{"GroupId"=$GroupId}
+                    $DupReportPayload = Set-DupApplicabilityPayload $FileTokenInfo @{"GroupId" = $GroupId }
                 }
                 else {
-                    $DupReportPayload = Set-DupApplicabilityPayload $FileTokenInfo @{"DeviceId"=$DeviceId}
+                    $DupReportPayload = Set-DupApplicabilityPayload $FileTokenInfo @{"DeviceId" = $DeviceId }
                 }
                 Write-Host "Determining if any devices and components are applicable for $($DupFile)"
                 $DupUpdatePayload = Get-ApplicableComponents $IpAddress $Headers $Type $DupReportPayload
-                if ($DupUpdatePayload -and ($DupUpdatePayload."Targets".Length -gt 0)){
+                if ($DupUpdatePayload -and ($DupUpdatePayload."Targets".Length -gt 0)) {
                     Write-Host $DupUpdatePayload."Targets".Length
                     $JobBody = $DupUpdatePayload | ConvertTo-Json -Depth 6
                     $JobSvcUrl = "https://$($IpAddress)/api/JobService/Jobs"
-                    $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -UseBasicParsing -Method Post -Body $JobBody -Headers $Headers -ContentType $Type
+                    $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Method Post -Body $JobBody -Headers $Headers -ContentType $Type
                     if ($JobResp.StatusCode -eq 201) {
                         $JobInfo = $JobResp.Content | ConvertFrom-Json
                         $JobId = $JobInfo.Id
@@ -428,6 +422,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

@@ -43,17 +43,17 @@ limitations under the License.
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [System.Net.IPAddress] $IpAddress,
+  [Parameter(Mandatory)]
+  [System.Net.IPAddress] $IpAddress,
 
-    [Parameter(Mandatory)]
-    [pscredential] $Credentials
+  [Parameter(Mandatory)]
+  [pscredential] $Credentials
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+  ## Trust all certs - for sample usage only
+  Try {
+    add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -64,70 +64,72 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    Catch {
-        Write-Error "Unable to add type for cert policy"
-    }
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  }
+  catch {
+    Write-Error "Unable to add type for cert policy"
+  }
 }
 
 Try {
-    Set-CertPolicy
-    $BaseUri = "https://$($IpAddress)"
-    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
-    $ReportUrl   = $BaseUri + "/api/ReportService/ReportDefs"
-    $NextLinkUrl = $null
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+  Set-CertPolicy
+  $BaseUri = "https://$($IpAddress)"
+  $SessionUrl = $BaseUri + "/api/SessionService/Sessions"
+  $ReportUrl = $BaseUri + "/api/ReportService/ReportDefs"
+  $NextLinkUrl = $null
+  $Type = "application/json"
+  $UserName = $Credentials.username
+  $Password = $Credentials.GetNetworkCredential().password
+  $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+  $Headers = @{}
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $ReportResp = Invoke-WebRequest -Uri $ReportUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($ReportResp.StatusCode -eq 200) {
-            $ReportInfo = $ReportResp.Content | ConvertFrom-Json
-            $ReportList = $ReportInfo.value
-            $totalReports = $ReportInfo.'@odata.count'
-            if ($totalReports -gt 0) {
-              if ($ReportInfo.'@odata.nextLink'){
-                $NextLinkUrl = $BaseUri + $ReportInfo.'@odata.nextLink'
-              }
-              while ($NextLinkUrl){
-                  $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                  if ($NextLinkResponse.StatusCode -eq 200) {
-                      $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                      $ReportList += $NextLinkData.'value'
-                      if ($NextLinkData.'@odata.nextLink'){
-                          $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                      }else{
-                          $NextLinkUrl = $null
-                      }
-                  }else {
-                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-                    $NextLinkUrl = $null
-                  }
-              }
-              Write-Output "*** List of pre-defined reports ***"
-              $ReportList | Format-List
+  $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+  if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
+    ## Successfully created a session - extract the auth token from the response
+    ## header and update our headers for subsequent requests
+    $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+    $ReportResp = Invoke-WebRequest -Uri $ReportUrl -Method Get -Headers $Headers -ContentType $Type
+    if ($ReportResp.StatusCode -eq 200) {
+      $ReportInfo = $ReportResp.Content | ConvertFrom-Json
+      $ReportList = $ReportInfo.value
+      $totalReports = $ReportInfo.'@odata.count'
+      if ($totalReports -gt 0) {
+        if ($ReportInfo.'@odata.nextLink') {
+          $NextLinkUrl = $BaseUri + $ReportInfo.'@odata.nextLink'
+        }
+        while ($NextLinkUrl) {
+          $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+          if ($NextLinkResponse.StatusCode -eq 200) {
+            $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+            $ReportList += $NextLinkData.'value'
+            if ($NextLinkData.'@odata.nextLink') {
+              $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
             }
             else {
-                    Write-Warning "No pre-defined reports found on $($IpAddress)"
+              $NextLinkUrl = $null
             }
+          }
+          else {
+            Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+            $NextLinkUrl = $null
+          }
         }
-        else {
-            Write-Warning "Unable to retrieve reports from $($IpAddress)"
-        }
+        Write-Output "*** List of pre-defined reports ***"
+        $ReportList | Format-List
+      }
+      else {
+        Write-Warning "No pre-defined reports found on $($IpAddress)"
+      }
     }
     else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+      Write-Warning "Unable to retrieve reports from $($IpAddress)"
     }
+  }
+  else {
+    Write-Error "Unable to create a session with appliance $($IpAddress)"
+  }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+  Write-Error "Exception occured - $($_.Exception.Message)"
 }
