@@ -2,7 +2,7 @@
 # Python script using OME API to create a new static group
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
-# _version_ = 0.1
+# _version_ = 0.2
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 SYNOPSIS:
    Script to create a new static group
@@ -30,57 +31,92 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python create_static_group.py --ip <xx> --user <username>
-        --password <pwd> --groupname "Random Test Group"
+   python create_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
 """
 import json
+import sys
 import argparse
 from argparse import RawTextHelpFormatter
-import urllib3
-import requests
+try:
+    import urllib3
+    import requests
+except ModuleNotFoundError:
+    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
+          "urllib3`")
+    sys.exit(0)
 
 
-def create_static_group(ip_address, user_name, password, group_name):
-    """ Authenticate with OME and enumerate groups """
+def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
+    """
+    Authenticates with OME and creates a session
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        ome_username:  Username for OME
+        ome_password: OME password
+
+    Returns: A dictionary of HTTP headers
+    """
+
+    authenticated_headers = {'content-type': 'application/json'}
+    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
+    user_details = {'UserName': ome_username,
+                    'Password': ome_password,
+                    'SessionType': 'API'}
+    session_info = requests.post(session_url, verify=False,
+                                 data=json.dumps(user_details),
+                                 headers=authenticated_headers)
+
+    if session_info.status_code == 201:
+        authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        return authenticated_headers
+
+    print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
+          "and IP?")
+    raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
+                    "password, and IP?")
+
+
+def create_static_group(authenticated_headers: dict, ome_ip_address: str, group_name: str) -> int:
+    """
+    Authenticate with OME and enumerate groups
+
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        group_name: The name of the group which you would like to create
+
+    Returns: Returns an integer containing the ID of the group or -1 if the group creation failed
+    """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
-        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ip_address
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': user_name,
-                        'Password': password,
-                        'SessionType': 'API'}
+        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ome_ip_address
 
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            response = requests.get(group_url, headers=headers, verify=False)
-            if response.status_code == 200:
-                json_data = response.json()
-                if json_data['@odata.count'] > 0:
-                    # Technically there should be only one result in the filter
-                    group_id = json_data['value'][0]['Id']
-                    group_payload = {"GroupModel": {
-                        "Name": group_name,
-                        "Description": "",
-                        "MembershipTypeId": 12,
-                        "ParentId": int(group_id)}
-                    }
-                    create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % ip_address
-                    create_resp = requests.post(create_url, headers=headers,
-                                                verify=False,
-                                                data=json.dumps(group_payload))
-                    if create_resp.status_code == 200:
-                        print("New group created : ID =", create_resp.text)
-                    elif create_resp.status_code == 400:
-                        print("Failed group creation ...See error info below")
-                        print(json.dumps(create_resp.json(), indent=4,
-                                         sort_keys=False))
-            else:
-                print("Unable to retrieve group list from %s" % ip_address)
-        else:
-            print("Unable to create a session with appliance %s" % ip_address)
+        response = requests.get(group_url, headers=authenticated_headers, verify=False)
+        if response.status_code == 200:
+            json_data = response.json()
+            if json_data['@odata.count'] > 0:
+                # Technically there should be only one result in the filter
+                group_id = json_data['value'][0]['Id']
+                group_payload = {"GroupModel": {
+                    "Name": group_name,
+                    "Description": "",
+                    "MembershipTypeId": 12,
+                    "ParentId": int(group_id)}
+                }
+                create_url = 'https://%s/api/GroupService/Actions/GroupService.CreateGroup' % ome_ip_address
+                create_resp = requests.post(create_url, headers=authenticated_headers,
+                                            verify=False,
+                                            data=json.dumps(group_payload))
+                if create_resp.status_code == 200:
+                    print("New group created : ID =", create_resp.text)
+                    return int(create_resp.text)
+                elif create_resp.status_code == 400:
+                    print("Failed group creation ...See error info below")
+                    print(json.dumps(create_resp.json(), indent=4,
+                                     sort_keys=False))
+                    return -1
+        print("Unable to retrieve group list from %s" % ome_ip_address)
+        return -1
     except Exception as error:
         print("Unexpected error:", str(error))
 
@@ -97,4 +133,14 @@ if __name__ == '__main__':
     parser.add_argument("--groupname", "-g", required=True,
                         help="A valid name for the group")
     args = parser.parse_args()
-    create_static_group(args.ip, args.user, args.password, args.groupname)
+
+    try:
+        headers = authenticate(args.ip, args.user, args.password)
+
+        if not headers:
+            sys.exit(0)
+
+        create_static_group(headers, args.ip, args.groupname)
+
+    except Exception as error:
+        print("Unexpected error:", str(error))

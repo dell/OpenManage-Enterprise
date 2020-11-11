@@ -93,7 +93,7 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) ->
         group_name: The name of the group whose ID you want to resolve.
         headers: Headers used for authentication to the OME server
 
-    Returns: Returns the ID of the group as an integer.
+    Returns: Returns the ID of the group as an integer or -1 if it couldn't be found.
 
     """
 
