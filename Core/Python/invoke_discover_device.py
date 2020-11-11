@@ -1,7 +1,8 @@
 #
 # Python script using OME API to create a new static group
 #
-# _version_ = 0.1
+# _maintained_by_ = Grant Curell <grant_curell@dell.com>
+# _version_ = 0.2
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -26,7 +27,7 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python discover_device.py --ip <ip addr> --user admin
+   python invoke_discover_device.py --ip <ip addr> --user admin
     --password <passwd> --targetUserName <user name>
     --targetPassword <password> --deviceType <{Device_Type}>
     --targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx> or --targetIpAddrCsvFile xyz.csv
@@ -37,34 +38,56 @@ import os
 import csv
 import time
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import urllib3
-import requests
+import sys
+from argparse import RawTextHelpFormatter
+from pprint import pprint
+try:
+    import urllib3
+    import requests
+except ModuleNotFoundError:
+    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests`"
+          "urllib3")
+    sys.exit(0)
 
 
-def authenticate_with_ome(ip_address, user_name, password):
-    """ X-auth session creation """
-    auth_success = False
-    session_url = "https://%s/api/SessionService/Sessions" % ip_address
-    user_details = {'UserName': user_name,
-                    'Password': password,
+def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
+    """
+    Authenticates with OME and creates a session
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        ome_username:  Username for OME
+        ome_password: OME password
+
+    Returns: A dictionary of HTTP headers
+    """
+
+    authenticated_headers = {'content-type': 'application/json'}
+    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
+    user_details = {'UserName': ome_username,
+                    'Password': ome_password,
                     'SessionType': 'API'}
-    headers = {'content-type': 'application/json'}
     session_info = requests.post(session_url, verify=False,
                                  data=json.dumps(user_details),
-                                 headers=headers)
+                                 headers=authenticated_headers)
+
     if session_info.status_code == 201:
-        headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-        auth_success = True
-    else:
-        error_msg = "Failed create of session with {0} - Status code = {1}"
-        print(error_msg.format(ip_address, session_info.status_code))
-    return (auth_success, headers)
+        authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        return authenticated_headers
+
+    print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
+          "and IP?")
+    raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
+                    "password, and IP?")
 
 
-def get_discover_device_payload():
-    """ Payload for discovering devices """
+def get_discover_device_payload() -> dict:
+    """
+    Creates the payload needed to discover device payloads
+
+    Returns: A dictionary containing the payload required for discovering devices
+    """
     discovery_config_details = {
         "server": {
             "DiscoveryConfigGroupName": "Server Discovery",
@@ -139,35 +162,65 @@ def get_discover_device_payload():
                 "Cron": "startnow"}
         }
     }
+
     return discovery_config_details
 
 
-def discover_device(ip_address, headers, discover_user_name, discover_password, list_of_ip, device_type):
-    """ Discover devices """
+def discover_device(ome_ip_address,
+                    authenticated_headers,
+                    device_discover_username,
+                    device_discover_password,
+                    list_of_device_ips,
+                    device_type) -> requests.models.Response:
+    """
+    Discovers devices and adds them to the target OME instance
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        device_discover_username: Username for the targeted device(s)
+        device_discover_password: Password for the targeted device(s)
+        list_of_device_ips: A list of IP addresses you want to discover
+        device_type: The type of device to be discovered
+
+    Returns: Returns a response object containing the details of the discovery job from the server
+
+    """
     discover_payloads = get_discover_device_payload()
     discover_payload = discover_payloads.get(device_type)
     discover_payload["DiscoveryConfigModels"][0]["DiscoveryConfigTargets"][:] = []
-    for ip_adds in list_of_ip:
+    for ip_adds in list_of_device_ips:
         if ip_adds != ' ':
             discover_payload["DiscoveryConfigModels"][0]["DiscoveryConfigTargets"].append(
                 {"NetworkAddressDetail": ip_adds})
     if device_type in ('server', 'chassis'):
         connection_profile = json.loads(discover_payload["DiscoveryConfigModels"][0]["ConnectionProfile"])
-        connection_profile['credentials'][0]['credentials']['username'] = discover_user_name
-        connection_profile['credentials'][0]['credentials']['password'] = discover_password
+        connection_profile['credentials'][0]['credentials']['username'] = device_discover_username
+        connection_profile['credentials'][0]['credentials']['password'] = device_discover_password
         discover_payload["DiscoveryConfigModels"][0]["ConnectionProfile"] = json.dumps(connection_profile)
-    print(discover_payload)
-    url = 'https://%s/api/DiscoveryConfigService/DiscoveryConfigGroups' % ip_address
-    discover_resp = requests.post(url, headers=headers,
+    pprint(discover_payload)
+    url = 'https://%s/api/DiscoveryConfigService/DiscoveryConfigGroups' % ome_ip_address
+    discover_resp = requests.post(url, headers=authenticated_headers,
                                   data=json.dumps(discover_payload), verify=False)
+    print(type(discover_resp))
     return discover_resp
 
 
-def get_job_id(ip_address, headers, discovery_config_group_id):
-    """ Get job id """
+def get_job_id(ome_ip_address, authenticated_headers, discovery_config_group_id) -> int:
+    """
+    Get job id
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        discovery_config_group_id: The group ID of all devices being discovered as part of this job
+
+    Returns: An integer containing the job ID or -1 if the job ID could not be found
+    """
+
     job_id = -1
-    url = 'https://%s/api/DiscoveryConfigService/Jobs' % ip_address
-    job_resp = requests.get(url, headers=headers, verify=False)
+    url = 'https://%s/api/DiscoveryConfigService/Jobs' % ome_ip_address
+    job_resp = requests.get(url, headers=authenticated_headers, verify=False)
     if job_resp.status_code == 200:
         job_resp_object = job_resp.json()
         if job_resp_object['@odata.count'] > 0:
@@ -178,12 +231,28 @@ def get_job_id(ip_address, headers, discovery_config_group_id):
         else:
             print("unable to get job id " + job_resp_object)
     else:
-        print("unable to get job id.Status code:  " + job_resp.status_code)
+        print("unable to get job id.Status code:  " + str(job_resp.status_code))
+
     return job_id
 
 
-def track_job_to_completion(ip_address, headers, job_id):
-    """ Tracks the  job to completion / error """
+def track_job_to_completion(ome_ip_address: str,
+                            authenticated_headers: dict,
+                            tracked_job_id,
+                            max_retries: int = 20,
+                            sleep_interval: int = 30) -> bool:
+    """
+    Tracks a job to either completion or a failure within the job.
+
+    Args:
+        ome_ip_address: The IP address of the OME server
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        tracked_job_id: The ID of the job which you would like to track
+        max_retries: The maximum number of times the function should contact the server to see if the job has completed
+        sleep_interval: The frequency with which the function should check the server for job completion
+
+    Returns: True if the job completed successfully or completed with errors. Returns false if the job failed.
+    """
     job_status_map = {
         "2020": "Scheduled",
         "2030": "Queued",
@@ -199,54 +268,58 @@ def track_job_to_completion(ip_address, headers, job_id):
         "2103": "Canceled"
     }
 
-    max_retries = 20
-    sleep_interval = 30
     failed_job_status = [2070, 2090, 2100, 2101, 2102, 2103]
-    job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, job_id)
+    job_url = 'https://%s/api/JobService/Jobs(%s)' % (ome_ip_address, tracked_job_id)
     loop_ctr = 0
     job_incomplete = True
-    print("Polling %s to completion ..." % job_id)
+    print("Polling %s to completion ..." % tracked_job_id)
+
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
-        job_resp = requests.get(job_url, headers=headers, verify=False)
+        job_resp = requests.get(job_url, headers=authenticated_headers, verify=False)
+
         if job_resp.status_code == 200:
             job_status = str((job_resp.json())['LastRunStatus']['Id'])
             job_status_str = job_status_map[job_status]
-            print("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_str))
+            print("Iteration %s: Status of %s is %s" % (loop_ctr, tracked_job_id, job_status_str))
+
             if int(job_status) == 2060:
                 job_incomplete = False
-                print("Completed discovering of devices successfully ... Exiting")
+                print("Job completed successfully!")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
+
                 if job_status_str == "Warning":
                     print("Completed with errors")
                 else:
-                    print("discovering of device failed ... ")
+                    print("Discovering of device failed... ")
+
                 job_hist_url = str(job_url) + "/ExecutionHistories"
-                job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
+                job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
+
                 if job_hist_resp.status_code == 200:
-                    get_execution_detail(job_hist_resp, headers, job_hist_url)
+                    # Get the job's execution details
+                    job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
+                    execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
+                    job_hist_det_url = str(job_hist_url) + execution_hist_detail
+                    job_hist_det_resp = requests.get(job_hist_det_url,
+                                                     headers=headers,
+                                                     verify=False)
+                    if job_hist_det_resp.status_code == 200:
+                        pprint(job_hist_det_resp.json()['value'])
+                    else:
+                        print("Unable to parse job execution history... exiting")
                 break
         else:
-            print("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
+            print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
+
     if job_incomplete:
-        print("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
+        print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, max_retries))
+        return False
 
-
-def get_execution_detail(job_hist_resp, headers, job_hist_url):
-    """ Get execution details """
-    job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
-    execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
-    job_hist_det_url = str(job_hist_url) + execution_hist_detail
-    job_hist_det_resp = requests.get(job_hist_det_url,
-                                     headers=headers,
-                                     verify=False)
-    if job_hist_det_resp.status_code == 200:
-        print(job_hist_det_resp.text)
-    else:
-        print("Unable to parse job execution history .. Exiting")
+    return True
 
 
 if __name__ == '__main__':
@@ -265,10 +338,10 @@ if __name__ == '__main__':
     parser.add_argument("--deviceType", required=True,
                         choices=('server', 'chassis'),
                         help="Device Type  to discover devices")
-    mutex_group = parser.add_mutually_exclusive_group(required=True)
-    mutex_group.add_argument("--targetIpAddresses",
+    MUTEX_GROUP = parser.add_mutually_exclusive_group(required=True)
+    MUTEX_GROUP.add_argument("--targetIpAddresses",
                              help="Array of Ip address to discover devices ")
-    mutex_group.add_argument("--targetIpAddrCsvFile",
+    MUTEX_GROUP.add_argument("--targetIpAddrCsvFile",
                              help="Path to Csv file that contains IP address to discover devices")
     args = parser.parse_args()
     ip_address = args.ip
@@ -286,11 +359,11 @@ if __name__ == '__main__':
     else:
         if os.path.isfile(csv_file_path):
             if os.path.getsize(csv_file_path) > 0:
-                CSV_FILE = open(csv_file_path, 'r')
-                CSV_DATA = csv.reader(CSV_FILE)
-                CSV_LIST = list(CSV_DATA)
-                for CSV_DATA in CSV_LIST:
-                    for ip in CSV_DATA:
+                csv_file = open(csv_file_path, 'r')
+                csv_data = csv.reader(csv_file)
+                csv_list = list(csv_data)
+                for csv_data in csv_list:
+                    for ip in csv_data:
                         list_of_ip.append(ip)
             else:
                 print("File %s seems to be empty ... Exiting" % csv_file_path)
@@ -302,7 +375,7 @@ if __name__ == '__main__':
             ips = ip.split('-')
         else:
             ips = ip
-        if type(ips) is list:
+        if isinstance(ips, list):
             for ip in ips:
                 list_of_ipaddresses.append(ip)
         else:
@@ -313,8 +386,8 @@ if __name__ == '__main__':
                 raise Exception("Invalid IP address " + ip_addr + " Example of valid ip  192.168.1.0")
             for ip_byte in ip_bytes:
                 if not ip_byte.isdigit():
-                    raise Exception(
-                        "Invalid IP address" + ip_addr + " Only digits are allowed. Example of valid ip 192.168.1.0")
+                    raise Exception("Invalid IP address" + ip_addr +
+                                    " Only digits are allowed. Example of valid ip 192.168.1.0")
                 octet = int(ip_byte)
                 if octet < 0 or octet > 255:
                     raise Exception(
@@ -322,21 +395,20 @@ if __name__ == '__main__':
                         " single byte must be 0 <= byte < 256. Example of valid ip 192.168.1.0")
 
     try:
-        auth_success, headers = authenticate_with_ome(ip_address, user_name,
-                                                      password)
-        if auth_success:
-            discovery_resp = discover_device(ip_address, headers,
-                                             discover_user_name, discover_password,
-                                             list_of_ip, device_type)
-            if discovery_resp.status_code == 201:
-                print("Discovering devices.....")
-                time.sleep(30)
-                discovery_config_group_id = (discovery_resp.json())["DiscoveryConfigGroupId"]
-                job_id = get_job_id(ip_address, headers, discovery_config_group_id)
-                if job_id != -1:
-                    track_job_to_completion(ip_address, headers, job_id)
+        headers = authenticate(ip_address, user_name, password)
 
-            else:
-                print("unable to discover devices ", discovery_resp.text)
+        discovery_resp = discover_device(ip_address, headers,
+                                         discover_user_name, discover_password,
+                                         list_of_ip, device_type)
+        if discovery_resp.status_code == 201:
+            print("Discovering devices.....")
+            time.sleep(30)
+            discovery_config_group_id = (discovery_resp.json())["DiscoveryConfigGroupId"]
+            job_id = get_job_id(ip_address, headers, discovery_config_group_id)
+            if job_id != -1:
+                track_job_to_completion(ip_address, headers, job_id)
+        else:
+            print("unable to discover devices ", discovery_resp.text)
+
     except Exception as error:
         print("Unexpected error:", str(error))
