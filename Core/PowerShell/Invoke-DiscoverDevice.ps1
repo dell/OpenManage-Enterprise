@@ -21,13 +21,13 @@
  .EXAMPLE
   $cred = Get-Credential
   $disccred = Get-Credential
-  .\Find-DeviceForManagement.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  -IPAddressCsvFile .\xxxx.csv  -nodeCredentials $disccred
+  .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  -IPAddressCsvFile .\xxxx.csv  -nodeCredentials $disccred
    where {device_type} can be server/chassis
    In this instance you will be prompted for credentials to use to
    connect to the appliance
    .EXAMPLE
   $cred = Get-Credential
-  .\Find-DeviceForManagement.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,...
+  .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,...
    where {device_type} can be server/chassis
    In this instance you will be prompted for credentials
 #>
