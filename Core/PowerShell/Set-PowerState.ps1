@@ -35,7 +35,7 @@ param(
     [parameter(Mandatory)]
     [System.UInt32]$DeviceId,
     [Parameter(Mandatory)]
-    [ValidateSet("On", "Off", "Cold Boot", "Warm Boot","ShutDown")]
+    [ValidateSet("On", "Off", "Cold Boot", "Warm Boot", "ShutDown")]
     [String] $State
 )
 
@@ -43,14 +43,14 @@ $PowerControlStateMap = @{
     "On"        = "2";
     "Off"       = "12";
     "Cold Boot" = "5";
-    "Warm Boot" ="10";
-    "ShutDown" = "8"
+    "Warm Boot" = "10";
+    "ShutDown"  = "8"
 }
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-    add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -61,12 +61,12 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@
-    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-}
-Catch {
-    Write-Error "Unable to add type for cert policy"
-}
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    }
+    catch {
+        Write-Error "Unable to add type for cert policy"
+    }
 }
 
 function Get-DeviceIdList($IpAddress, $Headers, $Type) {
@@ -74,34 +74,30 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type) {
     $NextLinkUrl = $null
     $BaseUri = "https://$($IpAddress)"
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         if ($DevInfo.'@odata.count' -gt 0 ) {
-            $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id}
-            if($DevInfo.'@odata.nextLink'){
-               $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+            $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id }
+            if ($DevInfo.'@odata.nextLink') {
+                $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
             }
-            while($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($NextLinkResponse.StatusCode -eq 200)
-                    {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceIdList += , $_.Id}
-                        if($NextLinkData.'@odata.nextLink')
-                        {
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }
-                        else
-                        {
-                            $NextLinkUrl = $null
-                        }
+            while ($NextLinkUrl) {
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                if ($NextLinkResponse.StatusCode -eq 200) {
+                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                    $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id }
+                    if ($NextLinkData.'@odata.nextLink') {
+                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
                     }
-                    else
-                    {
-                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    else {
                         $NextLinkUrl = $null
                     }
+                }
+                else {
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    $NextLinkUrl = $null
+                }
             }
         }
     }
@@ -113,9 +109,9 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type) {
 
 function Get-DevicepowerState($IpAddress, $Headers, $Type, $DeviceId) {
     $DeviceUrl = $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
     $PowerState = $null
-    if ($DevResp.StatusCode -eq 200){
+    if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         $PowerState = $DevInfo.PowerState
     }
@@ -157,7 +153,7 @@ function Get-JobServicePayload() {
                 }
             ]
         }
-    }' |ConvertFrom-Json
+    }' | ConvertFrom-Json
     return $POWER_CONTROL
 
 }
@@ -168,11 +164,11 @@ function Get-UpdatedJobServicePayload ($JobServicePayload, $DeviceId, $State) {
         "Off"       = "Power Off";
         "Cold Boot" = "Power Cycle"
         "Warm Boot" = "System Reset (Warm Boot)"
-        "ShutDown" = "Graceful Shutdown"
+        "ShutDown"  = "Graceful Shutdown"
     }
     $PowerControlDetails = $JobServicePayload."power_control_details"
     $PowerControlDetails."JobName" = $JobName[$State]
-    $PowerControlDetails."JobDescription"="Power Control Task:"+$JobName[$State]
+    $PowerControlDetails."JobDescription" = "Power Control Task:" + $JobName[$State]
     $PowerControlDetails."Params"[0]."Value" = "POWER_CONTROL"
     $PowerControlDetails."Params"[1]."Key" = "powerState"
     $PowerControlDetails."Params"[1]."Value" = $PowerControlStateMap[$State]
@@ -202,17 +198,18 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId, $State) {
 
     $MAX_RETRIES = 20
     $SLEEP_INTERVAL = 30
-    $StatusName=@{ "On"= "Powered On";
-    "Off" = "Powered Off";
-    "Cold Boot" = "Power Cycle"
-    "Warm Boot" = " Reset "
-    "ShutDown" = "Shutdown"}
+    $StatusName = @{ "On" = "Powered On";
+        "Off"             = "Powered Off";
+        "Cold Boot"       = "Power Cycle"
+        "Warm Boot"       = " Reset "
+        "ShutDown"        = "Shutdown"
+    }
     $JobSvcUrl = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
     $Ctr = 0
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -225,12 +222,12 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId, $State) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning " $($StatusName[$State]) operation failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -245,7 +242,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId, $State) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
 
@@ -257,10 +254,10 @@ Try {
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
     $DeviceIdList = @()
-    $PowerStateMap=@{ "On"="17";"Off"="18";"PoweringOn"="20";"PoweringOff"="21"}
+    $PowerStateMap = @{ "On" = "17"; "Off" = "18"; "PoweringOn" = "20"; "PoweringOff" = "21" }
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         Write-Host "Successfully created session"
@@ -268,46 +265,51 @@ Try {
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         $DeviceIdList = Get-DeviceIdList $IpAddress $Headers $Type
-        if($DeviceIdList){
-       if($DeviceIdList -Contains $DeviceId){
-          $PowerState = Get-DevicepowerState $IpAddress $Headers $Type $DeviceId
-          if($PowerState){
-            if($PowerControlStateMap[$State] -eq $PowerState ){
-                Write-Host "Device is already in the desired state."
-            }elseif(($State -eq "On") -and ($PowerState -eq $PowerStateMap["PoweringOn"])){
-                Write-Host "Device is already in the desired state."
-            }
-            elseif(($State -eq "Off") -and ($PowerState -eq $PowerStateMap["PoweringOff"])){
-                Write-Host "Device is already in the desired state. "
-            }
-            else{
-                $JobServicePayload = Get-JobServicePayload
-                $UpdatedJobServicePayload = Get-UpdatedJobServicePayload $JobServicePayload $DeviceId $State
-                $UpdatedJobServicePayload = $UpdatedJobServicePayload |ConvertTo-Json -Depth 6
-                $JobResponse = Invoke-WebRequest -Uri $JobUrl -Method Post -Body $UpdatedJobServicePayload -ContentType $Type -Headers $Headers
-                if ($JobResponse.StatusCode -eq 201) {
-                    $JobInfo = $JobResponse.Content | ConvertFrom-Json
-                    $JobId = $JobInfo.Id
-                    Get-JobStatus $IpAddress $Headers $Type $JObId $State
+        if ($DeviceIdList) {
+            if ($DeviceIdList -Contains $DeviceId) {
+                $PowerState = Get-DevicepowerState $IpAddress $Headers $Type $DeviceId
+                if ($PowerState) {
+                    if ($PowerControlStateMap[$State] -eq $PowerState ) {
+                        Write-Host "Device is already in the desired state."
+                    }
+                    elseif (($State -eq "On") -and ($PowerState -eq $PowerStateMap["PoweringOn"])) {
+                        Write-Host "Device is already in the desired state."
+                    }
+                    elseif (($State -eq "Off") -and ($PowerState -eq $PowerStateMap["PoweringOff"])) {
+                        Write-Host "Device is already in the desired state. "
+                    }
+                    else {
+                        $JobServicePayload = Get-JobServicePayload
+                        $UpdatedJobServicePayload = Get-UpdatedJobServicePayload $JobServicePayload $DeviceId $State
+                        $UpdatedJobServicePayload = $UpdatedJobServicePayload | ConvertTo-Json -Depth 6
+                        $JobResponse = Invoke-WebRequest -Uri $JobUrl -Method Post -Body $UpdatedJobServicePayload -ContentType $Type -Headers $Headers
+                        if ($JobResponse.StatusCode -eq 201) {
+                            $JobInfo = $JobResponse.Content | ConvertFrom-Json
+                            $JobId = $JobInfo.Id
+                            Get-JobStatus $IpAddress $Headers $Type $JObId $State
+                        }
+                        else {
+                            Write-Error "unable to  $($State) device..."
+                            Write-Host $JobResponse
+                        }
+                    }
                 }
                 else {
-                    Write-Error "unable to  $($State) device..."
-                    Write-Host $JobResponse
+                    Write-Host "Unable to fetch powerstate for device with id $($DeviceId))"
                 }
             }
-          }else{
-              Write-Host "Unable to fetch powerstate for device with id $($DeviceId))"
-          }
-       }else{
-        Write-Warning "Device with Id $($DeviceId) not found on $($IPAddress) .....Existing "
-       }
-    }else{
-        Write-Error "Device not found on $($IpAddress) ... Exiting"
+            else {
+                Write-Warning "Device with Id $($DeviceId) not found on $($IPAddress) .....Existing "
+            }
+        }
+        else {
+            Write-Error "Device not found on $($IpAddress) ... Exiting"
+        }
     }
-}else {
-    Write-Error "Unable to create a session with appliance $($IpAddress)"
+    else {
+        Write-Error "Unable to create a session with appliance $($IpAddress)"
+    }
 }
-}
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

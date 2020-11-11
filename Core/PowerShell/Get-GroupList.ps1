@@ -1,6 +1,6 @@
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
-_version_ = 0.1
+_version_ = 0.2
 
 Copyright (c) 2020 Dell EMC Corporation
 
@@ -43,65 +43,23 @@ limitations under the License.
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [System.Net.IPAddress] $IpAddress,
+  [Parameter(Mandatory)]
+  [System.Net.IPAddress] $IpAddress,
 
-    [Parameter(Mandatory)]
-    [pscredential] $Credentials
+  [Parameter(Mandatory)]
+  [pscredential] $Credentials
 )
 
-function Set-CertPolicy() {
-## Trust all certs - for sample usage only
 Try {
-add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    Catch {
-        Write-Error "Unable to add type for cert policy"
-    }
+
+  $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
+  $Type = "application/json"
+  $Headers = @{}
+
+  $GroupInfo = Invoke-RestMethod -SkipCertificateCheck -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type -Credential $Credentials
+  $GroupInfo.'value' |  Sort-Object Id |  Format-Table -Property Id, Name, Description, CreationTime, UpdatedTime
 
 }
-
-Try {
-    Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $GroupUrl   = "https://$($IpAddress)/api/GroupService/Groups"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
-
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($GrpResp.StatusCode -eq 200) {
-            #$GrpResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4
-            $GroupInfo = $GrpResp.Content | ConvertFrom-Json
-            $GroupInfo.'value' |  Sort-Object Id |  Format-Table -Property Id,Name,Description,CreationTime,UpdatedTime
-        }
-        else {
-            Write-Error "Unable to retrieve group list from $($IpAddress)"
-        }
-    }
-    else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
-    }
-}
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+  Write-Error "Exception occured - $($_.Exception.Message)"
 }

@@ -40,7 +40,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-	[ValidateSet('server', 'chassis')]
+    [ValidateSet('server', 'chassis')]
     [String] $DeviceType,
     [Parameter(ParameterSetName = 'File_path', Mandatory)]
     [ValidateScript( {
@@ -75,7 +75,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -157,14 +157,14 @@ function Get-DiscoverDevicePayload() {
 							"Cron":"startnow"
                        }
         }
-    }' |ConvertFrom-Json
+    }' | ConvertFrom-Json
     return $DiscoveryConfigDetails
 }
 
 function Get-JobId($IpAddress, $Headers, $DiscoverConfigGroupId) {
     $JobId = -1
     $JobUrl = "https://$($IpAddress)/api/DiscoveryConfigService/Jobs"
-    $JobResponse = Invoke-WebRequest -UseBasicParsing -Uri $JobUrl -Headers $Headers -Method Get
+    $JobResponse = Invoke-WebRequest -Uri $JobUrl -Headers $Headers -Method Get
     if ($JobResponse.StatusCode -eq 200) {
         $JobInfo = $JobResponse.Content | ConvertFrom-Json
         $JobValues = $JobInfo.value
@@ -181,7 +181,7 @@ function Get-JobId($IpAddress, $Headers, $DiscoverConfigGroupId) {
     return $JobId
 }
 function Test-IpAddress($ipAddrs) {
-    $ipAddrs = $ipAddrs | Where-Object {$_}
+    $ipAddrs = $ipAddrs | Where-Object { $_ }
     $ipAddressList = [System.Collections.ArrayList][String[]]$ipAddrs
     foreach ($ip in $ipAddrs) {
         if ($ip -Match '-') {
@@ -212,7 +212,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = $JobData.LastRunStatus.Name
@@ -225,7 +225,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Update job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     Get-ExecutionHistoryDetail $ExecResp $ExecHistoryUrl $Headers $Type $JobExecUrl
                 }
@@ -236,7 +236,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
 
@@ -244,7 +244,7 @@ function Get-ExecutionHistoryDetail($ExecResp, $ExecHistoryUrl, $Headers, $Type,
     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
     $HistoryId = $ExecRespInfo.value[0].Id
     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
     if ($HistoryResp.StatusCode -eq 200) {
         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
     }
@@ -260,7 +260,7 @@ function Update-Payload($ipAddressList, $DeviceType, $nodeCredentials) {
     $inputs = Get-DiscoverDevicePayload
     $input = $inputs.$DeviceType
     $input.DiscoveryConfigModels[0].PSObject.Properties.Remove("DiscoveryConfigTargets")
-    $input.DiscoveryConfigModels[0]| Add-Member -MemberType NoteProperty -Name 'DiscoveryConfigTargets' -Value @()
+    $input.DiscoveryConfigModels[0] | Add-Member -MemberType NoteProperty -Name 'DiscoveryConfigTargets' -Value @()
     foreach ($ip in $ipAddressList) {
         $jsonContent = [PSCustomObject]@{
             'NetworkAddressDetail' = $ip
@@ -290,47 +290,48 @@ Try {
             $split = $_ -split ","
             foreach ($ip in $split) {
                 $ipAddrs += $ip
-            }}
+            } }
     }
     else {
         $ipAddrs = $IpArray
     }
     $ipAddressList = Test-IpAddress $ipAddrs
-	if($ipAddressList){
-    $input = Update-Payload $ipAddressList $DeviceType $nodeCredentials
-    $input = $input | ConvertTo-Json -Depth 6
-    $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
-    $Headers = @{ }
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-		Write-Host $input
-        $DiscoverResponse = Invoke-WebRequest -Uri $DiscoverUrl -UseBasicParsing -Method Post  -Body $input -Headers $Headers -ContentType $Type
-        if ($DiscoverResponse.StatusCode -eq 201) {
-            write-Host "Discovering devices...."
-            Start-Sleep -Seconds 10
-            $DiscoverInfo = $DiscoverResponse.Content | ConvertFrom-Json
-            $DiscoverConfigGroupId = $DiscoverInfo.DiscoveryConfigGroupId
-            $JobId = Get-JobId $IpAddress $Headers $DiscoverConfigGroupId
-            if ($JobId -gt 0) {
-                Write-Host "Polling job to completion....."
-                Get-JobStatus $IpAddress $Headers $Type $JobId
+    if ($ipAddressList) {
+        $input = Update-Payload $ipAddressList $DeviceType $nodeCredentials
+        $input = $input | ConvertTo-Json -Depth 6
+        $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+        $Headers = @{ }
+        $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+        if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
+            $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
+            Write-Host $input
+            $DiscoverResponse = Invoke-WebRequest -Uri $DiscoverUrl -Method Post  -Body $input -Headers $Headers -ContentType $Type
+            if ($DiscoverResponse.StatusCode -eq 201) {
+                write-Host "Discovering devices...."
+                Start-Sleep -Seconds 10
+                $DiscoverInfo = $DiscoverResponse.Content | ConvertFrom-Json
+                $DiscoverConfigGroupId = $DiscoverInfo.DiscoveryConfigGroupId
+                $JobId = Get-JobId $IpAddress $Headers $DiscoverConfigGroupId
+                if ($JobId -gt 0) {
+                    Write-Host "Polling job to completion....."
+                    Get-JobStatus $IpAddress $Headers $Type $JobId
+                }
+                else {
+                    Write-Warning "Unable to get JobID"
+                }
             }
             else {
-                Write-Warning "Unable to get JobID"
+                Write-Error "Unable to discover device  with appliance $($IpAddress) $($DiscoverResponse)"
             }
         }
         else {
-            Write-Error "Unable to discover device  with appliance $($IpAddress) $($DiscoverResponse)"
+            Write-Error "Unable to create a session with appliance $($IpAddress)"
         }
     }
     else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+        write-Host "Enter a valid Ip Address"
     }
-	}else{
-	write-Host "Enter a valid Ip Address"
-	}
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

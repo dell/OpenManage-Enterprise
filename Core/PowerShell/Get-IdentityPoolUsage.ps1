@@ -60,17 +60,17 @@ param(
     [Parameter(Mandatory)]
     [pscredential] $Credentials,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String] $Id,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String] $OutFile
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -84,7 +84,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -92,26 +92,26 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 $SessionAuthToken = @{}
 
 function Get-Session($IpAddress, $Credentials) {
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $SessResponseData = $SessResponse.Content | ConvertFrom-Json
         $SessionAuthToken = @{
-        "token"= $SessResponse.Headers["X-Auth-Token"];
-        "id"= $SessResponseData.Id
+            "token" = $SessResponse.Headers["X-Auth-Token"];
+            "id"    = $SessResponseData.Id
         }
     }
     return $SessionAuthToken
 }
 
 function Remove-Session($IpAddress, $Headers, $Id) {
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
-    $Type        = "application/json"
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
+    $Type = "application/json"
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
 }
 
@@ -119,8 +119,8 @@ Try {
     Set-CertPolicy
     $BaseUri = "https://$($IpAddress)"
     $NextLinkUrl = $null
-    $Type        = "application/json"
-    $Headers     = @{}
+    $Type = "application/json"
+    $Headers = @{}
 
     # Request authentication session token
     $AuthToken = Get-Session $IpAddress $Credentials
@@ -130,7 +130,7 @@ Try {
         
         # Display Identity Pools
         $IdentityPoolUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools"
-        $IdentityPoolResp = Invoke-WebRequest -Uri $IdentityPoolUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $IdentityPoolResp = Invoke-WebRequest -Uri $IdentityPoolUrl -Method Get -Headers $Headers -ContentType $Type
         if ($IdentityPoolResp.StatusCode -eq 200) {
             $IdentityPoolRespData = $IdentityPoolResp.Content | ConvertFrom-Json
             $IdentityPoolRespData = $IdentityPoolRespData.'value'
@@ -143,7 +143,7 @@ Try {
 
         # Get Identity Pool Usage Sets
         $IdentityPoolUsageSetUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets"
-        $IdentityPoolUsageSetResp = Invoke-WebRequest -Uri $IdentityPoolUsageSetUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $IdentityPoolUsageSetResp = Invoke-WebRequest -Uri $IdentityPoolUsageSetUrl -Method Get -Headers $Headers -ContentType $Type
         if ($IdentityPoolUsageSetResp.StatusCode -eq 200) {
             $IdentityPoolUsageSetRespData = $IdentityPoolUsageSetResp.Content | ConvertFrom-Json
             $IdentityPoolUsageSetRespData = $IdentityPoolUsageSetRespData.'value'
@@ -155,52 +155,52 @@ Try {
                 $IdentitySetName = $IdentitySet.Name
 
                 $IdentityPoolUsageDetailUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets($($IdentitySetId))/Details"
-                $IdentityPoolUsageDetailResp = Invoke-WebRequest -Uri $IdentityPoolUsageDetailUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                $IdentityPoolUsageDetailResp = Invoke-WebRequest -Uri $IdentityPoolUsageDetailUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($IdentityPoolUsageDetailResp.StatusCode -eq 200) {
                     $IdentityPoolUsageDetailData = $IdentityPoolUsageDetailResp.Content | ConvertFrom-Json
                     # Loop through Details appending to object array
-                    foreach($DeviceEntry in $IdentityPoolUsageDetailData.'value')
-                    {
-                        $DeviceDetails =@{
-                            IdentityType = $IdentitySetName
-                            ChassisName = $DeviceEntry.DeviceInfo.ChassisName
-                            ServerName = $DeviceEntry.DeviceInfo.ServerName
-                            ManagementIp = $DeviceEntry.DeviceInfo.ManagementIp
+                    foreach ($DeviceEntry in $IdentityPoolUsageDetailData.'value') {
+                        $DeviceDetails = @{
+                            IdentityType  = $IdentitySetName
+                            ChassisName   = $DeviceEntry.DeviceInfo.ChassisName
+                            ServerName    = $DeviceEntry.DeviceInfo.ServerName
+                            ManagementIp  = $DeviceEntry.DeviceInfo.ManagementIp
                             NicIdentifier = $DeviceEntry.NicIdentifier
-                            MacAddress = $DeviceEntry.MacAddress
+                            MacAddress    = $DeviceEntry.MacAddress
                         }
                         $DeviceData += New-Object PSObject -Property $DeviceDetails 
                     }
 
                     # Check if there are multiple pages in response
-                    if ($IdentityPoolUsageDetailData.'@odata.nextLink'){
+                    if ($IdentityPoolUsageDetailData.'@odata.nextLink') {
                         $NextLinkUrl = $BaseUri + $IdentityPoolUsageDetailData.'@odata.nextLink'
                     }
                     # Loop through pages until end
                     while ($NextLinkUrl) {
-                        $IdentityPoolUsageDetailNextLinkResp = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                        $IdentityPoolUsageDetailNextLinkResp = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                         if ($IdentityPoolUsageDetailNextLinkResp.StatusCode -eq 200) {
                             $IdentityPoolUsageDetailNextLinkData = $IdentityPoolUsageDetailNextLinkResp.Content | ConvertFrom-Json
                             # Loop through Details appending to object array
-                            foreach($DeviceEntry in $IdentityPoolUsageDetailNextLinkData.'value')
-                            {
-                                $DeviceDetails =@{
-                                    IdentityType = $IdentitySetName
-                                    ChassisName = $DeviceEntry.DeviceInfo.ChassisName
-                                    ServerName = $DeviceEntry.DeviceInfo.ServerName
-                                    ManagementIp = $DeviceEntry.DeviceInfo.ManagementIp
+                            foreach ($DeviceEntry in $IdentityPoolUsageDetailNextLinkData.'value') {
+                                $DeviceDetails = @{
+                                    IdentityType  = $IdentitySetName
+                                    ChassisName   = $DeviceEntry.DeviceInfo.ChassisName
+                                    ServerName    = $DeviceEntry.DeviceInfo.ServerName
+                                    ManagementIp  = $DeviceEntry.DeviceInfo.ManagementIp
                                     NicIdentifier = $DeviceEntry.NicIdentifier
-                                    MacAddress = $DeviceEntry.MacAddress
+                                    MacAddress    = $DeviceEntry.MacAddress
                                 }
                                 $DeviceData += New-Object PSObject -Property $DeviceDetails 
                             }
                             # Set for nextLink for next iteration
-                            if ($IdentityPoolUsageDetailNextLinkData.'@odata.nextLink'){
+                            if ($IdentityPoolUsageDetailNextLinkData.'@odata.nextLink') {
                                 $NextLinkUrl = $BaseUri + $IdentityPoolUsageDetailNextLinkData.'@odata.nextLink'
-                            } else { 
+                            }
+                            else { 
                                 $NextLinkUrl = $null
                             }
-                        } else {
+                        }
+                        else {
                             $NextLinkUrl = $null
                             Write-Error "Unable to retrieve items from nextLink... Exiting"
                         }
@@ -219,11 +219,13 @@ Try {
                 if ($OutFile -eq "") {
                     $DeviceData | Export-Csv -Path "Get-IdentityPoolUsage.csv" -NoTypeInformation
                     Write-Host "Exported data to $(Get-Location)\Get-IdentityPoolUsage.csv"
-                } else {
+                }
+                else {
                     $DeviceData | Export-Csv -Path $OutFile -NoTypeInformation
                     Write-Host "Exported data to $($OutFile)"
                 }
-            } else {
+            }
+            else {
                 Write-Host "No data to display"
             }
         }
@@ -233,11 +235,11 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception: $($_)"
 }
-Finally {
+finally {
     if ($AuthToken) {
-      Remove-Session $IpAddress $Headers $AuthToken["id"]
+        Remove-Session $IpAddress $Headers $AuthToken["id"]
     }
 }

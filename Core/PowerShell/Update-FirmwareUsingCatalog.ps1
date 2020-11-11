@@ -52,11 +52,11 @@ param(
     [Parameter(ParameterSetName = 'Device_Update')]
     [System.UInt32]$DeviceId,
 	
-    [Parameter(ParameterSetName = 'servicetags',Mandatory)]
+    [Parameter(ParameterSetName = 'servicetags', Mandatory)]
     [string[]]$servicetags,
  
     [Parameter(Mandatory)]
-    [ValidateSet('upgrade','downgrade','flash-all')]
+    [ValidateSet('upgrade', 'downgrade', 'flash-all')]
     [String[]]$Updateactions,
 
     [Parameter(Mandatory)]
@@ -67,16 +67,16 @@ param(
     [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
     [System.Net.IPAddress]$reposourceip,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String]$catalogpath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String]$repouser,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String]$repodomain,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [String]$repopassword
 
 )
@@ -98,7 +98,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -106,48 +106,44 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 function Get-GroupList($IpAddress, $Headers, $Type) {
     $GroupList = @()
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
     if ($GrpResp.StatusCode -eq 200) {
         $GroupInfo = $GrpResp.Content | ConvertFrom-Json
-        $GroupInfo.'value' |  Sort-Object Id | ForEach-Object {$GroupList += , $_.Id}
+        $GroupInfo.'value' |  Sort-Object Id | ForEach-Object { $GroupList += , $_.Id }
     }
     return $GroupList
 }
 
-function Get-DeviceList($IpAddress,$Headers,$Type){
+function Get-DeviceList($IpAddress, $Headers, $Type) {
     $NextLinkUrl = $null
     $BaseUri = "https://$($IpAddress)"
     $DeviceList = @()
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
-        $DevInfo.'value' |  Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
+        $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
 
-        if($DevInfo.'@odata.nextLink'){
-             $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+        if ($DevInfo.'@odata.nextLink') {
+            $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
         }
-        while($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($NextLinkResponse.StatusCode -eq 200)
-                    {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
-                        if($NextLinkData.'@odata.nextLink')
-                        {
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }
-                        else
-                        {
-                            $NextLinkUrl = $null
-                        }
-                    }
-                    else
-                    {
-                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-                        $NextLinkUrl = $null
-                    }
-         }
+        while ($NextLinkUrl) {
+            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+            if ($NextLinkResponse.StatusCode -eq 200) {
+                $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
+                if ($NextLinkData.'@odata.nextLink') {
+                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+                }
+                else {
+                    $NextLinkUrl = $null
+                }
+            }
+            else {
+                Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                $NextLinkUrl = $null
+            }
+        }
     }
     return $DeviceList
 }
@@ -157,7 +153,7 @@ function Check-ExistingCatalogAndBaseline($IpAddress, $Headers, $Type) {
     $BaselineList = @()
     $CatalogInfo = @{}
     $CatalogURL = "https://$($IpAddress)/api/UpdateService/Catalogs"
-    $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $Response = Invoke-WebRequest -Uri $CatalogURL -Method Get -Headers $Headers -ContentType $Type
     if ($Response.StatusCode -eq 200) {
         $DevInfo = $Response.Content | ConvertFrom-Json
         $values = $DevInfo.'value'
@@ -190,7 +186,7 @@ function Delete-CatalogAndBaseline($IpAddress, $Headers, $Type, $CatalogInfo) {
         $BaselineDeletePayload = @{}
         $BaselineDeletePayload."BaselineIds" = $CatalogInfo."BaselineList"
         $payload = $BaselineDeletePayload | ConvertTo-Json
-        $Response = Invoke-WebRequest -Uri $DeleteBaselineURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $payload
+        $Response = Invoke-WebRequest -Uri $DeleteBaselineURL -Headers $Headers -ContentType $Type -Method POST -Body $payload
         if ($Response.StatusCode -eq 204) {
             Write-Host "Existing baselines deleted successfully"
         }
@@ -206,7 +202,7 @@ function Delete-CatalogAndBaseline($IpAddress, $Headers, $Type, $CatalogInfo) {
         $CatalogDeletePayload = @{}
         $CatalogDeletePayload."CatalogIds" = $CatalogInfo."CatalogList"
         $payload = $CatalogDeletePayload | ConvertTo-Json
-        $Response = Invoke-WebRequest -Uri $DeleteCatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $payload
+        $Response = Invoke-WebRequest -Uri $DeleteCatalogURL -Headers $Headers -ContentType $Type -Method POST -Body $payload
         if ($Response.StatusCode -eq 204) {
             Write-Host "Existing catalogs deleted successfully"
         }
@@ -222,7 +218,7 @@ function Delete-CatalogAndBaseline($IpAddress, $Headers, $Type, $CatalogInfo) {
 function Get-BaselineId($IpAddress, $Headers, $Type, $CatalogId) {
     $BaselineURL = "https://$($IpAddress)/api/UpdateService/Baselines"
     $BaselineId = $null
-    $Response = Invoke-WebRequest -Uri $BaselineURL -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $Response = Invoke-WebRequest -Uri $BaselineURL -Method Get -Headers $Headers -ContentType $Type
     if ($Response.StatusCode -eq 200) {
         $BaselineInfo = $Response.Content | ConvertFrom-Json
         $values = $BaselineInfo.'value'
@@ -240,7 +236,7 @@ function Create-Baseline($IpAddress, $Headers, $Type, $catalog_id, $repoId, $Tar
     $BaselinePayload = Get-BaselinePayload $IpAddress $Headers $Type $catalog_id $repoId $TargetId $TargetTypeHash
     $BaselineURL = "https://$($IpAddress)/api/UpdateService/Baselines"
     $Body = $BaselinePayload | ConvertTo-Json -Depth 6
-    $Response = Invoke-WebRequest -Uri $BaselineURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
+    $Response = Invoke-WebRequest -Uri $BaselineURL -Headers $Headers -ContentType $Type -Method POST -Body $Body
     if ($Response.StatusCode -eq 201) {
         Write-Host "Baseline creation successful..waiting for completion"
     }
@@ -255,11 +251,11 @@ function Create-Catalog($IpAddress, $Headers, $Type) {
     $Body = $CatalogPayload | ConvertTo-Json -Depth 6
     $catalog_id = $null
     $repoId = $null
-    $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
+    $Response = Invoke-WebRequest -Uri $CatalogURL -Headers $Headers -ContentType $Type -Method POST -Body $Body
     if ($Response.StatusCode -eq 201) {
         Write-Host "Catalog creation successful..waiting for completion"
         Start-Sleep -s 80
-        $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+        $Response = Invoke-WebRequest -Uri $CatalogURL -Headers $Headers -ContentType $Type -Method GET
         $CatalogInfo = $Response | ConvertFrom-Json
         foreach ($catalog in $CatalogInfo.'value') {
             if ($catalog.'Repository'.'Source' -eq "downloads.dell.com") {
@@ -327,7 +323,7 @@ function Get-BaselinePayload($IpAddress, $Headers, $Type, $CatalogId, $repoId, $
 
 function Get-GroupDetail($IpAddress, $Headers, $Type, $GroupId) {
     $GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))"
-    $Response = Invoke-WebRequest -Uri $GroupServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $GroupServiceURL -Headers $Headers -ContentType $Type -Method GET
     $groupInfo = @{}
     if ($Response.StatusCode -eq 200) {
         $GroupResp = $Response.Content | ConvertFrom-Json
@@ -346,7 +342,7 @@ function Get-GroupDetail($IpAddress, $Headers, $Type, $GroupId) {
 
 function Get-DeviceDetail($IpAddress, $Headers, $Type, $DeviceId) {
     $DeviceServiceURL = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))"
-    $Response = Invoke-WebRequest -Uri $DeviceServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $DeviceServiceURL -Headers $Headers -ContentType $Type -Method GET
     $DevInfo = @{}
     if ($Response.StatusCode -eq 200) {
         $DevResp = $Response.Content | ConvertFrom-Json
@@ -368,16 +364,16 @@ function Get-DeviceDetail($IpAddress, $Headers, $Type, $DeviceId) {
 function Check-ResponseType($complValList) {
     $flag = "false"
     $complVal = $complValList[0]
-	$ComponentCompliance= $complVal.ComponentComplianceReports
-		if ($ComponentCompliance){
-			$flag = "true"
-		}
+    $ComponentCompliance = $complVal.ComponentComplianceReports
+    if ($ComponentCompliance) {
+        $flag = "true"
+    }
     return $flag
 }
 
 function Check-DeviceComplianceReport($IpAddress, $Headers, $Type, $BaselineId) {
     $ComplURL = "https://$($IpAddress)/api/UpdateService/Baselines($($BaselineId))/DeviceComplianceReports"
-    $Response = Invoke-WebRequest -Uri $ComplURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $ComplURL -Headers $Headers -ContentType $Type -Method GET
     $DeviceComplianceReportTargetList = @()
     $DeviceComplianceReportHash = @{}
 
@@ -412,12 +408,12 @@ function Check-DeviceComplianceReport($IpAddress, $Headers, $Type, $BaselineId) 
                     }
                 }
             }
-            elseif ($complValList.Length -gt 0){
+            elseif ($complValList.Length -gt 0) {
                 foreach ($complianceHash in $complValList) {
                     $sourcesString = $null
                     $navigationUrlLink = $complianceHash.'ComponentComplianceReports@odata.navigationLink'
                     $navigationURL = "https://$($IpAddress)" + "$navigationUrlLink"
-                    $ComponentComplianceReportsResponse = Invoke-WebRequest -Uri $navigationURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+                    $ComponentComplianceReportsResponse = Invoke-WebRequest -Uri $navigationURL -Headers $Headers -ContentType $Type -Method GET
                     if ($ComponentComplianceReportsResponse.StatusCode -eq 200) {
                         $ComponentComplianceData = $ComponentComplianceReportsResponse.Content | ConvertFrom-Json
                         if ($ComponentComplianceData.'@odata.count' -gt 0) {
@@ -441,12 +437,12 @@ function Check-DeviceComplianceReport($IpAddress, $Headers, $Type, $BaselineId) 
 				
                         }
                     }
-					else {
-						Write-Warning "Compliance reports api call did not succeed...status code returned is not 200"
-					}
+                    else {
+                        Write-Warning "Compliance reports api call did not succeed...status code returned is not 200"
+                    }
                 }
             }
-			#>
+            #>
 			
         }
         else {
@@ -498,7 +494,7 @@ function Wait-OnUpdateJob($IpAddress, $Headers, $Type, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -511,12 +507,12 @@ function Wait-OnUpdateJob($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Update job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -531,7 +527,7 @@ function Wait-OnUpdateJob($IpAddress, $Headers, $Type, $JobId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
 
@@ -647,7 +643,7 @@ Try {
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
 
 
@@ -661,24 +657,24 @@ Try {
         if ($GroupId) {
             $GroupList = Get-GroupList $IpAddress $Headers $Type
             if ($GroupList -contains $GroupId) {
-				#check if there are any devices associated with this group
-				$GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
-				$Response = Invoke-WebRequest -Uri $GroupServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-				$groupInfo = @{}
-				if ($Response.StatusCode -eq 200) {
-					$GroupResp = $Response.Content | ConvertFrom-Json
-					if ($GroupResp."@odata.count" -eq 0) {
-						throw "Unable to fetch group info for group id $($GroupId)"
-					}
-				}
-				else {throw "Unable to fetch group info for the device ... Exiting"}
-			}
-            else {throw "Group $($GroupId) not present on $($IpAddress) ... Exiting"}
+                #check if there are any devices associated with this group
+                $GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
+                $Response = Invoke-WebRequest -Uri $GroupServiceURL -Headers $Headers -ContentType $Type -Method GET
+                $groupInfo = @{}
+                if ($Response.StatusCode -eq 200) {
+                    $GroupResp = $Response.Content | ConvertFrom-Json
+                    if ($GroupResp."@odata.count" -eq 0) {
+                        throw "Unable to fetch group info for group id $($GroupId)"
+                    }
+                }
+                else { throw "Unable to fetch group info for the device ... Exiting" }
+            }
+            else { throw "Group $($GroupId) not present on $($IpAddress) ... Exiting" }
         }
         else {
             $DeviceList = Get-DeviceList $IpAddress $Headers $Type
             if ($DeviceList -contains $DeviceId) {}
-            else {throw "Device $($DeviceId) not present on $($IpAddress) ... Exiting"}
+            else { throw "Device $($DeviceId) not present on $($IpAddress) ... Exiting" }
         }
         #check if there are any existing catalogs,baselines and delete them before creating new catalog.
         $CatalogInfo = Check-ExistingCatalogAndBaseline $IpAddress $Headers $Type
@@ -712,7 +708,7 @@ Try {
                 # Update firmware
                 $UpdateJobURL = "https://$($IpAddress)/api/JobService/Jobs"
                 $Body = $UpdatePayload | ConvertTo-Json -Depth 6
-                $JobResp = Invoke-WebRequest -Uri $UpdateJobURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
+                $JobResp = Invoke-WebRequest -Uri $UpdateJobURL -Headers $Headers -ContentType $Type -Method POST -Body $Body
                 if ($JobResp.StatusCode -eq 201) {
                     Write-Host "Update job creation successful"
                     $JobInfo = $JobResp.Content | ConvertFrom-Json
@@ -733,6 +729,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

@@ -28,7 +28,7 @@ This script retires the current lead and the backup lead gets promoted as the ne
  1. Credentials entered are not stored to disk.
  
 Example:
-python retire_lead.py --ip <lead ip> --user <username> --password <password>
+python invoke_retire_lead.py --ip <lead ip> --user <username> --password <password>
 
 retires the current lead and promotes the backup lead
 

@@ -1,7 +1,7 @@
 ﻿<#
 PowerShell Script using OME API to get the device list.
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
-_version_ = 0.1
+_version_ = 0.2
 
 Copyright (c) 2020 Dell EMC Corporation
 
@@ -19,254 +19,222 @@ limitations under the License.
 #>
 
 <#
- .SYNOPSIS
-   Script to get the list of devices managed by OM Enterprise
+  .SYNOPSIS
+    Script to get the list of devices managed by OM Enterprise
 
- .DESCRIPTION
+  .DESCRIPTION
 
-   This script exercises the OME REST API to get a list of devices
-   currently being managed by that instance. For authentication X-Auth
-   is used over Basic Authentication
+    This script exercises the OME REST API to get a list of devices
+    currently being managed by that instance. For authentication X-Auth
+    is used over Basic Authentication
 
-   Note that the credentials entered are not stored to disk.
+    Note that the credentials entered are not stored to disk.
 
  .PARAMETER IpAddress
-   This is the IP address of the OME Appliance
+    This is the IP address of the OME Appliance
 
  .PARAMETER Credentials
-   Credentials used to talk to the OME Appliance
+    Credentials used to talk to the OME Appliance
 
  .PARAMETER OutFormat
-   Output format - one of csv / json
-   Default is JSON
+    Output format - one of csv / json. If no argument is provided to this and to OutFilePath it will print 
+    a table to screen. If OutFilePath is provided it will print to a file. Note: using the argument CSV here
+    without OutFilePath will also cause a table to print to screen. Without OutFilePath and with the json
+    argument this will print the JSON to screen.
 
- .PARAMETER Outfilepath
-   An optional file to dump output to in the specified
-   output format  
+ .PARAMETER OutFilePath
+    An optional file to dump output to in the specified
+    output format  
 
-
-   .EXAMPLE
-   $cred = Get-Credential
-   .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
-
- .EXAMPLE
-   Get-DeviceList -IPAddress "10.xx.xx.xx" -UserName admin
-   Get-DeviceList -IPAddress "10.xx.xx.xx" -OutFormat json -UserName admin
-   Get-DeviceList -IpAddress 100.96.20.132 -OutFormat CSV -UserName admin -Outfilepath C:\Users\Desktop\test.csv
-   Get-DeviceList -IpAddress 100.96.20.132 -OutFormat json -UserName admin -Outfilepath C:\Users\Desktop\test.json
-   In this instance you will be prompted for credentials to use
+  .EXAMPLE
+    $cred = Get-Credential
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -OutFormat json
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -OutFormat CSV -OutFilePath .\\test.csv
 #>
+
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
-    [System.Net.IPAddress] $IPAddress,
+  [Parameter(Mandatory = $true)]
+  [System.Net.IPAddress] $IPAddress,
 
-    [Parameter(Mandatory=$False)]
-    [ValidateSet('CSV','Json')]
-    [String] $OutFormat = "json",
+  [Parameter(Mandatory = $False)]
+  [ValidateSet('CSV', 'json')]
+  [String] $OutFormat = "CSV",
 
-    [Parameter(Mandatory=$false)]
-    [AllowEmptyString()]
-    [String] $Outfilepath = "",
+  [Parameter(Mandatory = $false)]
+  [AllowEmptyString()]
+  [String] $OutFilePath = "",
 
-    [Parameter(Mandatory = $true)]
-    $UserName = "admin",
-
-    [Parameter(Mandatory=$True)]
-    [SecureString]$Password
+  [Parameter(Mandatory)]
+  [pscredential] $Credentials
 )
-function Set-CertPolicy() 
-{
-    ## Trust all certs - for sample usage only
-    Try 
-    {
-        add-type @"
-        using System.Net;
-        using System.Security.Cryptography.X509Certificates;
-        public class TrustAllCertsPolicy : ICertificatePolicy 
-        {
-            public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem)
-            {
-                return true;
-            }
-        }
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    Catch 
-    {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
 
-function Json-Format
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        $data,
+function Get-UniqueFileName {
+  <#
+      .SYNOPSIS
+        Get a unique file name for the provided file
 
-        [Parameter(Mandatory)]
-        [AllowEmptyString()]
-        [String] $path
-    )
+      .DESCRIPTION
+        Resolves any relative paths to a full path and if the file already exists adds (#) to the filename and
+        returns it.
 
-    if($path -eq $null -or $path -eq "")
-    {
-        $DeviceData | ConvertTo-Json -Depth 100
-    }
-    else
-    {
-        $filepath = Get-uniquefilename -filepath $path -formatextension "json"
-        $jsondata | Out-File -FilePath $path
-    } 
-}
+      .PARAMETER FilePath
+        A file path to a target location. Ex: '.\test.csv'
 
-function CSV-Format
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        $data,
+      .OUTPUTS
+        The output of the function is in the variable FilePath and contains the full file path to the provided
+        file. For example if .\test.csv were provided, this could resolve to 
+        "C:\Users\grant\Documents\code\OpenManage-Enterprise\test.csv"
+    #>
 
-        [Parameter(Mandatory)]
-        [AllowEmptyString()]
-        [String] $path
-    )
-    $Devicearray = @()
-    foreach($device in $DeviceData)
-    {
-        $DirPermissions = New-Object -TypeName PSObject -Property @{
-        ID = $Device.Id
-        Identifier = $Device.Identifier
-        DeviceServiceTag = $Device.DeviceServiceTag
-        ChassisServiceTag = $Device.ChassisServiceTag
-        Model = $Device.Model
-        DeviceName = $Device.DeviceName
-        }
-        $Devicearray += $DirPermissions
-    }
-    if($path -eq $null -or $path -eq "")
-    {
-        $Devicearray | Format-Table
-    }
-    else
-    {
-        $filepath = Get-uniquefilename -filepath $path -formatextension "csv"
-        $Devicearray | Export-Csv -Path $filepath -NoTypeInformation
-    } 
-}
-
-function Get-uniquefilename
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [System.IO.FileInfo] $filepath,
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory)]
+    [System.IO.FileInfo] $FilePath,
     
-        [Parameter(Mandatory)]
-        [String] $formatextension
-    )
+    [Parameter(Mandatory)]
+    [String] $formatextension
+  )
 
-    if(Test-Path -LiteralPath $filepath -PathType Container)
-    {
-        Write-Error "Unable to get the file name, please provide the filename"
+  if (Test-Path -LiteralPath $FilePath -PathType Container) {
+    Write-Error "Unable to get the file name, please provide the filename"
+    throw
+  }
+  else {
+    $folder = Split-Path -Path ([io.path]::GetFullPath($FilePath)) -Parent
+    $formatfilename = $FilePath.BaseName
+    $i = 1
+    while (Test-Path $FilePath) {
+      $filename = $formatfilename + "($i)"
+      $newfilename = $filename + "." + $formatextension
+      $FilePath = Join-Path $folder $newfilename
+      $i++
     }
-    else
-    {
-        $folder = Split-Path -Path ([io.path]::GetFullPath($filepath)) -Parent
-        $formatfilename = $filepath.BaseName
-        $i = 1
-        while(Test-Path $filepath)
-        {
-            $filename = $formatfilename+"($i)"
-            $newfilename = $filename+"."+$formatextension
-            $filepath = Join-Path $folder $newfilename
-            $i++
-        }
-    }
-    return $filepath
+  }
+  return $FilePath
 }
 
 
+function Get-Data {
+  <#
+    .SYNOPSIS
+      Used to interact with API resources
 
-try
-{
-    Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $BaseUri = "https://$($IpAddress)"
-    $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
-    $NextLinkUrl = $null
-    $Type        = "application/json"
-    #$UserName    = $Credentials.username
-    $PlainPassword = [System.Net.NetworkCredential]::new("", $Password).Password
-    #$password = ConvertFrom-SecureString -SecureString $Password
-    #$Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$PlainPassword;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    .DESCRIPTION
+      This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+      handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+      pages to get a complete listing.
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201)
-    {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $DeviceData = @()
-        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($DevCountResp.StatusCode -eq 200)
-        {
-            $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
-            $DeviceData += $DeviceCountData.'value'
-            if($DeviceCountData.'@odata.nextLink')
-            {
-                $NextLinkUrl = $BaseUri + $DeviceCountData.'@odata.nextLink'
-            }
-            while($NextLinkUrl)
-            {
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                if($NextLinkResponse.StatusCode -eq 200)
-                {
-                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                    $DeviceData += $NextLinkData.'value'
-                    if($NextLinkData.'@odata.nextLink')
-                    {
-                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                    }
-                    else
-                    {
-                        $NextLinkUrl = $null
-                    }
-                }
-                else
-                {
-                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-                    $NextLinkUrl = $null
-                }
-            }
-            
-            if($OutFormat -eq "json")
-            {
-                Json-Format -data $DeviceData -path $Outfilepath
-            }
-            elseif($OutFormat -eq "csv")
-            {
-                CSV-Format -data $DeviceData -path $Outfilepath
-            }       
-        }
-        else
-        {
-            Write-Error "Unable to get count of managed devices .. Exiting"
-        }
+    .PARAMETER Url
+    The API url against which you would like to make a request
+
+    .INPUTS
+    None. You cannot pipe objects to Get-Data.
+
+    .OUTPUTS
+    list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
+    OME server
+  #>
+    
+  [CmdletBinding()]
+  param (
+  
+    [Parameter(Mandatory)]
+    [string] 
+    # The API url against which you would like to make a request
+    $Url,
+  
+    [Parameter(Mandatory = $false)]
+    [string]
+    # (Optional) A filter to run against the API endpoint
+    $Filter
+  )
+  
+  $Data = @()
+  $NextLinkUrl = $null
+  try {
+  
+    if ($PSBoundParameters.ContainsKey('Filter')) {
+      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get 
+      -Credential $Credentials -ContentType $Type -SkipCertificateCheck
+  
+      if ($CountData.'@odata.count' -lt 1) {
+        Write-Error "No results were found for filter $($Filter)."
+        return $null
+      } 
     }
-    else
-    {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+    else {
+      $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+        -SkipCertificateCheck
     }
+  
+    $Data += $CountData.'value'
+    if ($CountData.'@odata.nextLink') {
+      $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+    }
+    while ($NextLinkUrl) {
+      $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
+        -ContentType $Type -SkipCertificateCheck
+      $Data += $NextLinkData.'value'
+      if ($NextLinkData.'@odata.nextLink') {
+        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+      }
+      else {
+        $NextLinkUrl = $null
+      }
+    }
+      
+    return $Data
+  
+  }
+  catch [System.Net.Http.HttpRequestException] {
+    Write-Error "There was a problem connecting to OME. Did it become unavailable?"
+    return $null
+  }
+  
 }
-catch
-{
-    Write-Error "Exception occured - $($_.Exception.Message)"
+
+
+try {
+
+  $BaseUri = "https://$($IpAddress)"
+  $DeviceCountUrl = $BaseUri + "/api/DeviceService/Devices"
+  $NextLinkUrl = $null
+
+  $DeviceData = Get-Data $DeviceCountUrl
+    
+  if ($OutFormat -eq "json") {    
+    if (-not $PSBoundParameters.ContainsKey('OutFilePath') -or $OutFilePath -eq "") {
+      $DeviceData | ConvertTo-Json -Depth 100
+    }
+    else {
+      $FilePath = Get-UniqueFileName -FilePath $OutFilePath -formatextension "json"
+      $jsondata | Out-File -FilePath $OutFilePath
+    } 
+  }
+  else {
+    $Devicearray = @()
+    foreach ($device in $DeviceData) {
+      $DirPermissions = New-Object -TypeName PSObject -Property @{
+        ID                = $Device.Id
+        Identifier        = $Device.Identifier
+        DeviceServiceTag  = $Device.DeviceServiceTag
+        ChassisServiceTag = $Device.ChassisServiceTag
+        Model             = $Device.Model
+        DeviceName        = $Device.DeviceName
+      }
+      $Devicearray += $DirPermissions
+    } if ($null -eq $OutFilePath -or $OutFilePath -eq "") {
+      $Devicearray | Format-Table
+    }
+    else {
+      $FilePath = Get-UniqueFileName -FilePath $OutFilePath -formatextension "csv"
+      $Devicearray | Export-Csv -Path $FilePath -NoTypeInformation
+    } 
+  }
+
+}
+catch {
+  Write-Error "Exception occured - $($_.Exception.Message)"
 }

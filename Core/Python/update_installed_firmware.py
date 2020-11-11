@@ -31,7 +31,7 @@ Description:
  Note that the credentials entered are not stored to disk.
 
 Example:
-python update_firmware_using_dup.py --ip <ip addr> --user admin
+python update_installed_firmware.py --ip <ip addr> --user admin
     --password <passwd> --groupid 25315
     --dupfile iDRAC-with-Lifecycle-Controller_Firmware_387FW_WN64_3.21.21.21_A00.EXE
 

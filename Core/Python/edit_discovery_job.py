@@ -27,7 +27,7 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python modify_discovery_job.py --ip <ip addr> --user admin
+   python edit_discovery_job.py --ip <ip addr> --user admin
     --password <passwd> --jobNamePattern <Existing Discovery Job name>
     --targetUserName <user name> --targetPassword <password>
     --targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx>

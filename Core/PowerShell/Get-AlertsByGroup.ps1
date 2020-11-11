@@ -59,7 +59,7 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [ValidateSet("Name","Description")]
+    [ValidateSet("Name", "Description")]
     [String] $FilterBy,
 
     [Parameter(Mandatory)]
@@ -67,9 +67,9 @@ param(
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -83,7 +83,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -91,52 +91,54 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 Try {
     Set-CertPolicy
     $BaseUri = "https://$($IpAddress)"
-    $SessionUrl  = $BaseUri + "/api/SessionService/Sessions"
-    $GroupUrl    = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
+    $SessionUrl = $BaseUri + "/api/SessionService/Sessions"
+    $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups?`$filter=$($FilterBy) eq '$($GroupInfo)'"
     $NextLinkUrl = $null
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
         if ($GrpResp.StatusCode -eq 200) {
             $GrpInfo = $GrpResp.Content | ConvertFrom-Json
             if ($GrpInfo.'@odata.count' -gt 0) {
                 $GroupId = $GrpInfo.value[0].Id
                 $AlertUrl = "https://$($IpAddress)/api/AlertService/Alerts?`$filter=AlertDeviceGroup eq $($GroupId)"
-                $AlertResp = Invoke-WebRequest -Uri $AlertUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                $AlertResp = Invoke-WebRequest -Uri $AlertUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($AlertResp.StatusCode -eq 200) {
                     $AlertInfo = $AlertResp.Content | ConvertFrom-Json
                     $AlertList = $AlertInfo.value
                     $TotalCount = $AlertInfo.'@odata.count'
                     if ($TotalCount -gt 0) {
-                        if ($AlertInfo.'@odata.nextLink'){
+                        if ($AlertInfo.'@odata.nextLink') {
                             $NextLinkUrl = $BaseUri + $AlertInfo.'@odata.nextLink'
                         }
-                        while ($NextLinkUrl){
-                            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                        while ($NextLinkUrl) {
+                            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                             if ($NextLinkResponse.StatusCode -eq 200) {
                                 $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                                 $AlertList += $NextLinkData.'value'
-                                if ($NextLinkData.'@odata.nextLink'){
+                                if ($NextLinkData.'@odata.nextLink') {
                                     $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                                }else{
+                                }
+                                else {
                                     $NextLinkUrl = $null
                                 }
-                            }else{
+                            }
+                            else {
                                 Write-Error "Unable to get full set of Alerts ... "
                                 $NextLinkUrl = $null
                             }
                         }
                         Write-Output "*** Alerts for group ($($GroupInfo))***"
-                        $AlertList| Format-List
+                        $AlertList | Format-List
                     }
                     else {
                         Write-Warning "No alerts found for group ($($GroupInfo))"
@@ -158,6 +160,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

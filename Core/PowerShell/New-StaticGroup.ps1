@@ -59,9 +59,9 @@ param(
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -75,7 +75,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 
@@ -83,33 +83,33 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $StaticGrp   = "https://$($IpAddress)/api/GroupService/Groups?`$filter=Name eq 'Static Groups'"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $StaticGrp = "https://$($IpAddress)/api/GroupService/Groups?`$filter=Name eq 'Static Groups'"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $StaticGrpResp = Invoke-WebRequest -Uri $StaticGrp -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $StaticGrpResp = Invoke-WebRequest -Uri $StaticGrp -Method Get -Headers $Headers -ContentType $Type
         if ($StaticGrpResp.StatusCode -eq 200) {
             $StaticGrpInfo = $StaticGrpResp.Content | ConvertFrom-Json
             $StaticGrpId = $StaticGrpInfo.Value[0].Id
             $GrpInfo = @{
-                "Name"=$GroupName;
-                "Description"="";
-                "MembershipTypeId"=12;
-                "ParentId"=[uint32]$StaticGrpId
-                }
-            $GrpPayload = @{"GroupModel"=$GrpInfo} | ConvertTo-Json
+                "Name"             = $GroupName;
+                "Description"      = "";
+                "MembershipTypeId" = 12;
+                "ParentId"         = [uint32]$StaticGrpId
+            }
+            $GrpPayload = @{"GroupModel" = $GrpInfo } | ConvertTo-Json
             $GrpCreateUrl = "https://$($IpAddress)/api/GroupService/Actions/GroupService.CreateGroup"
 
-            $CreateResp = Invoke-WebRequest -Uri $GrpCreateUrl -UseBasicParsing -Me Post -H $Headers -Con $Type -Body $GrpPayload
+            $CreateResp = Invoke-WebRequest -Uri $GrpCreateUrl -Me Post -H $Headers -Con $Type -Body $GrpPayload
             if ($CreateResp.StatusCode -eq 200) {
                 Write-Host "new group created - ID:$($CreateResp)"
             }
@@ -123,6 +123,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Check if the group name already exists in OME and retry...Exception: $($_.Exception.Message)"
 }

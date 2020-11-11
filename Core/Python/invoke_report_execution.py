@@ -51,7 +51,7 @@ API WORKFLOW:
     and print out results
 
 EXAMPLE:
-    python .\run_existing_report.py  --ip <ip addr> --user <username>
+    python .\invoke_report_execution.py  --ip <ip addr> --user <username>
         --password <password> --reportid 10051
 """
 import sys
