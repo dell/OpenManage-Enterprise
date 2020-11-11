@@ -31,7 +31,7 @@ DESCRIPTION:
    Note that the credentials entered are not stored to disk.
 
 EXAMPLE:
-   python create_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+   python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
 """
 import sys
 import argparse
