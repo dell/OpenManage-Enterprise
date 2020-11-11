@@ -56,6 +56,9 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
         ome_password: OME password
 
     Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect.
     """
 
     authenticated_headers = {'content-type': 'application/json'}

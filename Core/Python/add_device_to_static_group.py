@@ -43,13 +43,13 @@ import requests
 
 def get_device_list(ome_ip_address: str, headers: dict) -> dict:
     """
-    Retrieves a list of all devices being handled by this OME server
+    Retrieves a dictionary of all devices being handled by this OME server
 
     Args:
         ome_ip_address: The IP address of the OME server
         headers: Headers used for authentication to the OME server
 
-    Returns: A list of all devices managed by the this OME server
+    Returns: A dictionary of all devices managed by the this OME server
 
     """
 

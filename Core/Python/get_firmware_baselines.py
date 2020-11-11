@@ -50,6 +50,9 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
         ome_password: OME password
 
     Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect.
     """
 
     authenticated_headers = {'content-type': 'application/json'}
@@ -71,7 +74,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
                         "password, and IP?")
 
 
-def retrieve_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
+def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
     """
     This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
     handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
@@ -150,7 +153,7 @@ def get_firmware_baselines(authenticated_headers: dict,
 
     print("Retrieving a list of firmware")
     firmware_baselines = \
-        retrieve_data(authenticated_headers, "https://%s/api/UpdateService/Baselines" % ome_ip_address)  # type: list
+        get_data(authenticated_headers, "https://%s/api/UpdateService/Baselines" % ome_ip_address)  # type: list
 
     if not firmware_baselines:
         print("Unable to retrieve firmware list from %s. This could happen for many reasons but the most likely is a"
@@ -166,7 +169,7 @@ def get_firmware_baselines(authenticated_headers: dict,
 
     # If the user passed a device name, resolve that name to a device ID
     if device_name:
-        device_id = retrieve_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
                                   "DeviceName eq \'%s\'" % device_name)
         if not device_id:
             print("Error: We were unable to find device name " + device_name + " on this OME server. Exiting.")
@@ -174,7 +177,7 @@ def get_firmware_baselines(authenticated_headers: dict,
         else:
             device_id = device_id[0]['Id']
     elif service_tag:
-        device_id = retrieve_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
                                   "DeviceServiceTag eq \'%s\'" % service_tag)
 
         if not device_id:
@@ -183,7 +186,7 @@ def get_firmware_baselines(authenticated_headers: dict,
         else:
             device_id = device_id[0]['Id']
     elif device_idrac_ip:
-        device_list = retrieve_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address)
+        device_list = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address)
 
         if not device_list:
             print("Unable to get device list from %s. This could happen for many reasons but the most likely is a"
