@@ -69,6 +69,9 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
         ome_password: OME password
 
     Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect.
     """
 
     authenticated_headers = {'content-type': 'application/json'}
@@ -90,7 +93,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
                     "password, and IP?")
 
 
-def retrieve_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
+def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
     """
     This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
     handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
@@ -169,7 +172,7 @@ if __name__ == '__main__':
         if not headers:
             sys.exit(0)
 
-        audit_logs = retrieve_data(headers, "https://%s/api/ApplicationService/AuditLogs" % args.ip)
+        audit_logs = get_data(headers, "https://%s/api/ApplicationService/AuditLogs" % args.ip)
 
         if args.share:
             if not args.smbuser or not args.smbpass:
