@@ -1,7 +1,6 @@
 ﻿<#
 PowerShell Script using OME API to get the device list.
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
-_version_ = 0.2
 
 Copyright (c) 2020 Dell EMC Corporation
 
@@ -118,47 +117,47 @@ function Get-UniqueFileName {
 
 function Get-Data {
   <#
-    .SYNOPSIS
-      Used to interact with API resources
+  .SYNOPSIS
+  Used to interact with API resources
 
-    .DESCRIPTION
-      This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
-      handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
-      pages to get a complete listing.
+  .DESCRIPTION
+  This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+  handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+  pages to get a complete listing.
 
-    .PARAMETER Url
-    The API url against which you would like to make a request
+  .PARAMETER Url
+  The API url against which you would like to make a request
 
-    .INPUTS
-    None. You cannot pipe objects to Get-Data.
+  .INPUTS
+  None. You cannot pipe objects to Get-Data.
 
-    .OUTPUTS
-    list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
-    OME server
-  #>
-    
+  .OUTPUTS
+  list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
+  OME server
+
+#>
+
   [CmdletBinding()]
   param (
-  
+
     [Parameter(Mandatory)]
     [string] 
     # The API url against which you would like to make a request
     $Url,
-  
+
     [Parameter(Mandatory = $false)]
     [string]
     # (Optional) A filter to run against the API endpoint
     $Filter
   )
-  
+
   $Data = @()
   $NextLinkUrl = $null
   try {
-  
+
     if ($PSBoundParameters.ContainsKey('Filter')) {
-      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get 
-      -Credential $Credentials -ContentType $Type -SkipCertificateCheck
-  
+      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+
       if ($CountData.'@odata.count' -lt 1) {
         Write-Error "No results were found for filter $($Filter)."
         return $null
@@ -168,15 +167,28 @@ function Get-Data {
       $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
         -SkipCertificateCheck
     }
-  
-    $Data += $CountData.'value'
+
+    if ($null -ne $CountData.'value') {
+      $Data += $CountData.'value'
+    }
+    else {
+      $Data += $CountData
+    }
+      
     if ($CountData.'@odata.nextLink') {
       $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
     }
     while ($NextLinkUrl) {
       $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
         -ContentType $Type -SkipCertificateCheck
-      $Data += $NextLinkData.'value'
+          
+      if ($null -ne $NextLinkData.'value') {
+        $Data += $NextLinkData.'value'
+      }
+      else {
+        $Data += $NextLinkData
+      }    
+          
       if ($NextLinkData.'@odata.nextLink') {
         $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
       }
@@ -184,15 +196,15 @@ function Get-Data {
         $NextLinkUrl = $null
       }
     }
-      
-    return $Data
   
+    return $Data
+
   }
   catch [System.Net.Http.HttpRequestException] {
     Write-Error "There was a problem connecting to OME. Did it become unavailable?"
     return $null
   }
-  
+
 }
 
 

@@ -2,7 +2,6 @@
 # Python script using OME API to get device list.
 #
 # _author_ = Prasad Rao <prasad_rao1@Dell.com>
-# _version_ = 0.1
 #
 #
 # Copyright (c) 2020 Dell EMC Corporation

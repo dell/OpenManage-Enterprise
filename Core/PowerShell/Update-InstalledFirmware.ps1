@@ -1,6 +1,5 @@
 ﻿<#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
-_version_ = 0.1
 Copyright (c) 2020 Dell EMC Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

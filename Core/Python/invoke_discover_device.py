@@ -2,7 +2,6 @@
 # Python script using OME API to create a new static group
 #
 # _maintained_by_ = Grant Curell <grant_curell@dell.com>
-# _version_ = 0.2
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #

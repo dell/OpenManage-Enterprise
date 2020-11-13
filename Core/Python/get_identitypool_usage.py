@@ -2,7 +2,6 @@
 # Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
 #
 # Copyright (c) 2020 Dell EMC Corporation

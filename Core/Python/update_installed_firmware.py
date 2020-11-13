@@ -2,7 +2,6 @@
 # Python script using OME API to update firmware on devices
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
-# _version_ = 0.1
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #

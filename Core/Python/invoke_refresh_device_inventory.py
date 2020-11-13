@@ -2,7 +2,6 @@
 #  Python script using OME API to create a new static group
 #
 # _author_ = Grant Curell <grant_curell@dell.com>
-# _version_ = 0.1
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -28,7 +27,7 @@ DESCRIPTION:
     with basic authentication. Note: Credentials are not stored on disk.
 
 EXAMPLE:
-   python refresh_device_inventory.py -i 192.168.1.93 -u admin -p somepass --idrac-ips 192.168.1.63,192.168.1.45
+   python invoke_refresh_device_inventory.py -i 192.168.1.93 -u admin -p somepass --idrac-ips 192.168.1.63,192.168.1.45
 """
 
 from argparse import RawTextHelpFormatter
@@ -146,7 +145,11 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
     else:
         count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
 
-    data = count_data['value']
+    if 'value' in count_data:
+        data = count_data['value']
+    else:
+        data = count_data
+
     if '@odata.nextLink' in count_data:
         # Grab the base URI
         next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
@@ -165,10 +168,11 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
             if '@odata.nextLink' in requested_data:
                 next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + \
                                 requested_data['@odata.nextLink']
-            if data is None:
-                data = requested_data["value"]
+
+            if 'value' in requested_data:
+                data += requested_data['value']
             else:
-                data += requested_data["value"]
+                data += requested_data
         else:
             print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
                   " with error: " + response.text)
@@ -264,7 +268,7 @@ def track_job_to_completion(ome_ip_address: str,
     return True
 
 
-def resolve_device_id(authenticated_headers: dict,
+def get_device_id(authenticated_headers: dict,
                       ome_ip_address: str,
                       service_tag: str = None,
                       device_idrac_ip: str = None,
@@ -285,7 +289,7 @@ def resolve_device_id(authenticated_headers: dict,
     device_id = -1
 
     if not service_tag and not device_idrac_ip and not device_name:
-        print("No argument provided to resolve_device_id. Must provide service tag, device idrac IP or device name.")
+        print("No argument provided to get_device_id. Must provide service tag, device idrac IP or device name.")
         return -1
 
     # If the user passed a device name, resolve that name to a device ID
@@ -339,7 +343,7 @@ def refresh_device_inventory(authenticated_headers: dict,
                              device_idrac_ips: List[str] = None,
                              device_names: List[str] = None):
     """
-    Gets a list of firmware baselines from OME
+    Refresh the inventory of targeted hosts
 
     Args:
         authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
@@ -358,19 +362,19 @@ def refresh_device_inventory(authenticated_headers: dict,
 
     if service_tags:
         for service_tag in service_tags:
-            target = resolve_device_id(authenticated_headers, ome_ip_address, service_tag=service_tag)
+            target = get_device_id(authenticated_headers, ome_ip_address, service_tag=service_tag)
             if target != -1:
                 targets.append(target)
 
     if device_idrac_ips:
         for device_idrac_ip in device_idrac_ips:
-            target = resolve_device_id(authenticated_headers, ome_ip_address, device_idrac_ip=device_idrac_ip)
+            target = get_device_id(authenticated_headers, ome_ip_address, device_idrac_ip=device_idrac_ip)
             if target != -1:
                 targets.append(target)
 
     if device_names:
         for device_name in device_names:
-            target = resolve_device_id(authenticated_headers, ome_ip_address, device_name=device_name)
+            target = get_device_id(authenticated_headers, ome_ip_address, device_name=device_name)
             if target != -1:
                 targets.append(target)
 
@@ -504,6 +508,8 @@ def refresh_device_inventory(authenticated_headers: dict,
         print("Inventory refresh completed successfully.")
     else:
         print("Something went wrong. See text output above for more details.")
+
+    print("Inventory refresh complete!")
 
 
 if __name__ == '__main__':

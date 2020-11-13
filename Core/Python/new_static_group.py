@@ -2,7 +2,6 @@
 # Python script using OME API to create a new static group
 #
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
-# _version_ = 0.2
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
