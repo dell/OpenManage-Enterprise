@@ -46,33 +46,37 @@ This is used to perform any sort of interaction with a REST API resource. It inc
         This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
         handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
         pages to get a complete listing.
-
+    
         Args:
             authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
             url: The API url against which you would like to make a request
             odata_filter: An optional parameter for providing an odata filter to run against the API endpoint.
-
+    
         Returns: Returns a list of dictionaries of the data received from OME
-
+    
         """
-
+    
         next_link_url = None
-
+    
         if odata_filter:
             count_data = requests.get(url + '?$filter=' + odata_filter, headers=authenticated_headers, verify=False)
-
+    
             count_data = count_data.json()
             if count_data['@odata.count'] <= 0:
                 print("No results found!")
                 return []
         else:
             count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
-
-        data = count_data['value']
+    
+        if 'value' in count_data:
+            data = count_data['value']
+        else:
+            data = count_data
+    
         if '@odata.nextLink' in count_data:
             # Grab the base URI
             next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
-
+    
         while next_link_url is not None:
             response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
             next_link_url = None
@@ -81,29 +85,30 @@ This is used to perform any sort of interaction with a REST API resource. It inc
                 if requested_data['@odata.count'] <= 0:
                     print("No results found!")
                     return []
-
+    
                 # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
                 # is present we get a link to the page with the next set of results.
                 if '@odata.nextLink' in requested_data:
                     next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + \
                                     requested_data['@odata.nextLink']
-                if data is None:
-                    data = requested_data["value"]
+    
+                if 'value' in requested_data:
+                    data += requested_data['value']
                 else:
-                    data += requested_data["value"]
+                    data += requested_data
             else:
                 print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
-                    " with error: " + response.text)
+                      " with error: " + response.text)
                 raise Exception("Unknown error occurred. Received HTTP response code: " + str(response.status_code)
                                 + " with error: " + response.text)
-
+    
         return data
 
 ## Resolve a device to its ID
 
 Use this function to resolve a service tag, idrac IP, or an OME device name to its OME device ID. Most API resources require you to use the device ID to take action. Use this function to resolve any of the above to the OME device ID.
 
-    def resolve_device_id(authenticated_headers: dict,
+    def get_device_id(authenticated_headers: dict,
                         ome_ip_address: str,
                         service_tag: str = None,
                         device_idrac_ip: str = None,
@@ -124,7 +129,7 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
         device_id = -1
 
         if not service_tag and not device_idrac_ip and not device_name:
-            print("No argument provided to resolve_device_id. Must provide service tag, device idrac IP or device name.")
+            print("No argument provided to get_device_id. Must provide service tag, device idrac IP or device name.")
             return -1
 
         # If the user passed a device name, resolve that name to a device ID

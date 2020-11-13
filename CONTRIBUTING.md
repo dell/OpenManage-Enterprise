@@ -22,6 +22,28 @@ We are working to standardize the repository. Any help would be welcomed with [u
   - You can find approved PowerShell verbs [here](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
 - If your code is addressing an issue use the `#<ticket_number>` syntax inside of the commit message to reference the ticket.
 - Before writing functions for common functionality like getting a device ID, accessing a REST resource, etc check out [Library Code](#library-code). Before accepting pull requests, if you rewrite a function already listed here we will probably ask you to refactor to use the library code.
+- Whenever possible use odata filters instead of performing an exhaustive search of a dictionary. The [Get-Data](docs/powershell_library_code.md#Interact_with_an_API_Resource) for PowerShell and the [get_data](docs/python_library_code.md#Interact_with_an_API_Resource) provide a filter argument you can use for data retrieval. odata does not supported filtering on nested values so sometimes the `bad` method is unavoidable, but otherwise a filter can be used. This is particularly important to make our scripts scale efficiently for large deployments with tens of thousands of servers. Below are some common odata filters.
+  - Getting a group ID from its name: `https://<ome_ip>/api/GroupService/Groups?$filter=Name eq '<group_name>'`
+  - Get a device ID from its name `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceName eq '<device_name>'`
+  - Get a device ID from its service tag `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceServiceTag eq '<service_tag>'`
+
+#### Bad
+
+    device_list = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address)
+    for device_dictionary in device_list:
+        if device_dictionary['DeviceName'] == device_name:
+            device_id = device_dictionary['Id']
+            break
+
+#### Good
+
+    requests.get('https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'AHostName\' headers=authenticated_headers, verify=False)
+
+    # PowerShell
+    Get-Data "https://$($IpAddress)/api/DeviceService/Devices" "DeviceName eq `'$($DeviceName)`'"
+
+    # Python
+    get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address, "DeviceName eq \'%s\'" % device_name)
 
 ## PowerShell
 
