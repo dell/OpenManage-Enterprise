@@ -2,7 +2,6 @@
 #  Python script using OME API to create a new static group
 #
 # _author_ = Grant Curell <grant_curell@dell.com>
-# _version_ = 0.1
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -101,7 +100,11 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
     else:
         count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
 
-    data = count_data['value']
+    if 'value' in count_data:
+        data = count_data['value']
+    else:
+        data = count_data
+
     if '@odata.nextLink' in count_data:
         # Grab the base URI
         next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
@@ -120,10 +123,11 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
             if '@odata.nextLink' in requested_data:
                 next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + \
                                 requested_data['@odata.nextLink']
-            if data is None:
-                data = requested_data["value"]
+
+            if 'value' in requested_data:
+                data += requested_data['value']
             else:
-                data += requested_data["value"]
+                data += requested_data
         else:
             print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
                   " with error: " + response.text)

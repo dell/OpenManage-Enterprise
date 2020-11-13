@@ -1,6 +1,5 @@
 <#
 _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-_version_ = 0.1
 
 Copyright (c) 2020 Dell EMC Corporation
 

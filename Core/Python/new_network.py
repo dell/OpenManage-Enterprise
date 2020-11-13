@@ -2,7 +2,6 @@
 # Python script using OME API to create a Network
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #

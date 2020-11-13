@@ -1,6 +1,5 @@
 <#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
-_version_ = 0.1
 
 Copyright (c) 2020 Dell EMC Corporation
 

@@ -1,6 +1,5 @@
 <#
 _author_ = Grant Curell <grant_curell@dell.com>
-_version_ = 0.1
 
 Copyright (c) 2020 Dell EMC Corporation
 
@@ -57,26 +56,26 @@ param(
 
 function Get-Data {
   <#
-    .SYNOPSIS
-      Used to interact with API resources
+  .SYNOPSIS
+  Used to interact with API resources
 
-    .DESCRIPTION
-      This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
-      handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
-      pages to get a complete listing.
+  .DESCRIPTION
+  This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+  handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+  pages to get a complete listing.
 
-    .PARAMETER Url
-    The API url against which you would like to make a request
+  .PARAMETER Url
+  The API url against which you would like to make a request
 
-    .INPUTS
-    None. You cannot pipe objects to Get-Data.
+  .INPUTS
+  None. You cannot pipe objects to Get-Data.
 
-    .OUTPUTS
-    list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
-    OME server
+  .OUTPUTS
+  list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
+  OME server
 
-  #>
-  
+#>
+
   [CmdletBinding()]
   param (
 
@@ -96,8 +95,7 @@ function Get-Data {
   try {
 
     if ($PSBoundParameters.ContainsKey('Filter')) {
-      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -UseBasicParsing -Method Get 
-      -Credential $Credentials -ContentType $Type -SkipCertificateCheck
+      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get -Credential $Credentials -SkipCertificateCheck
 
       if ($CountData.'@odata.count' -lt 1) {
         Write-Error "No results were found for filter $($Filter)."
@@ -105,18 +103,31 @@ function Get-Data {
       } 
     }
     else {
-      $CountData = Invoke-RestMethod -Uri $Url -UseBasicParsing -Method Get -Credential $Credentials -ContentType $Type `
+      $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
         -SkipCertificateCheck
     }
 
-    $Data += $CountData.'value'
+    if ($null -ne $CountData.'value') {
+      $Data += $CountData.'value'
+    }
+    else {
+      $Data += $CountData
+    }
+      
     if ($CountData.'@odata.nextLink') {
       $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
     }
     while ($NextLinkUrl) {
-      $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -UseBasicParsing -Method Get -Credential $Credentials `
+      $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
         -ContentType $Type -SkipCertificateCheck
-      $Data += $NextLinkData.'value'
+          
+      if ($null -ne $NextLinkData.'value') {
+        $Data += $NextLinkData.'value'
+      }
+      else {
+        $Data += $NextLinkData
+      }    
+          
       if ($NextLinkData.'@odata.nextLink') {
         $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
       }
@@ -124,7 +135,7 @@ function Get-Data {
         $NextLinkUrl = $null
       }
     }
-    
+  
     return $Data
 
   }

@@ -1,8 +1,7 @@
 #
 # Python script using OME API to create a new static group
 #
-# _version_ = 0.1
-#
+# 
 # Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
