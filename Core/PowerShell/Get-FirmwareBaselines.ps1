@@ -140,7 +140,7 @@ function Get-Data {
 
   }
   catch [System.Net.Http.HttpRequestException] {
-    Write-Error "There was a problem connecting to OME. Did it become unavailable?"
+    Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
     return $null
   }
 
@@ -277,5 +277,5 @@ try {
 
 }
 catch {
-  Write-Error "Exception occured - $($_.Exception.Message)"
+  Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

@@ -115,8 +115,7 @@ function Get-Data {
     None. You cannot pipe objects to Get-Data.
 
     .OUTPUTS
-    list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
-    OME server
+    dict. A dictionary containing the results of the API call
 
   #>
   
@@ -184,7 +183,7 @@ function Get-Data {
 
     }
     catch [System.Net.Http.HttpRequestException] {
-        Write-Error "There was a problem connecting to OME. Did it become unavailable?"
+        Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
         return $null
     }
 
@@ -263,7 +262,7 @@ function Get-DeviceId {
         }
     }
 
-    if ($PSBoundParameters.ContainsKey('IdracIp')) {
+    if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
         $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
         foreach ($Device in $DeviceList) {
             if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $IdracIp) {
@@ -302,7 +301,7 @@ function Invoke-TrackJobToCompletion {
     True if the job completed successfully or completed with errors. Returns false if the job failed.
 
     #>
-  
+
     [CmdletBinding()]
     param (
 
@@ -323,12 +322,13 @@ function Invoke-TrackJobToCompletion {
         $SleepInterval = 60
     )
 
-    $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+    $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
     $Ctr = 0
     do {
         $Ctr++
         Start-Sleep -Seconds $SleepInterval
-        $JobData = Get-Data "https://$($OmeIpAddress)/api/JobService/Jobs($($JobId))"
+        $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
+        $JobData = Get-Data $JOBSVCURL
 
         if ($null -eq $JobData) {
             Write-Error "Something went wrong tracking the job data. 
@@ -343,18 +343,15 @@ function Invoke-TrackJobToCompletion {
             Write-Host "Job completed successfully!"
             break
         }
-        elseif ($FailedJobStatuses -contains $JobStatus) {
-            Write-Warning "Update job failed .... "
-            $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-            $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Credential $Credentials
-            if ($ExecResp.StatusCode -eq 200) {
-                Get-ExecutionHistoryDetail $ExecResp $ExecHistoryUrl $Headers $Type $JobExecUrl
-            }
-            else {
-                Write-Warning "Unable to get job execution history info"
-                return $false
-            }
-            break
+        elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
+            Write-Warning "Job failed"
+            $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
+            $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
+            $HistoryId = $ExecRespInfo.value[0].Id
+            $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
+                                             -ContentType $Type -Credential $Credentials -SkipCertificateCheck
+            Write-Host ($HistoryResp.value)
+            return $false
         }
         else { continue }
     } until ($Ctr -ge $MaxRetries)
@@ -553,5 +550,5 @@ try {
     Write-Output "Inventory refresh complete!"
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }
