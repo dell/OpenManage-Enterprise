@@ -50,7 +50,8 @@ We are working to standardize the repository. Any help would be welcomed with [u
 ## PowerShell
 
 - Must be tested and run against PowerShell 7
-- Names must use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
+- Function names must use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
+- Variable names should use CamelCaseLikeThis for regular variable names and ALLCAPS for constants. 
 - We suggest for development you use [Visual Studio Code](https://code.visualstudio.com/download). It provides a `Format Document` function which automatically updates your PowerShell code to follow best practices. If you would rather use something else you can use [Get-FirmwareBaselines.ps1](Core/PowerShell/Get-FirmwareBaselines.ps1) as a reference for our preferred PowerShell coding practices.
 - If for whatever reason the [Get-Data](docs/powershell_library_code.md#Interact-with-an-API-Resource) function does not suit your needs, use the `Invoke-RestMethod` function unless you have a specific reason to use `Invoke-WebRequest`. If you have not setup certificates, you will probably need to include the argument `-SkipCertificateCheck` otherwise you will get the error `Exception occured - The SSL connection could not be established, see inner exception.`
 - Provide documentation for all functions. For example:

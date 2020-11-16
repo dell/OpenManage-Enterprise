@@ -35,7 +35,7 @@ limitations under the License.
    .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -DupFile .\BIOSxxxx.EXE -DeviceId 25234
  .EXAMPLE
-   .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -DupFile .\BIOSxxxx.EXE
+   .\Update-InstalledFirmwareWithDup.ps1 -IpAddress "10.xx.xx.xx" -DupFile .\BIOSxxxx.EXE
     -GroupId 1010
    In this instance you will be prompted for credentials to use to
    connect to the appliance
