@@ -1,6 +1,8 @@
 ﻿<#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
+
 Copyright (c) 2020 Dell EMC Corporation
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -13,29 +15,47 @@ limitations under the License.
 #>
 
 <#
- .SYNOPSIS
-   Script to update firmware using catalog for a device or applicable devices
-   within a group
- .DESCRIPTION
-   This script exercises the OME REST API to allow updating
-   a device or a group of devices by using a single DUP file.
- .PARAMETER IpAddress
-   This is the IP address of the OME Appliance
- .PARAMETER Credentials
-   Credentials used to talk to the OME Appliance
- .PARAMETER GroupId
-   The Id of the Group to be updated using the Catalog.
- .PARAMETER DeviceId
-   The Id of the device to be updated using the Catalog.
- .EXAMPLE
-   $cred = Get-Credential
-   .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-    $cred -DeviceId 25234
- .EXAMPLE
-   .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-    $cred -GroupId 1010
-   In this instance you will be prompted for credentials to use to
-   connect to the appliance
+  .SYNOPSIS
+    Script to update firmware using Dell's online catalog or a custom NFS/CIFs repository.
+  .PARAMETER IpAddress
+    This is the IP address of the OME Appliance
+  .PARAMETER Credentials
+    Credentials used to talk to the OME Appliance
+  .PARAMETER GroupName
+    The ID of the Group to be updated using the catalog.
+  .PARAMETER DeviceIds
+    A list of IDs to be updated using the catalog
+  .PARAMETER ServiceTags
+    A list of service tags to be updated using the catalog
+  .PARAMETER IdracIps
+    A list of host idrac IPs belonging to hosts you would like to update
+  .PARAMETER DeviceNames
+    A list of device names belonging to hosts you would like to update
+  .PARAMETER UpdateActions
+    The type of action you would like to perform. This can be upgrade, downgrade, or flashall
+    Currently only upgrade is implemented.
+  .PARAMETER RepoType
+    (Not yet implemented)The type of resitory from which you would like to pull from. This can be CIFS or NFS.
+  .PARAMETER ResourceIp
+    The IP address of the CIFs or NFS share from which you would like to pull.
+  .PARAMETER CatalogPath
+    The fully qualified path to a CFS or NFS repository
+  .PARAMETER RepoUser
+    The username for the CIFS or NFS repository
+  .PARAMETER RepoDomain
+    The domain of the CIFS or NFS repository from which you would like to update
+  .PARAMETER RepoPassword
+    The password for the CIFS or NFS repository
+  .PARAMETER Force
+    Not yet implemented
+
+  .EXAMPLE
+    $cred = Get-Credential
+    .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceId 25234
+    .\Update-FirmwareUsingCatalog -IpAddress 192.168.1.93 -Credentials $creds -UpdateActions upgrade -RepoType DELL_ONLINE -IdracIps 192.168.1.45
+
+    .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName Test
+     In this instance you will be prompted for credentials to use to connect to the appliance
 #>
 [CmdletBinding(DefaultParameterSetName = 'Group_Update')]
 param(
@@ -45,811 +65,888 @@ param(
     [Parameter(Mandatory)]
     [pscredential] $Credentials,
 
-    [Parameter(ParameterSetName = 'Group_Update', Mandatory)]
-    [System.UInt32]$GroupId,
+    [Parameter(ParameterSetName = 'Group_Update', Mandatory = $false)]
+    [String]$GroupName,
 
-    [Parameter(ParameterSetName = 'Device_Update')]
-    [System.UInt32]$DeviceId,
-	
-    [Parameter(ParameterSetName = 'servicetags')]
-    [string]$servicetags,
+    [Parameter(Mandatory = $false)]
+    [Collections.Generic.List[int]] $DeviceIds,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
+    [Collections.Generic.List[string]] $ServiceTags,
+
+    [Parameter(Mandatory = $false)]
+    [Collections.Generic.List[System.Net.IPAddress]] $IdracIps,
+
+    [Parameter(Mandatory = $false)]
+    [Collections.Generic.List[string]] $DeviceNames,
+
+    [Parameter(Mandatory = $false)]
     [ValidateSet('upgrade', 'downgrade', 'flash-all')]
-    [String]$updateActions = 'upgrade',
-
+    [String]$UpdateActions = 'upgrade',
 
     [Parameter(Mandatory)]
     [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
-    [String]$repotype,
+    [String]$RepoType,
 
     [Parameter(Mandatory = $false)]
-    [System.Net.IPAddress] $reposourceip,
+    [System.Net.IPAddress] $ResourceIp,
 
     [Parameter(Mandatory = $false)]
-    [String] $catalogpath,
+    [String] $CatalogPath,
 
     [Parameter(Mandatory = $false)]
-    [String] $repouser,
+    [String] $RepoUser,
 
     [Parameter(Mandatory = $false)]
-    [String] $repodomain,
+    [String] $RepoDomain,
 
     [Parameter(Mandatory = $false)]
-    [String] $repopassword,
+    [securestring] $RepoPassword,
 
     [Parameter(Mandatory = $false)]
-    [String] $force
+    [String] $Force
 
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
+
+function Get-DeviceId {
+    <#
+    .SYNOPSIS
+    Resolves a service tag, idrac IP or device name to a device ID
+
+    .PARAMETER OmeIpAddress
+    IP address of the OME server
+
+    .PARAMETER ServiceTag
+    (Optional) The service tag of a host
+
+    .PARAMETER DeviceIdracIp
+    (Optional) The idrac IP of a host
+
+    .PARAMETER DeviceName
+    (Optional) The name of a host
+
+    .OUTPUTS
+    int. The output is the ID of the device fed into the function or -1 if it couldn't be found.
+
+    #>
+
+    [CmdletBinding()]
+    param (
+
+        [Parameter(Mandatory)]
+        [System.Net.IPAddress]
+        $OmeIpAddress,
+
+        [Parameter(Mandatory = $false)]
+        [parameter(ParameterSetName = "ServiceTag")]
+        [string]
+        $ServiceTag,
+
+        [Parameter(Mandatory = $false)]
+        [parameter(ParameterSetName = "DeviceIdracIp")]
+
+        [System.Net.IPAddress]
+        $DeviceIdracIp,
+
+        [Parameter(Mandatory = $false)]
+        [parameter(ParameterSetName = "DeviceName")]
+        [System.Net.IPAddress]
+        $DeviceName
+    )
+
+    $DeviceId = -1
+    
+    if ($PSBoundParameters.ContainsKey('DeviceName')) {
+        $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceName eq `'$($DeviceName)`'"
+
+        if ($null -eq $DeviceId) {
+            Write-Output "Error: We were unable to find device name $($DeviceName) on this OME server. Exiting."
+            Exit
+        }
+        else {
+            $DeviceId = $DeviceId.'Id'
+        }
     }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    if ($PSBoundParameters.ContainsKey('ServiceTag')) {
+        $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceServiceTag eq `'$($ServiceTag)`'"
+
+        if ($null -eq $DeviceId) {
+            Write-Output "Error: We were unable to find service tag $($ServiceTag) on this OME server. Exiting."
+            Exit
+        }
+        else {
+            $DeviceId = $DeviceId.'Id'
+        }
     }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
 
-function Get-GroupList($IpAddress, $Headers, $Type) {
-    $GroupList = @()
-    $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-    if ($GrpResp.StatusCode -eq 200) {
-        $GroupInfo = $GrpResp.Content | ConvertFrom-Json
-        $GroupInfo.'value' |  Sort-Object Id | ForEach-Object {$GroupList += , $_.Id}
-    }
-    return $GroupList
-}
-
-function Get-ServiceTags($IpAddress,$Headers,$Type){
-    $NextLinkUrl = $null
-    $BaseUri = "https://$($IpAddress)"
-    $ServieTagDictionary = @{}
-    $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-    if ($DevResp.StatusCode -eq 200) {
-        $DevInfo = $DevResp.Content | ConvertFrom-Json
-        $DevInfo.'value' |  Sort-Object Id | ForEach-Object {$ServieTagDictionary.Add($_.DeviceServiceTag, $_.Id)} #Add($_.DeviceServiceTag, $_.Id)}
-     }
-     return $ServieTagDictionary
-}
-
-
-function Get-DeviceList($IpAddress, $Headers, $Type) {
-    $NextLinkUrl = $null
-    $BaseUri = "https://$($IpAddress)"
-    $DeviceList = @()
-    $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-    if ($DevResp.StatusCode -eq 200) {
-        $DevInfo = $DevResp.Content | ConvertFrom-Json
-        $DevInfo.'value' |  Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
-
-        if ($DevInfo.'@odata.nextLink') {
-            $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+    if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
+        $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
+        foreach ($Device in $DeviceList) {
+            if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $IdracIp) {
+                $DeviceId = $Device."Id"
+                break
+            }
         }
 
-        while($NextLinkUrl){
-            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-            if($NextLinkResponse.StatusCode -eq 200) {
-                $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceList += , $_.Id}
-                if($NextLinkData.'@odata.nextLink') {
-                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                }
-                else {
-                    $NextLinkUrl = $null
-                }
+        if ($DeviceId -eq 0) {
+            throw "Error: We were unable to find idrac IP $($IdracIp) on this OME server. Exiting."
+        }
+    }
+
+    return $DeviceId
+}
+
+
+function Get-Data {
+    <#
+    .SYNOPSIS
+      Used to interact with API resources
+
+    .DESCRIPTION
+      This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+      handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+      pages to get a complete listing.
+
+    .PARAMETER Url
+    The API url against which you would like to make a request
+
+    .INPUTS
+    None. You cannot pipe objects to Get-Data.
+
+    .OUTPUTS
+    dict. A dictionary containing the results of the API call
+
+  #>
+  
+    [CmdletBinding()]
+    param (
+
+        [Parameter(Mandatory)]
+        [string] 
+        # The API url against which you would like to make a request
+        $Url,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        # (Optional) A filter to run against the API endpoint
+        $Filter
+    )
+
+    $Data = @()
+    $NextLinkUrl = $null
+    try {
+
+        if ($PSBoundParameters.ContainsKey('Filter')) {
+            $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+
+            if ($CountData.'@odata.count' -lt 1) {
+                Write-Error "No results were found for filter $($Filter)."
+                return $null
+            } 
+        }
+        else {
+            $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+                -SkipCertificateCheck
+        }
+
+        if ($null -ne $CountData.'value') {
+            $Data += $CountData.'value'
+        }
+        else {
+            $Data += $CountData
+        }
+        
+        if ($CountData.'@odata.nextLink') {
+            $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+        }
+        while ($NextLinkUrl) {
+            $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
+                -ContentType $Type -SkipCertificateCheck
+            
+            if ($null -ne $NextLinkData.'value') {
+                $Data += $NextLinkData.'value'
             }
             else {
-                Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                $Data += $NextLinkData
+            }    
+            
+            if ($NextLinkData.'@odata.nextLink') {
+                $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+            }
+            else {
                 $NextLinkUrl = $null
             }
         }
+    
+        return $Data
+
     }
-    return $DeviceList
+    catch [System.Net.Http.HttpRequestException] {
+        Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+        return $null
+    }
+
 }
 
-function Check-ExistingCatalogAndBaseline($IpAddress, $Headers, $Type) {
-    $CatalogList = @()
-    $BaselineList = @()
-    $CatalogInfo = @{}
-    $CatalogURL = "https://$($IpAddress)/api/UpdateService/Catalogs"
-    $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-    if ($Response.StatusCode -eq 200) {
-        $DevInfo = $Response.Content | ConvertFrom-Json
-        $values = $DevInfo.'value'
-        foreach ($data in $values) {
-            if ($data.'Repository'.'Source' -eq "downloads.dell.com") {
-                $CatalogList += $data.'Id'
-                if ($data.'AssociatedBaselines'.Length -gt 0) {
-                    foreach ($baseline in $data.'AssociatedBaselines') {
-                        $BaselineList += $baseline.'BaselineId'
+
+function Test-Version($Version, $CurrentVersion) {
+    <#
+      .SYNOPSIS
+        This is a helper function used to normalize version info so that PowerShell can compare
+
+      .PARAMETER Version
+        The version that is on the host
+
+      .PARAMETER CurrentVersion
+        The current up-to-date version
+
+      .OUTPUTS
+        A tuple containing the normalized versions
+    #>
+    if (($Version -match "^[\d\.]+$") -and ($CurrentVersion -match "^[\d\.]+$") ) {
+        if ($Version.length -eq 1) {
+            # append .0 to the single digit version since powershell [Version] requires [\d.\d] format.
+            $Version = $Version + '.' + '0'
+        }
+        if ($CurrentVersion.length -eq 1) {
+            $CurrentVersion = $CurrentVersion + '.' + '0'
+        }
+        $Version = [Version]$Version
+        $CurrentVersion = [Version]$CurrentVersion
+    }
+    return $Version, $CurrentVersion
+}
+
+
+function Invoke-CheckDeviceComplianceReport($IpAddress, $Type, $BaselineId, $UpdateAction) {
+    <#
+    .SYNOPSIS
+      Checks all devices in the compliance reports and generates a list of devices to update
+
+    .DESCRIPTION
+      This function reaches out to the baselines API and retrieves the compliance report associated with it. It then loops
+      over each finding for each device and creates a payload for it.
+
+    .PARAMETER IpAddress
+      The IP address of the OME instance
+
+    .PARAMETER Type
+      The type of request to use for post methods. This will always be application/json here
+
+    .PARAMETER BaselineId
+      The identifier for the baseline containing the compliance reports
+
+    .PARAMETER UpdateAction
+      The type of action you would like to perform. This can be upgrade, downgrade, or flashall
+
+    .OUTPUTS
+      list. The output of this function are all the different devices which need to be updated. This is later fed into the
+      payload sent to the update task.
+
+    #>
+    Write-Host "Checking compliance report..."
+    $DeviceComplianceReportTargetList = @()
+    $DeviceComplianceReportHash = @{}
+    $TimeSpan = New-TimeSpan -Minutes 20
+    $StopWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "Waiting for compliance report to finish. Timeout is $($TimeSpan)."
+    do {
+        Start-Sleep 5
+        $ComplData = Invoke-RestMethod `
+                                       -Uri "https://$($IpAddress)/api/UpdateService/Baselines($($BaselineId))/DeviceComplianceReports" `
+                                       -Method GET -SkipCertificateCheck -Credential $Credentials
+        Write-Host "Checking if baseline compliance report has finished. $($StopWatch.elapsed) has passed."
+    } while ($StopWatch.elapsed -lt $TimeSpan -and $null -eq $ComplData)
+    
+    $ComplValList = $ComplData.'value'
+    
+    Write-Host "Checking compliance report versions for each device to determine what needs to be updated..."
+    if ($ComplValList.Length -gt 0) {
+        if ($ComplValList[0].ComponentComplianceReports) {
+            foreach ($ComplianceHash in $ComplValList) { 
+                $SourcesString = $null
+                $CompList = $ComplianceHash.'ComponentComplianceReports'
+                if ($CompList.Length -gt 0) {
+                    foreach ($Component in $CompList) {
+                        $Version, $CurrentVersion = Test-Version $Component.'Version' $Component.'CurrentVersion'
+                        if ($Version -gt $CurrentVersion) {
+                            if ($UpdateAction -contains $Component.'UpdateAction') {
+                                $SourceName = $Component.'SourceName'
+                                if ($SourcesString.Length -eq 0) {
+                                    $SourcesString += $SourceName
+                                }
+                                else {
+                                    $SourcesString += ';' + $SourceName
+                                }
+                            }
+                        }
+                    }
+                }
+                if ( $null -ne $SourcesString) {
+                    $DeviceComplianceReportHash.'Data' = $SourcesString
+                    $DeviceComplianceReportHash.'Id' = $ComplianceHash.'DeviceId'
+                    $DeviceComplianceReportTargetList += $DeviceComplianceReportHash
+                }
+            }
+        }
+        elseif ($ComplValList.Length -gt 0) {
+            foreach ($ComplianceHash in $ComplValList) {
+                $SourcesString = $null
+                $NavigationUrlLink = $ComplianceHash.'ComponentComplianceReports@odata.navigationLink'
+                $NavigationURL = "https://$($IpAddress)" + "$NavigationUrlLink"
+                $ComponentComplianceReportsResponse = Invoke-WebRequest -Uri $NavigationURL -ContentType $Type `
+                -Method GET -SkipCertificateCheck -Credential $Credentials
+                if ($ComponentComplianceReportsResponse.StatusCode -eq 200) {
+                    $ComponentComplianceData = $ComponentComplianceReportsResponse.Content | ConvertFrom-Json
+                    if ($ComponentComplianceData.'@odata.count' -gt 0) {
+                        $ComponentComplianceValue = $ComponentComplianceData.'value' 
+                        $Version, $CurrentVersion = Test-Version $ComponentComplianceValue.'Version' `
+                        $ComponentComplianceValue.'CurrentVersion'
+                        if ($Version -gt $CurrentVersion) {
+                            $SourceName = $ComponentComplianceValue.'SourceName'
+                            if ($UpdateAction -contains $Component.'UpdateAction') {
+                                if ($SourcesString.Length -eq 0) {
+                                    $SourcesString += $SourceName
+                                }
+                                else {
+                                    $SourcesString += ';' + $SourceName
+                                }
+                            }
+                        }
+                        if ( $null -ne $SourcesString) {
+                            $DeviceComplianceReportHash.'Data' = $SourcesString
+                            $DeviceComplianceReportHash.'Id' = $ComplianceHash.'DeviceId'
+                            $DeviceComplianceReportTargetList += $DeviceComplianceReportHash
+                        }
                     }
                 }
                 else {
-                    Write-Host "There are no baselines associated for the Catalog $($CatalogList)"
+                    Write-Warning "Compliance reports api call did not succeed...status code returned is not 200"
+                }
+            }
+        }
+    }
+    else {
+        Write-Warning "Compliance value list is empty"
+    }
+    return $DeviceComplianceReportTargetList
+}
+
+
+function Invoke-TrackJobToCompletion {
+    <#
+    .SYNOPSIS
+    Tracks a job to either completion or a failure within the job.
+
+    .PARAMETER OmeIpAddress
+    The IP address of the OME server
+
+    .PARAMETER JobId
+    The ID of the job which you would like to track
+
+    .PARAMETER MaxRetries
+    (Optional) The maximum number of times the function should contact the server to see if the job has completed
+
+    .PARAMETER SleepInterval
+    (Optional) The frequency with which the function should check the server for job completion
+
+    .OUTPUTS
+    True if the job completed successfully or completed with errors. Returns false if the job failed.
+
+    #>
+
+    [CmdletBinding()]
+    param (
+
+        [Parameter(Mandatory)]
+        [System.Net.IPAddress]
+        $OmeIpAddress,
+
+        [Parameter(Mandatory)]
+        [int]
+        $JobId,
+
+        [Parameter(Mandatory = $false)]
+        [int]
+        $MaxRetries = 20,
+
+        [Parameter(Mandatory = $false)]
+        [int]
+        $SleepInterval = 60
+    )
+
+    $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+    $Ctr = 0
+    do {
+        $Ctr++
+        Start-Sleep -Seconds $SleepInterval
+        $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
+        $JobData = Get-Data $JOBSVCURL
+
+        if ($null -eq $JobData) {
+            Write-Error "Something went wrong tracking the job data. 
+            Try checking jobs in OME to see if the job is running."
+            return $false
+        }
+
+        $JobStatus = $JobData.LastRunStatus.Name
+        Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JobStatus)"
+        if ($JobStatus -eq 'Completed') {
+            ## Completed successfully
+            Write-Host "Job completed successfully!"
+            break
+        }
+        elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
+            Write-Warning "Job failed"
+            $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
+            $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
+            $HistoryId = $ExecRespInfo.value[0].Id
+            $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
+                                             -ContentType $Type -Credential $Credentials -SkipCertificateCheck
+            Write-Host ($HistoryResp.value)
+            return $false
+        }
+        else { continue }
+    } until ($Ctr -ge $MaxRetries)
+
+    return $true
+}
+
+
+# -- Main script - beginning of execution is here --
+try {
+    $UpdateAction = @()
+    $Type = "application/json"
+    $CATALOGURL = "https://$($IpAddress)/api/UpdateService/Catalogs"
+    $FAILEDJOBSTATUS = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+
+    # TODO - This is not yet implemented
+    foreach ( $Action in $UpdateActions) {
+        if ($Action -eq "flash-all" -or $Action -eq "downgrade") {
+            Write-Error "The flash-all and downgrade actions are not yet implemented."
+            Exit
+        }
+    }
+
+    foreach ( $Action in $UpdateActions) {
+        if ($Action -eq "flash-all") {
+            $UpdateAction += 'UPGRADE'
+            $UpdateAction += 'DOWNGRADE'
+            break
+        }
+        $UpdateAction += $Action.ToUpper()
+    }
+
+    if ($RepoType -eq "CIFS") {
+        Write-Error "Using CIFs functionality has not yet been implemented."
+        Exit
+        if (($ResourceIp -eq "") -or ($CatalogPath -eq "") -or ($RepoUser -eq "") -or ($RepoPassword -eq "")) {
+            throw "CIFS repository requires --ResourceIp, --CatalogPath, --RepoUser and --RepoPassword."
+        }
+    }
+    if ($RepoType -eq "NFS") {
+        Write-Error "Using NFS functionality has not yet been implemented."
+        Exit
+        if (($ResourceIp -eq "") -or ($CatalogPath -eq "")) {
+            throw "NFS repository requires --ResourceIp, --CatalogPath."
+        }
+    }
+
+    $Targets = @()
+
+
+    # -- Create a list of targets for firmware update --
+
+    if ($PSBoundParameters.ContainsKey('GroupName') -and ($PSBoundParameters.ContainsKey('ServiceTags') `
+        -or $PSBoundParameters.ContainsKey('IdracIps') -or $PSBoundParameters.ContainsKey('DeviceNames'))) {
+        $Confirmation = Read-Host "WARNING: You have provided both a group and individual devices. The script will let you do this but if devices you provided indivudally are also in the specified group the behavior is unknown. You probably shouldn't do this, but we won't stop you. Do you want to continue? (Y/N)"
+        if ($Confirmation -ne 'y' -and $Confirmation -ne 'Y') {
+            Exit
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('DeviceIds')) {
+        $Targets += $DeviceIds
+    }
+
+    if ($PSBoundParameters.ContainsKey('GroupName')) {
+
+        $GroupData = Get-Data "https://$($IpAddress)/api/GroupService/Groups" "Name eq '$($GroupName)'"
+
+        if ($null -eq $GroupData) {
+            Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
+            Exit
+        }
+
+        $GroupId = $GroupData.'Id'
+        $GroupType = $GroupData.'TypeId'
+    }
+    
+    if ($PSBoundParameters.ContainsKey('ServiceTags')) {
+        foreach ($ServiceTag in $ServiceTags) {
+            $Target = Get-DeviceId -OmeIpAddress $IpAddress -ServiceTag $ServiceTag
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for service tag $($ServiceTag)"
+                Exit
+            }
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('IdracIps')) {
+        foreach ($IdracIp in $IdracIps) {
+            $Target = Get-DeviceId -OmeIpAddress $IpAddress -DeviceIdracIp $IdracIp
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for idrac IP $($IdracIp)"
+                Exit
+            }
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('DeviceNames')) {
+        foreach ($DeviceName in $DeviceNames) {
+            $Target = Get-DeviceId $IpAddress -DeviceName $DeviceName
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for device name $($DeviceName)"
+                Exit
+            }
+        }
+    }
+
+
+    # -- Check if there are any existing catalogs or baselines and delete them before creating new catalog. --
+
+    $CatalogList = @()
+    $BaselineList = @()
+    $CatalogInfo = @{}
+    $DevInfo = Invoke-RestMethod -Uri $CATALOGURL -Method Get -Credential $Credentials -SkipCertificateCheck
+    foreach ($Catalog in $DevInfo.'value') {
+        if ($Catalog.'Repository'.'Source' -eq "downloads.dell.com") {
+            $CatalogList += $Catalog.'Id'
+            if ($Catalog.'AssociatedBaselines'.Length -gt 0) {
+                foreach ($Baseline in $Catalog.'AssociatedBaselines') {
+                    $BaselineList += $Baseline.'BaselineId'
                 }
             }
             else {
-                Write-Host "Skipping for other sources"
+                Write-Output "There are no baselines associated with the catalog $($Catalog.Name)"
             }
         }
-        $CatalogInfo."CatalogList" = $CatalogList
-        $CatalogInfo."BaselineList" = $BaselineList
-    }
-    return $CatalogInfo
-}
-
-function Delete-CatalogAndBaseline($IpAddress, $Headers, $Type, $CatalogInfo) {
-    $DeleteCatalogURL = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.RemoveCatalogs"
-    $DeleteBaselineURL = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.RemoveBaselines"
-    if ($CatalogInfo."BaselineList".Length -gt 0) {
-        $BaselineDeletePayload = @{}
-        $BaselineDeletePayload."BaselineIds" = $CatalogInfo."BaselineList"
-        $payload = $BaselineDeletePayload | ConvertTo-Json
-        $Response = Invoke-WebRequest -Uri $DeleteBaselineURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $payload
-        if ($Response.StatusCode -eq 204) {
-            Write-Host "Existing baselines deleted successfully"
-        }
         else {
-            Write-Error "Unable to delete baselines"
+            Write-Debug "Catalog $($Catalog.Name) has source other then download.dell.com selected. Skipping it for now."
         }
+    }
+    $CatalogInfo."CatalogList" = $CatalogList
+    $CatalogInfo."BaselineList" = $BaselineList
+
+
+    # -- Delete any catalogs or baselines which would conflict with this operation --
+    # TODO - this should be updated to prompt before deleting or deconflict the naming of the catalog
+    # TODO - see https://github.com/dell/OpenManage-Enterprise/issues/86
+    Write-Output "Deleting any catalogs that are already associated with the target repository."
+    if ($CatalogInfo."BaselineList".Length -gt 0) {
+        $Payload = @{
+            BaselineIds = $CatalogInfo."BaselineList"
+        } | ConvertTo-Json
+        $Response = Invoke-RestMethod -Uri "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.RemoveBaselines" `
+                                      -Credential $Credentials -ContentType $Type -Method POST -Body $Payload -SkipCertificateCheck
+        Write-Output "Deleted all baselines associated with the target repository."
     }
     else {
-        Write-Host "There are no baselines associated..skipping"
+        Write-Output "There are no baselines associated with the catalog... skipping"
     }
 
     if ($CatalogInfo."CatalogList".Length -gt 0) {
-        $CatalogDeletePayload = @{}
-        $CatalogDeletePayload."CatalogIds" = $CatalogInfo."CatalogList"
-        $payload = $CatalogDeletePayload | ConvertTo-Json
-        $Response = Invoke-WebRequest -Uri $DeleteCatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $payload
-        if ($Response.StatusCode -eq 204) {
-            Write-Host "Existing catalogs deleted successfully"
-        }
-        else {
-            Write-Error "Unable to delete catalogs"
-        }
+        $Payload = @{
+            CatalogIds = $CatalogInfo."CatalogList"
+        } | ConvertTo-Json
+        $Response = Invoke-RestMethod -Uri "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.RemoveCatalogs" `
+                                      -Credential $Credentials -ContentType $Type -Method POST -Body $Payload -SkipCertificateCheck
+        Write-Output "Deleted all catalogs associated with the target repository."
     }
     else {
-        Write-Host "There are no existing catalogs..skipping"
+        Write-Host "There are no catalogs on this OME instance... skipping."
     }
-}
 
-function Get-BaselineId($IpAddress, $Headers, $Type, $CatalogId) {
-    $BaselineURL = "https://$($IpAddress)/api/UpdateService/Baselines"
-    $BaselineId = $null
-    $Response = Invoke-WebRequest -Uri $BaselineURL -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-    if ($Response.StatusCode -eq 200) {
-        $BaselineInfo = $Response.Content | ConvertFrom-Json
-        $values = $BaselineInfo.'value'
-        foreach ($data in $values) {
-            if ($data.'CatalogId' -eq $CatalogId) {
-                $BaselineId = $data.'Id'
-                Break
+    
+    # -- Get the catalog payload --
+
+    $CatalogType = $RepoType
+    $Source = $null
+    $SourcePath = ""
+    $FileName = ""
+    $User = ""
+    $Domain = ""
+    $Password = ""
+    if ($CatalogType -eq 'DELL_ONLINE') {
+        $Source = "downloads.dell.com"
+    }
+    else {
+        $Source = $RepoSourceIp
+        $PathTuple = $CatalogPath
+        $SourcePath = $PathTuple.Replace([System.IO.Path]::GetFileName($PathTuple), '')
+        $FileName = [System.IO.Path]::GetFileName($PathTuple)
+        if ($CatalogType -eq 'CIFS') {
+            $User = $RepoUser
+            $Domain = $RepoDomain
+            $Password = $RepoPassword
+            if ($User -ne "" -and $User -contains '\\') {
+                $Domain = $RepoUser.split('\\')[0]
+                $User = $User.split('\\')[1]
             }
-        }
-    }
-    return $BaselineId
-}
-
-function Create-Baseline($IpAddress, $Headers, $Type, $catalog_id, $repoId, $TargetTypeHash) {
-    $BaselinePayload = Get-BaselinePayload $IpAddress $Headers $Type $catalog_id $repoId $TargetTypeHash
-    $BaselineURL = "https://$($IpAddress)/api/UpdateService/Baselines"
-    $Body = $BaselinePayload | ConvertTo-Json -Depth 6
-    $Response = Invoke-WebRequest -Uri $BaselineURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
-    if ($Response.StatusCode -eq 201) {
-        Write-Host "Baseline creation successful..waiting for completion"
-    }
-    else {
-        Write-Warning "Baseline creation failed"
-    }
-}
-
-function Create-Catalog($IpAddress, $Headers, $Type, $repo_type,  $repo_source_ip, $catalog_path, $repo_user, $repo_password, $repo_domain) {
-    $CatalogPayload = Get-CatalogPayload -repotype $repo_type  -reposourceip $repo_source_ip -catalogpath $catalog_path -repouser $repo_user -repopassword $repo_password -repodomain $repo_domain    
-    $CatalogURL = "https://$($IpAddress)/api/UpdateService/Catalogs"
-    $Body = $CatalogPayload #| ConvertTo-Json -Depth 6
-    $catalog_id = $null
-    $repoId = $null
-    $CatalogRepositorySource = $null
-    if($repo_type -eq 'DELL_ONLINE'){
-       $CatalogRepositorySource = "downloads.dell.com"
-    }else{
-       $CatalogRepositorySource = $repo_source_ip
-    }
-    $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
-    if ($Response.StatusCode -eq 201) {
-        Write-Host "Catalog creation successful..waiting for completion"
-        Start-Sleep -s 80
-        $Response = Invoke-WebRequest -Uri $CatalogURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-        $CatalogInfo = $Response | ConvertFrom-Json
-        foreach ($catalog in $CatalogInfo.'value') {
-            if ($catalog.'Repository'.'Source' -eq $CatalogRepositorySource) {
-                $repoId = [uint64]$catalog.'Repository'.'Id'
-                $catalog_id = [uint64]$catalog.'Id'
-            }
-        }
-    }
-    else {
-        Write-Warning "Catalog creation failed...skipping update"
-    }
-    return $catalog_id, $repoId
-}
-
-function Get-CatalogPayload($repotype, $reposourceip, $catalogpath, $repouser, $repopassword, $repodomain) {
-   $catalog_type = $repotype
-    $source = $null
-    $source_path = ""
-    $filename = ""
-    $user = ""
-    $domain = ""
-    $password = ""
-    if($catalog_type -eq 'DELL_ONLINE'){
-        $source = "downloads.dell.com"
-    }
-    else{
-        $source = $reposourceip
-        $path_tuple = $catalogpath #os.path.split(kwargs['catalog_path'])
-        $source_path = $path_tuple.Replace([System.IO.Path]::GetFileName($path_tuple), '')  #path_tuple[0]
-        $filename = [System.IO.Path]::GetFileName($path_tuple)  #path_tuple[1]
-        if ($catalog_type -eq 'CIFS'){
-            $user = $repouser
-            $domain = $repodomain #kwargs['repo_domain'] if 'repo_domain' in kwargs.keys() else ""
-            $password = $repopassword
-            if ($user -ne "" -and $user -contains '\\'){
-                $domain = $repouser.split('\\')[0]
-                $user = $user.split('\\')[1]
-                }
 
         }
 
     }
     $Time = Get-Date -Format 'dd:MM:yy-hh:mm:ss'
-    $payload = @"
+    $Payload = @"
     {
-     "Filename":"$filename",
-      "SourcePath":"$source_path",      
+     "Filename":"$FileName",
+      "SourcePath":"$SourcePath",      
       "Repository":
         {
-          "Name":"Dell $catalog_type based Catalog + $Time",
-          "Description":"$catalog_type dec",
-          "RepositoryType":"$catalog_type",
-          "Source":"$source",
-          "DomainName":"$domain",
-          "Username":"$user",
-          "Password":"$password",
+          "Name":"Dell $CatalogType based Catalog + $Time",
+          "Description":"$CatalogType dec",
+          "RepositoryType":"$CatalogType",
+          "Source":"$Source",
+          "DomainName":"$Domain",
+          "Username":"$User",
+          "Password":"$Password",
           "CheckCertificate":false
         }
     }
 "@ 
-     return $payload
-
-}
 
 
-function Get-BaselinePayload($IpAddress, $Headers, $Type, $CatalogId, $repoId, $TargetTypeHash) {
-    $payload = '{
-					"Name": "Factory Baseline1",
-					"Description": "Factory test1",
-					"CatalogId": 1104,
-					"RepositoryId": 604,
-					"DowngradeEnabled": true,
-					"Is64Bit": true,
-					"Targets": [
-						{
-							"Id":"target_id",
-							 "Type": {
-								"Id": "target_type",
-								"Name": "target_name"
-						  }
-						}
-					]
-				}' | ConvertFrom-Json
+    # -- Create catalog --
 
-    $TargetArray = @()
-    $TargetArray += $TargetTypeHash
-    $payload."Targets" = $TargetArray
-    #$payload."Targets" = $TargetTypeHash
-    $payload."Name" = "Test Baseline"
-    $payload."Description" = "Test Baseline"
-    $payload."CatalogId" = $CatalogId
-    $payload."RepositoryId" = $repoId
-    return $payload
-}
-
-function Get-GroupDetail($IpAddress, $Headers, $Type, $GroupId) {
-    $GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))"
-    $Response = Invoke-WebRequest -Uri $GroupServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-    $groupInfo = @{}
-    $groupType = @{}
-    if ($Response.StatusCode -eq 200) {
-        $GroupResp = $Response.Content | ConvertFrom-Json
-        if ($GroupResp."Id" -eq $GroupId) {
-            $groupType."Id" = $GroupResp."TypeId"
-            $groupType."Name" = "Group"
-            $groupInfo."Id" =  $GroupId
-            $groupInfo."Type" = $groupType
-        }
-        else {
-            Write-Warning "Unable to find group id"
-        }
+    $CatalogId = $null
+    $RepoId = $null
+    $CatalogRepositorySource = $null
+    if ($RepoType -eq 'DELL_ONLINE') {
+        $CatalogRepositorySource = "downloads.dell.com"
     }
     else {
-        Write-Warning "Unable to fetch group info...skipping"
-    }
-    return $groupInfo
-}
-
-
-function Get-DeviceDetail($IpAddress, $Headers, $Type, $DeviceIds) {
-    $DeviceServiceURL = "https://$($IpAddress)/api/DeviceService/Devices"
-    $Response = Invoke-WebRequest -Uri $DeviceServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-    $TargetHash = @()
-    if ($Response.StatusCode -eq 200) {
-        $DevResp = $Response.Content | ConvertFrom-Json
-        foreach($object in $DevResp.value){
-           $DevInfo = @{}
-           $CurrentDevId = $object."Id"
-           if ($DeviceIds -contains $CurrentDevId) {
-            $DevInfo."Id" = $object."Type"
-            $DevInfo."Name" = $object."DeviceName"
-            $temp = @{
-                      "Id" = $CurrentDevId;
-                      "Type" = $DevInfo 
-                    }
-            $TargetHash +=$temp
-            }
-            else {
-                #Write-Warning "Unable to find device id $CurrentDevId"
-            }
-
-        }
-        
-    }
-    else {
-        Write-Warning "Unable to fetch device info...skipping"
-    }
-    return $TargetHash # | ConvertTo-Json
-
-}
-
-
-function Check-ResponseType($complValList) {
-    $flag = "false"
-    $complVal = $complValList[0]
-	$ComponentCompliance= $complVal.ComponentComplianceReports
-		if ($ComponentCompliance){
-			$flag = "true"
-		}
-    return $flag
-}
-
-function Check-DeviceComplianceReport($IpAddress, $Headers, $Type, $BaselineId, $updateAction) {
-    $ComplURL = "https://$($IpAddress)/api/UpdateService/Baselines($($BaselineId))/DeviceComplianceReports"
-    $Response = Invoke-WebRequest -Uri $ComplURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-    $DeviceComplianceReportTargetList = @()
-    $DeviceComplianceReportHash = @{}
-
-    if ($Response.StatusCode -eq 200) {
-        $ComplData = $Response | ConvertFrom-Json
-        $complValList = $ComplData.'value'
-		
-        if ($complValList.Length -gt 0) {
-            $responseType = Check-ResponseType $complValList
-            if ($responseType -eq "true") {
-                foreach ($complianceHash in $complValList) { 
-                    $sourcesString = $null
-                    $CompList = $complianceHash.'ComponentComplianceReports'
-                    if ($CompList.Length -gt 0) {
-                        foreach ($component in $CompList) {
-                            $version, $currentVersion = Verify-Version $component.'Version' $component.'CurrentVersion'
-                            if ($version -gt $currentVersion) {
-                                if($updateAction -contains $component.'UpdateAction'){
-                                $sourceName = $component.'SourceName'
-                                     if ($sourcesString.Length -eq 0) {
-                                         $sourcesString += $sourceName
-                                     }
-                                     else {
-                                         $sourcesString += ';' + $sourceName
-                                     }
-                                }
-                            }
-                        }
-                    }
-                    if ( $null -ne $sourcesString) {
-                        $DeviceComplianceReportHash.'Data' = $sourcesString
-                        $DeviceComplianceReportHash.'Id' = $complianceHash.'DeviceId'
-                        $DeviceComplianceReportTargetList += $DeviceComplianceReportHash
-                    }
-                }
-            }
-            elseif ($complValList.Length -gt 0){
-                foreach ($complianceHash in $complValList) {
-                    $sourcesString = $null
-                    $navigationUrlLink = $complianceHash.'ComponentComplianceReports@odata.navigationLink'
-                    $navigationURL = "https://$($IpAddress)" + "$navigationUrlLink"
-                    $ComponentComplianceReportsResponse = Invoke-WebRequest -Uri $navigationURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-                    if ($ComponentComplianceReportsResponse.StatusCode -eq 200) {
-                        $ComponentComplianceData = $ComponentComplianceReportsResponse.Content | ConvertFrom-Json
-                        if ($ComponentComplianceData.'@odata.count' -gt 0) {
-                            $ComponentComplianceValue = $ComponentComplianceData.'value' 
-                            $version, $currentVersion = Verify-Version $ComponentComplianceValue.'Version' $ComponentComplianceValue.'CurrentVersion'
-                            if ($version -gt $currentVersion) {
-                                $sourceName = $ComponentComplianceValue.'SourceName'
-                                if($updateAction -contains $component.'UpdateAction'){
-                                    if ($sourcesString.Length -eq 0) {
-                                        $sourcesString += $sourceName
-                                    }
-                                    else {
-                                        $sourcesString += ';' + $sourceName
-                                    }
-                                }
-                            }
-                            if ( $null -ne $sourcesString) {
-                                $DeviceComplianceReportHash.'Data' = $sourcesString
-                                $DeviceComplianceReportHash.'Id' = $complianceHash.'DeviceId'
-                                $DeviceComplianceReportTargetList += $DeviceComplianceReportHash
-                            }
-							
-				
-                        }
-                    }
-					else {
-						Write-Warning "Compliance reports api call did not succeed...status code returned is not 200"
-					}
-                }
-            }
-			#>
-			
-        }
-        else {
-            Write-Warning "Compliance value list is empty"
-        }
-    }
-    else {
-        Write-Warning "Unable to fetch device compliance info...skipping"
-    }
-    return $DeviceComplianceReportTargetList
-
-}
-
-function Create-TargetPayload($ComplianceReportList) {
-    $TargetTypeHash = @{}
-    $TargetTypeHash.'Id' = 1000
-    $TargetTypeHash.'Name' = "DEVICE"
-    $ComplianceReportTargetList = @()
-    foreach ($reportHash in $ComplianceReportList) {
-        $reportHash.'TargetType' = $TargetTypeHash
-        $ComplianceReportTargetList += $reportHash
-    }
-    return $ComplianceReportTargetList
-}
-
-function Wait-OnUpdateJob($IpAddress, $Headers, $Type, $JobId) {
-    $JOB_STATUS_MAP = @{
-        "2020" = "Scheduled";
-        "2030" = "Queued";
-        "2040" = "Starting";
-        "2050" = "Running";
-        "2060" = "Completed";
-        "2070" = "Failed";
-        "2090" = "Warning";
-        "2080" = "New";
-        "2100" = "Aborted";
-        "2101" = "Paused";
-        "2102" = "Stopped";
-        "2103" = "Canceled"
+        $CatalogRepositorySource = $RepoSourceIp
     }
 
-    $FailedJobStatuses = @(2070, 2090, 2100, 2101, 2102, 2103)
+    $Response = Invoke-RestMethod -Uri $CATALOGURL -Credential $Credentials -ContentType $Type -Method POST `
+                                  -Body $Payload -SkipCertificateCheck
 
-    $MAX_RETRIES = 20
-    $SLEEP_INTERVAL = 60
+    if (-not $Response.TaskId) {
+        Write-Error "There was a problem creating the catalog. Check the OME logs for details. Exiting."
+        Exit
+    }
 
-    $JobSvcUrl = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
-    $Ctr = 0
+    Write-Host "Catalog creation job submitted... waiting for completion"
+    $CatalogInfo = Invoke-RestMethod -Uri $CATALOGURL -Method GET -SkipCertificateCheck -Credential $Credentials
+    
+    
+    # -- Check catalog status --
+
+    $TimeSpan = New-TimeSpan -Minutes 10
+    $StopWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "Waiting for catalog creation to finish. Timeout is $($TimeSpan)."
     do {
-        $Ctr++
-        Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
-        if ($JobResp.StatusCode -eq 200) {
-            $JobData = $JobResp.Content | ConvertFrom-Json
-            $JobStatus = [string]$JobData.LastRunStatus.Id
-            Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JOB_STATUS_MAP.$JobStatus)"
-            if ($JobStatus -eq 2060) {
-                ## Completed successfully
-                Write-Host "Completed updating firmware successfully ..."
-                break
-            }
-            elseif ($FailedJobStatuses -contains $JobStatus) {
-                Write-Warning "Update job failed .... "
-                $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
-                if ($ExecResp.StatusCode -eq 200) {
-                    $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
-                    $HistoryId = $ExecRespInfo.value[0].Id
-                    $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
-                    if ($HistoryResp.StatusCode -eq 200) {
-                        Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
-                    }
-                    else {
-                        Write-Warning "Unable to get job execution history details"
-                    }
+        # Sometimes this needs a pause to work, other times it doesn't. If the ID doesn't exist from the
+        # above this will throw an exception caught below.
+        $RepoId = $null
+        try {
+            $CatalogData = Invoke-RestMethod -Uri $CATALOGURL"($($CatalogId))" -Method GET `
+                                             -Credential $Credentials -SkipCertificateCheck
+            break
+        }
+        catch [System.Net.Http.HttpRequestException] {
+            Write-Output "Catalog not yet created. Waiting for $($SLEEPINTERVAL) seconds and then checking again."
+            Start-Sleep $SLEEPINTERVAL
+            # TODO This assumes that every other catalog with this source was deleted. This should be updated
+            # TODO See https://github.com/dell/OpenManage-Enterprise/issues/86
+            $CatalogInfo = Invoke-RestMethod -Uri $CATALOGURL -Method GET -SkipCertificateCheck -Credential $Credentials
+            foreach ($Catalog in $CatalogInfo.'value') {
+                if ($Catalog.'Repository'.'Source' -eq $CatalogRepositorySource) {
+                    $RepoId = [uint64]$Catalog.'Repository'.'Id'
+                    $CatalogId = [uint64]$Catalog.'Id'
                 }
-                else {
-                    Write-Warning "Unable to get job execution history info"
-                }
-                break
             }
-            else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
-    } until ($Ctr -ge $MAX_RETRIES)
-}
 
-function Get-FirmwareApplicablePayload($catalog_id, $repoId, $baselineId, $TargetPayload) {
-    $Payload = '{
-        "JobName": "Update Firmware-Test",
-        "JobDescription": "Firmware Update Job",
-        "Schedule": "startNow",
-        "State": "Enabled",
-        "JobType": {
-            "Id": 5,
-            "Name": "Update_Task"
-        },
-        "Params": [{
-            "Key": "complianceReportId",
-            "Value": "12"
-        },
-		{
-            "Key": "repositoryId",
-            "Value": "1104"
-        },
-		{
-            "Key": "catalogId",
-            "Value": "604"
-        },
-		{
-            "Key": "operationName",
-            "Value": "INSTALL_FIRMWARE"
-        },
-		{
-            "Key": "complianceUpdate",
-            "Value": "true"
-        },
-		{
-            "Key": "signVerify",
-            "Value": "true"
-        },
-		{
-            "Key": "stagingValue",
-            "Value": "false"
-        }],
-        "Targets": []
-    }' | ConvertFrom-Json
+        $Status = $CatalogData.'Status'
 
-    $ParamsHashValMap = @{
-        "complianceReportId" = [string]$baselineId;
-        "repositoryId"       = [string]$repoId;
-        "catalogId"          = [string]$catalog_id
-				}
-
-    for ($i = 0; $i -le $Payload.'Params'.Length; $i++) {
-        if ($ParamsHashValMap.Keys -Contains ($Payload.'Params'[$i].'Key')) {
-            $value = $Payload.'Params'[$i].'Key'
-            $Payload.'Params'[$i].'Value' = $ParamsHashValMap.$value
+        Write-Host "Catalog status is $($Status)"
+        if ($Status -eq 'Completed') {
+            Write-Host "Catalog created successfully"
+            break
         }
-    }
-    $Payload."Targets" += $TargetPayload
-    return $payload
-}
 
-function Verify-Version($version, $currentVersion) {
-    if (($version -match "^[\d\.]+$") -and ($currentVersion -match "^[\d\.]+$") ) {
-        if ($version.length -eq 1) {
-            # append .0 to the single digit version since powershell [Version] requires [\d.\d] format.
-            $version = $version + '.' + '0'
+        if ($FAILEDJOBSTATUS -Contains ('$Status')) {
+            Write-Host "unable to create catalog"
+            break
         }
-        if ($currentVersion.length -eq 1) {
-            $currentVersion = $currentVersion + '.' + '0'
-        }
-        $version = [Version]$version
-        $currentVersion = [Version]$currentVersion
-    }
-    return $version, $currentVersion
-}
+    } while ($StopWatch.elapsed -lt $TimeSpan -and $null -eq $RepoId)
 
-
-function Check-CatalogStatus($IpAddress, $Headers, $Type, $catalog_id) {
-    $Count = 1
-    $MAX_RETRIES = 20
-    $SLEEP_INTERVAL = 15
-    $FailedJobstatus = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
-    do {
-        $CatalogUrl = "https://$($IpAddress)/api/UpdateService/Catalogs($($catalog_id))"
-        $Response = Invoke-WebRequest -Uri $CatalogUrl  -Method GET -Headers $Headers -ContentType $Type
-        if ($Response.StatusCode -eq 200) {
-            $CatalogData = $Response.Content | ConvertFrom-Json
-            $Status = $CatalogData.'Status'
-            Write-Host "Catalog Status is $($Status)"
-            if ($Status -eq 'Completed') {
-                Write-Host "Catalog created successfully"
-                break
-            }
-            if ($FailedJobstatus -Contains ('$Status')) {
-                Write-Host "unable to create catalog"
-                break
-            }
-            $Count++
-            Start-Sleep -Seconds $SLEEP_INTERVAL
-        }
-    }Until($Count -eq $MAX_RETRIES)
-    if ($Count -eq $MAX_RETRIES) {
-        Write-Warning "Trys $($MAX_RETRIES) times. Failed to get Catalog details."
+    if ($StopWatch.elapsed -gt $TimeSpan) {
+        Write-Warning "Exceeded the timeout of $($TimeSpan) while waiting for catalog creation to complete. 
+        Check the job log for catalog creation. Did something go wring?"
         sys.exit(1)
     }
-}
+
+    Write-Output "Catalog creation successful."
 
 
+    # -- Create baseline --
 
-## Script that does the work
-Try {
-    Set-CertPolicy
-    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
-    $Type = "application/json"
-    $UserName = $Credentials.username
-    $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
-    $Headers = @{}
-    $DeviceIds = @()
-
-    $updateAction = @()
-
-    if ($repotype -eq "CIFS"){
-         if(($reposourceip -eq "") -or ($catalogpath -eq "") -or ($repouser -eq "") -or ($repopassword -eq "")){
-               throw "CIFS repository requires --reposourceip, --catalogpath, --repouser and --repopassword."
-         }
+    Write-Output "Creating baseline..."
+    $BaselineId = $null
+    $TargetsPayload = @()
+    
+    if ($PSBoundParameters.ContainsKey('GroupName')) {
+        $TargetsPayload += @{
+            Id         = $GroupId
+            Type = @{
+                Id   = $GroupType
+                Name = "GROUP"
+            }
+        }
     }
-    if($repotype -eq "NFS"){
-        if(($reposourceip -eq "") -or ($catalogpath -eq "")){
-            throw "NFS repository requires --reposourceip, --catalogpath."
-         }
-    }
-
-    foreach( $action in $updateActions){
-       if($action -eq "flash-all"){
-       $updateAction += 'UPGRADE'
-       $updateAction += 'DOWNGRADE'
-       break
-       }
-       $updateAction += $action.ToUpper()
-    }
-
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 201) {
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        Write-Host "Successfully created session with $($IpAddress)`nParsing $($DupFile)"
-        ## Sending in non-existent targets throws an exception with a "bad request"
-        ## error. Doing some pre-req error checking as a result to validate input
-        ## This is a Powershell quirk on Invoke-WebRequest failing with an error
-        if ($GroupId) {
-            $GroupList = Get-GroupList $IpAddress $Headers $Type
-            if ($GroupList -contains $GroupId) {
-				#check if there are any devices associated with this group
-				$GroupServiceURL = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
-				$Response = Invoke-WebRequest -Uri $GroupServiceURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
-				$groupInfo = @{}
-				if ($Response.StatusCode -eq 200) {
-					$GroupResp = $Response.Content | ConvertFrom-Json
-					if ($GroupResp."@odata.count" -eq 0) {
-						throw "Unable to fetch group info for group id $($GroupId)"
-					}
-				}
-				else {throw "Unable to fetch group info for the device ... Exiting"}
-			}
-            else {throw "Group $($GroupId) not present on $($IpAddress) ... Exiting"}
-        }
-        elseif ($DeviceId) {
-            $DeviceList = Get-DeviceList $IpAddress $Headers $Type
-            if ($DeviceList -contains $DeviceId) {}
-            else {throw "Device $($DeviceId) not present on $($IpAddress) ... Exiting"}
-        }
-        else {
-            $ServiceTagDictionary = Get-ServiceTags $IpAddress $Headers $Type
-            Foreach($serviceTag in $ServiceTags){
-                if ($ServiceTagDictionary.keys -contains $serviceTag){
-                        #write-host $serviceTag + "is present"
-                        $DeviceIds += $ServiceTagDictionary.$serviceTag
-                }else{
-                     throw "ServiceTag $($serviceTag) not present on $($IpAddress) ... Exiting"
-                }
-            }            
-        }
-        #check if there are any existing catalogs,baselines and delete them before creating new catalog.
-        $CatalogInfo = Check-ExistingCatalogAndBaseline $IpAddress $Headers $Type
-        Delete-CatalogAndBaseline $IpAddress $Headers $Type $CatalogInfo
-        #Create catalog
-        #$catalog_id, $repoId = Create-Catalog $IpAddress $Headers $Type
-        $catalog_id, $repoId = Create-Catalog  -IpAddress $IpAddress -Headers $Headers -Type $Type -repo_type $repotype -repo_source_ip $reposourceip -catalog_path $catalogpath -repo_user $repouser -repo_password $repopassword -repo_domain $repodomain
-        #catalog_creation(ip_address=IP_ADDRESS, headers=HEADERS, repo_type=ARGS.repotype,
-        #                     repo_source_ip=ARGS.reposourceip, catalog_path=ARGS.catalogpath,
-        #                     repo_user=ARGS.repouser, repo_password=ARGS.repopassword,
-        #                     repo_domain=ARGS.repodomain)
-        Check-CatalogStatus $IpAddress $Headers $Type $catalog_id
-
-        #create baseline
-        $BaselinePayload = $null
-        $baselineId = $null
-        #$TargetTypeHash = ""
-        if ($GroupId) {
-            $TargetTypeHash = Get-GroupDetail $IpAddress $Headers $Type $GroupId
-            $TargetTypeHash."Name" = "GROUP"
-            Create-Baseline $IpAddress $Headers $Type $catalog_id $repoId $TargetTypeHash
-        }
-        elseif($DeviceId) {
-            $TargetTypeHash = Get-DeviceDetail $IpAddress $Headers $Type $DeviceId
-            #Write-Host $TargetTypeHash | ConvertTo-Json -Depth 6
-            #Create-Baseline $IpAddress $Headers $Type $catalog_id $repoId $DeviceId $TargetTypeHash
-            Create-Baseline $IpAddress $Headers $Type $catalog_id $repoId $TargetTypeHash
-        
-        }else{
-            ##serviceTags base line catalog
-            $TargetTypeHash = Get-DeviceDetail $IpAddress $Headers $Type $DeviceIds
-            Create-Baseline $IpAddress $Headers $Type $catalog_id $repoId $TargetTypeHash
-        
-        }
-        #Create-Baseline $IpAddress $Headers $Type $catalog_id $repoId $TargetTypeHash
-        #Wait for baseline job to complete
-        Start-Sleep 120
-        $baselineId = Get-BaselineId $IpAddress $Headers $Type $catalog_id
-        # Create compliance report
-        $ComplianceReportList = Check-DeviceComplianceReport $IpAddress $Headers $Type $baselineId $updateAction
-        if ($ComplianceReportList.Length -gt 0) {
-            $TargetPayload = Create-TargetPayload $ComplianceReportList
-            if ($TargetPayload.Length -gt 0) {
-                $UpdatePayload = Get-FirmwareApplicablePayload $catalog_id $repoId $baselineId $TargetPayload
-                # Update firmware
-                $UpdateJobURL = "https://$($IpAddress)/api/JobService/Jobs"
-                $Body = $UpdatePayload | ConvertTo-Json -Depth 6
-                $JobResp = Invoke-WebRequest -Uri $UpdateJobURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body
-                if ($JobResp.StatusCode -eq 201) {
-                    Write-Host "Update job creation successful"
-                    $JobInfo = $JobResp.Content | ConvertFrom-Json
-                    $JobId = $JobInfo.Id
-                    Write-Host "Created job $($JobId) to flash firmware ... Polling status now"
-                    Wait-OnUpdateJob $IpAddress $Headers $Type $JobId
-                }
-                else {
-                    Write-Warning "Update job creation failed"
+    
+    if ($PSBoundParameters.ContainsKey('ServiceTags') -or $PSBoundParameters.ContainsKey('IdracIps') -or `
+        $PSBoundParameters.ContainsKey('DeviceNames')) {
+        foreach ($DeviceToUpdate in $Targets) {
+            $TargetsPayload += @{
+                Id         = $DeviceToUpdate
+                Type = @{
+                    Id   = 1000
+                    Name = "DEVICE"
                 }
             }
         }
-        else {
-            Write-Warning "Compliance report is null"
+    }
+
+    $Payload =  @{
+        Name = "Dell baseline update $($Time)"
+        Description = "Baseline update job launched via the OME API"
+        CatalogId = $CatalogId
+        RepositoryId = $RepoId
+        DowngradeEnabled = $true
+        Is64Bit = $true
+        Targets = $TargetsPayload
+    } | ConvertTo-Json -Depth 6
+
+    $BASELINEURL = "https://$($IpAddress)/api/UpdateService/Baselines"
+    $Response = Invoke-RestMethod -Uri $BASELINEURL -Credential $Credentials -Method POST -Body $Payload `
+                                  -ContentType $Type -SkipCertificateCheck
+    if (Invoke-TrackJobToCompletion -OmeIpAddress $IpAddress -JobId $Response.'TaskId' -SleepInterval 5) {
+        Write-Output "Baseline creation task completed successfully."
+    }
+    $BaselineInfo = Invoke-RestMethod -Uri $BASELINEURL -Method Get -Credential $Credentials -SkipCertificateCheck
+    foreach ($Baseline in $BaselineInfo.'value') {
+        if ($Baseline.'CatalogId' -eq $CatalogId) {
+            $BaselineId = $Baseline.'Id'
+            Break
+        }
+    }
+
+    if ($null -eq $BaselineId) {
+        Write-Error "An error occurred while creating the baseline. Exiting."
+        Exit
+    }
+
+    Write-Host "Baseline creation successful."
+
+
+    # -- Create compliance report --
+
+    $ComplianceReportList = Invoke-CheckDeviceComplianceReport $IpAddress $Type $BaselineId $UpdateAction
+    if ($ComplianceReportList.Length -gt 0) {
+        
+        $TargetPayload = @()
+        foreach ($ReportHash in $ComplianceReportList) {
+            $ReportHash.'TargetType' = @{
+                Id = 1000
+                Name = "DEVICE"
+            }
+            $TargetPayload += $ReportHash
+        }
+
+        if ($TargetPayload.Length -gt 0) {
+
+            # TODO - See https://github.com/dell/OpenManage-Enterprise/issues/88
+            $Payload = @{
+                JobName = "OME API Update Firmware Job"
+                JobDescription = "Firmware update job triggered by the OME API"
+                Schedule = "startNow"
+                State = "Enabled"
+                JobType = @{
+                    Id = 5
+                    Name = "Update_Task"
+                }
+                Params = @(
+                    @{
+                        Key = "complianceReportId"
+                        Value = [string]$BaselineId
+                    }
+                    @{
+                        Key = "repositoryId"
+                        Value = [string]$RepoId
+                    }
+                    @{
+                        Key = "catalogId"
+                        Value = [string]$CatalogId
+                    }
+                    @{
+                        Key = "operationName"
+                        Value = "INSTALL_FIRMWARE"
+                    }
+                    @{
+                        Key = "complianceUpdate"
+                        Value = "true"
+                    }
+                    @{
+                        Key = "signVerify"
+                        Value = "true"
+                    }
+                    @{
+                        Key = "stagingValue"
+                        Value = "false"
+                    }
+                )
+                Targets = $TargetPayload
+            } | ConvertTo-Json -Depth 6
+            
+            # -- Update firmware --
+            $Response = Invoke-RestMethod -Uri "https://$($IpAddress)/api/JobService/Jobs" -ContentType $Type `
+                                          -Method POST -Body $Payload -SkipCertificateCheck -Credential $Credentials
+            
+            if ($null -eq $Response.Id) {
+                Write-Host "Something went wrong submitting the update job. Check logs for details. Exiting."
+                Exit
+            }
+            
+            Write-Host "Device update job submitted!"
+            Write-Host "Created job $($Response.Id) to flash firmware... polling status now. Maximum time set at 2 hours"
+            if (Invoke-TrackJobToCompletion -OmeIpAddress $IpAddress -JobId $Response.Id -MaxRetries 240 -SleepInterval 30) {
+                Write-Host "Firmware update completed successfully!"
+            }
+            else {
+                Write-Error "Firmware update job failed. Check the OME logs for details."
+                Exit
+            }
         }
     }
     else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+        Write-Warning "The baseline doesn't seem to have any compliance reports associated with it. Check that the baseline was created correctly."
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

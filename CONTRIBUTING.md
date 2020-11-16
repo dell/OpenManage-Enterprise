@@ -26,6 +26,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
   - Getting a group ID from its name: `https://<ome_ip>/api/GroupService/Groups?$filter=Name eq '<group_name>'`
   - Get a device ID from its name `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceName eq '<device_name>'`
   - Get a device ID from its service tag `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceServiceTag eq '<service_tag>'`
+- Use descriptive variable names. As a general rule you should not use names like "data". Instead use something that describes what type of data is expected.
 
 #### Bad
 
@@ -44,13 +45,14 @@ We are working to standardize the repository. Any help would be welcomed with [u
 
     # Python
     get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address, "DeviceName eq \'%s\'" % device_name)
+- When checking if a user provided an argument or not use `$PSBoundParameters.ContainsKey('<PARAM_NAME')`
 
 ## PowerShell
 
 - Must be tested and run against PowerShell 7
 - Names must use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
 - We suggest for development you use [Visual Studio Code](https://code.visualstudio.com/download). It provides a `Format Document` function which automatically updates your PowerShell code to follow best practices. If you would rather use something else you can use [Get-FirmwareBaselines.ps1](Core/PowerShell/Get-FirmwareBaselines.ps1) as a reference for our preferred PowerShell coding practices.
-- If for whatever reason the [Get-Data](docs/powershell_library_code.md#Interact-with-an-API-Resource) function does not suit your needs, use the `Invoke-RestMethod` function unless you have a specific reason to use `Invoke-WebRequest`.
+- If for whatever reason the [Get-Data](docs/powershell_library_code.md#Interact-with-an-API-Resource) function does not suit your needs, use the `Invoke-RestMethod` function unless you have a specific reason to use `Invoke-WebRequest`. If you have not setup certificates, you will probably need to include the argument `-SkipCertificateCheck` otherwise you will get the error `Exception occured - The SSL connection could not be established, see inner exception.`
 - Provide documentation for all functions. For example:
 
         function Get-UniqueFileName {
@@ -72,6 +74,133 @@ We are working to standardize the repository. Any help would be welcomed with [u
             #>
 
 - When handling credentials use the `pscredential` type. Wherever possible take advantage of passing credentials directly. Unless absolutely necessary you should not need to do things like `$Variable = $Credentials.Password`. Many functions (like `Invoke-RestMethod`) support the `-Credential` argument which allows you to pass the `pscredential` argument directly.
+- When looping for time in PowerShell use the below pattern. Replace with a `while` loop if that is more suitable for your needs.
+
+#### Bad
+
+    $Count = 1
+    $MAXRETRIES = 15
+    $SLEEPINTERVAL = 5
+    Start-Sleep $SLEEPINTERVAL
+    do {
+        $Count++
+        Start-Sleep $SLEEPINTERVAL
+        <SOME ACTION HERE>
+    } Until($Count -eq $MAXRETRIES)
+
+#### Good
+
+    $TimeSpan = New-TimeSpan -Minutes 20
+    $StopWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "Waiting for stuff to finish. Timeout is $($TimeSpan)."
+    do {
+        Start-Sleep 5
+        <SOME ACTION HERE>
+        Write-Host "Checking if stuff report has finished. $($StopWatch.elapsed) has passed."
+    } while ($StopWatch.elapsed -lt $TimeSpan -and $null -eq $ComplData)
+
+- Use PowerShell's native JSON creation instead of raw JSON, converted from JSON, and then converted back:
+
+#### Bad
+
+    $Payload = '{
+        "JobName": "Update Firmware-Test",
+        "JobDescription": "Firmware Update Job",
+        "Schedule": "startNow",
+        "State": "Enabled",
+        "JobType": {
+            "Id": 5,
+            "Name": "Update_Task"
+        },
+        "Params": [{
+            "Key": "complianceReportId",
+            "Value": "12"
+        },
+		{
+            "Key": "repositoryId",
+            "Value": "1104"
+        },
+		{
+            "Key": "catalogId",
+            "Value": "604"
+        },
+		{
+            "Key": "operationName",
+            "Value": "INSTALL_FIRMWARE"
+        },
+		{
+            "Key": "complianceUpdate",
+            "Value": "true"
+        },
+		{
+            "Key": "signVerify",
+            "Value": "true"
+        },
+		{
+            "Key": "stagingValue",
+            "Value": "false"
+        }],
+        "Targets": []
+    }' | ConvertFrom-Json
+
+    $ParamsHashValMap = @{
+        "complianceReportId" = [string]$BaselineId;
+        "repositoryId"       = [string]$RepoId;
+        "catalogId"          = [string]$CatalogId
+				}
+
+    for ($i = 0; $i -le $Payload.'Params'.Length; $i++) {
+        if ($ParamsHashValMap.Keys -Contains ($Payload.'Params'[$i].'Key')) {
+            $value = $Payload.'Params'[$i].'Key'
+            $Payload.'Params'[$i].'Value' = $ParamsHashValMap.$value
+        }
+    }
+    $Payload."Targets" += $TargetPayload
+    $Payload = $Payload | ConvertTo-Json -Depth 6
+
+#### Good
+
+    $Payload = @{
+        JobName = "OME API Update Firmware Job"
+        JobDescription = "Firmware update job triggered by the OME API"
+        Schedule = "startNow"
+        State = "Enabled"
+        JobType = @{
+            Id = 5
+            Name = "Update_Task"
+        }
+        Params = @(
+            @{
+                Key = "complianceReportId"
+                Value = [string]$BaselineId
+            }
+            @{
+                Key = "repositoryId"
+                Value = [string]$RepoId
+            }
+            @{
+                Key = "catalogId"
+                Value = [string]$CatalogId
+            }
+            @{
+                Key = "operationName"
+                Value = "INSTALL_FIRMWARE"
+            }
+            @{
+                Key = "complianceUpdate"
+                Value = "true"
+            }
+            @{
+                Key = "signVerify"
+                Value = "true"
+            }
+            @{
+                Key = "stagingValue"
+                Value = "false"
+            }
+        )
+        Targets = $TargetPayload
+    } | ConvertTo-Json -Depth 6
 
 ## Python
 
@@ -79,7 +208,7 @@ There is a great tutorial on writing good Python code [here](https://realpython.
 
 - Must be tested and run against Python 3
 - Adhere to PEP8 and PEP484. The easist way to adhere to PEP8 is to use PyLint. PyCharm provides [pylint as a plugin](https://plugins.jetbrains.com/plugin/11084-pylint) as does [vscode](https://code.visualstudio.com/docs/python/linting#_pylint). Alternatively it can be run from the command line.
-- Use type definitions in your function definitions. Ex:
+- Use type definitions in your function definitions. See [Invoke-RefreshInventory.ps1](Core/PowerShell/Invoke-RefreshInventory.ps1) for examples. Ex:
 
 #### Bad
 

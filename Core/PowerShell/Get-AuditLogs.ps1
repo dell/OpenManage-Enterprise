@@ -71,8 +71,7 @@ function Get-Data {
   None. You cannot pipe objects to Get-Data.
 
   .OUTPUTS
-  list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
-  OME server
+  dict. A dictionary containing the results of the API call
 
 #>
 
@@ -140,7 +139,7 @@ function Get-Data {
 
   }
   catch [System.Net.Http.HttpRequestException] {
-    Write-Error "There was a problem connecting to OME. Did it become unavailable?"
+    Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
     return $null
   }
 
@@ -166,5 +165,5 @@ try {
 
 }
 catch {
-  Write-Error "Exception occured - $($_.Exception.Message)"
+  Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

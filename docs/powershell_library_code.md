@@ -21,8 +21,7 @@ This is used to perform any sort of interaction with a REST API resource. It inc
         None. You cannot pipe objects to Get-Data.
 
         .OUTPUTS
-        list. The Get-Data function returns a list of hashtables with the headers resulting from authentication against the
-        OME server
+        dict. A dictionary containing the results of the API call
 
       #>
       
@@ -90,7 +89,7 @@ This is used to perform any sort of interaction with a REST API resource. It inc
 
         }
         catch [System.Net.Http.HttpRequestException] {
-            Write-Error "There was a problem connecting to OME. Did it become unavailable?"
+            Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
             return $null
         }
 
@@ -174,7 +173,7 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
                 }
             }
 
-            if ($PSBoundParameters.ContainsKey('IdracIp')) {
+            if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
                 $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
                 foreach ($Device in $DeviceList) {
                     if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $IdracIp) {
@@ -219,7 +218,7 @@ Track a job and wait for it to complete before continuing.
             True if the job completed successfully or completed with errors. Returns false if the job failed.
 
             #>
-        
+
             [CmdletBinding()]
             param (
 
@@ -240,12 +239,13 @@ Track a job and wait for it to complete before continuing.
                 $SleepInterval = 60
             )
 
-            $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+            $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
             $Ctr = 0
             do {
                 $Ctr++
                 Start-Sleep -Seconds $SleepInterval
-                $JobData = Get-Data "https://$($OmeIpAddress)/api/JobService/Jobs($($JobId))"
+                $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
+                $JobData = Get-Data $JOBSVCURL
 
                 if ($null -eq $JobData) {
                     Write-Error "Something went wrong tracking the job data. 
@@ -260,18 +260,15 @@ Track a job and wait for it to complete before continuing.
                     Write-Host "Job completed successfully!"
                     break
                 }
-                elseif ($FailedJobStatuses -contains $JobStatus) {
-                    Write-Warning "Update job failed .... "
-                    $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                    $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Credential $Credentials
-                    if ($ExecResp.StatusCode -eq 200) {
-                        Get-ExecutionHistoryDetail $ExecResp $ExecHistoryUrl $Headers $Type $JobExecUrl
-                    }
-                    else {
-                        Write-Warning "Unable to get job execution history info"
-                        return $false
-                    }
-                    break
+                elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
+                    Write-Warning "Job failed"
+                    $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
+                    $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
+                    $HistoryId = $ExecRespInfo.value[0].Id
+                    $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
+                                                    -ContentType $Type -Credential $Credentials -SkipCertificateCheck
+                    Write-Host ($HistoryResp.value)
+                    return $false
                 }
                 else { continue }
             } until ($Ctr -ge $MaxRetries)
