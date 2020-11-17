@@ -1,8 +1,7 @@
 #
-#  Python script using Power Manager API to get device or groups being monitored by Power Manager.
+# Python script using Power Manager API to get device or groups being monitored by Power Manager.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -98,8 +97,8 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
     """ Authenticate with OpenManage Enterprise, get power manager monitored devices"""
     try:
         #Define the Base URL, Session URL & headers
-        base_uri = 'https://%s' %(ip_address)
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        base_uri = 'https://%s' % ip_address
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -108,8 +107,8 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                         'SessionType': 'API'}
         
         #Define Power Manager Device & Group URL
-        pmp_device_url = "https://%s/api/PowerService/MonitoredDevices?$top=500" % (ip_address)
-        pmp_group_url = "https://%s/api/PowerService/MonitoredGroups?$top=100" % (ip_address)
+        pmp_device_url = "https://%s/api/PowerService/MonitoredDevices?$top=500" % ip_address
+        pmp_group_url = "https://%s/api/PowerService/MonitoredGroups?$top=100" % ip_address
         
         # Defining OUTPUT format
         device_output_column_headers = ['Device_ID', 'Device_Name', 'ServiceTag', 'Model', 'Is_Part_Of_Group?', 'Is_Power_Policy_Capable?']
@@ -129,13 +128,13 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                    print("Unable to create a session with  %s. Please try again later" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
         
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -150,13 +149,13 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                 if 'error' in pmp_device_json_data:
                     error_content = pmp_device_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager devices list from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager devices list from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager devices list from  %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager devices list from  %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager devices list from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager devices list from %s" % ip_address)
             else:
             
                 # Get the pmp device count from the JSON response data
@@ -164,7 +163,7 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                 
                 #If the pmp device count is 0, then error out immediately
                 if pmp_device_count <= 0:
-                    print("No Devices being monitored by Power Manager in %s" % (ip_address))
+                    print("No Devices being monitored by Power Manager in %s" % ip_address)
                 
                 #If the PMP device count is not 0, then get the content & further process it to get devices
                 else:
@@ -176,7 +175,7 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                     
                     #Else if the next link exist, process to get, parse & store the Power Manager devices until the nextLink exhaust.
                     else:
-                        print("\n   !!! INFO :: There are more than 500 devices being monitored by Power Manager in %s !!! \n  It may take several minutes to get the result. Please wait..." %(ip_address))
+                        print("\n   !!! INFO :: There are more than 500 devices being monitored by Power Manager in %s !!! \n  It may take several minutes to get the result. Please wait..." % ip_address)
                         
                         #Process the first set of Devices content to parse & store the capable Power Manager devices
                         device_output_column_data = store_pmp_device_elem(pmp_device_content)
@@ -219,13 +218,13 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                 if 'error' in pmp_group_json_data:
                     error_content = pmp_group_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager groups list from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager groups list from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager groups list from  %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager groups list from  %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager groups list from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager groups list from %s" % ip_address)
             else:
                 
                  #Get the PMP group count from the JSON response data
@@ -233,7 +232,7 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                 
                 #If PMP group count is 0, then error out immediately
                 if pmp_group_count <= 0:
-                    print("No Devices being monitored by Power Manager in %s" % (ip_address))
+                    print("No Devices being monitored by Power Manager in %s" % ip_address)
                 
                 #If PMP group count is not 0, then get the content & further process it to get device capabilities.
                 else:
@@ -246,7 +245,7 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                     #Else if the next link exist, process to get, parse & store the capable Power Manager devices until the nextLink exhaust.
                     else:
                         
-                        print("\n   !!! INFO :: There are more than 100 groups being managed by Power Manager in %s !!! \n  It may take several minutes to get the result. Please wait..." %(ip_address))
+                        print("\n   !!! INFO :: There are more than 100 groups being managed by Power Manager in %s !!! \n  It may take several minutes to get the result. Please wait..." % ip_address)
                         #Process the first set of Devices content to parse & store the capable Power Manager devices
                         group_output_column_data = store_pmp_group_elem(pmp_group_content)
 
@@ -277,17 +276,16 @@ def get_power_manager_monitoring_list(ip_address, user_name, password):
                     print("      Groups being Monitored by Power Manager ")
                     print("   ==============================================")
                     print(group_table)
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
 
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
     
-    get_power_manager_monitoring_list(ARGS.ip, ARGS.username, ARGS.password)
+    get_power_manager_monitoring_list(args.ip, args.username, args.password)
