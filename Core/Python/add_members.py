@@ -17,46 +17,43 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
- Script to add all standalone domains to the existing MCM group,
- and assign a backup lead
+#### Synopsis
+Script to add all standalone domains to the existing MCM group,
+and assign a backup lead
 
-Description:
- This script adds all standalone domains to the
- existing group and assigns a member as backup lead.
+#### Description
+This script adds all standalone domains to the
+existing group and assigns a member as backup lead.
 
- Note:
- 1. Credentials entered are not stored to disk.
- 2. Random member will be assigned as a backup lead
+#### Example
+`python add_members.py --ip <ip addr> --user root --password <passwd>`
 
-Example:
-python add_members.py --ip <ip addr> --user root
-    --password <passwd>
+Note:
+1. Credentials entered are not stored to disk.
+2. Random member will be assigned as a backup lead
 
-Adds all standalone members and assign a member as
-backup lead
-
-API workflow is below:
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
-   for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
-   user name and password entered by user
-4: Add all standalone members to the created group
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
-5: Parse returned job id and monitor it to completion
-6: Assign a random member as backup lead
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
-7: Parse returned job id and monitor it to completion
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+user name and password entered by user
+4. Add all standalone members to the created group
+with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
+5. Parse returned job id and monitor it to completion
+6. Assign a random member as backup lead
+with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
+7. Parse returned job id and monitor it to completion
 """
 
 import argparse
-import requests
 import json
-import urllib3
-from argparse import RawTextHelpFormatter
 import random
 import time
+from argparse import RawTextHelpFormatter
+
+import requests
+import urllib3
 
 
 def authenticate_with_ome(ip_address, user_name, password):

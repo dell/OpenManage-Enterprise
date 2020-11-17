@@ -19,23 +19,24 @@
 #
 
 """
-SYNOPSIS:
-   Script to create a new static group
+#### Synopsis
+Script to create a new static group
 
-DESCRIPTION:
-   This script exercises the OME REST API to create a new static
-   group. The user is responsible for adding devices to the
-   group once the group has been successfully created.
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to create a new static
+group. The user is responsible for adding devices to the
+group once the group has been successfully created.
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python new_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+#### Example
+`python new_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
+import argparse
 import json
 import sys
-import argparse
 from argparse import RawTextHelpFormatter
+
 try:
     import urllib3
     import requests

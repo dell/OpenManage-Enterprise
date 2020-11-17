@@ -18,28 +18,29 @@
 # limitations under the License.
 #
 """
-SYNOPSIS:
-   Script to create a new network with VLAN
+#### Synopsis
+Script to create a new network with VLAN
 
-DESCRIPTION:
-   This script exercises the OME REST API to create a new network
-   A network consists of a Minimum and Maximum VLAN ID to create a range
-   Set Minimum and Maximum to the same value to a single VLAN
-   
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to create a new network
+A network consists of a Minimum and Maximum VLAN ID to create a range
+Set Minimum and Maximum to the same value to a single VLAN
 
-EXAMPLE:
-   python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
+import csv
 import json
+import sys
+from argparse import RawTextHelpFormatter
+from os import path
+
 import requests
 import urllib3
-import csv
-from os import path
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -148,7 +149,7 @@ if __name__ == '__main__':
 *Must include header row with at least the rows in the example below
 *NetworkType must be an integer value. Use --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
-Example:
+#### Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
     args = parser.parse_args()

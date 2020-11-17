@@ -33,7 +33,7 @@ limitations under the License.
 
  .EXAMPLE
    $cred = Get-Credential
-   .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\New-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -GroupName TestGroup
 
    In this instance you will be prompted for credentials to use to

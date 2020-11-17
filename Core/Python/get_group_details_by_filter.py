@@ -19,19 +19,19 @@
 #
 
 """
-SYNOPSIS:
-    Script to get the details of groups managed by OM Enterprise
-    This script uses OData filters for extracting information
+#### Synopsis
+Script to get the details of groups managed by OM Enterprise
+This script uses OData filters for extracting information
 
-DESCRIPTION:
-    This script exercises the OME REST API to get a group and the
-    device details for all devices in that group. For authentication
-    X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a group and the
+device details for all devices in that group. For authentication
+X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-    python get_group_details_by_filter.py --ip <xx> --user <username> --password <pwd>
-        --filterby Name --field "All Devices"
+#### Example
+`python get_group_details_by_filter.py --ip <xx> --user <username> --password <pwd>
+    --filterby Name --field "All Devices"`
 """
 import argparse
 import json

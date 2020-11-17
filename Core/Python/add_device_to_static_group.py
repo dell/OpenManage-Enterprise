@@ -18,26 +18,26 @@
 # limitations under the License.
 #
 """
-SYNOPSIS:
-   Add one or more hosts to an existing static group.
+#### Synopsis
+Add one or more hosts to an existing static group.
 
-DESCRIPTION:
-   This script exercises the OME REST API to add one or more
-   hosts to an existing static group. For authentication X-Auth
-   is used over Basic Authentication. Note: The credentials entered
-   are not stored to disk.
+#### Description
+This script exercises the OME REST API to add one or more
+hosts to an existing static group. For authentication X-Auth
+is used over Basic Authentication. Note: The credentials entered
+are not stored to disk.
 
-EXAMPLE:
-   python add_device_to_static_group.py --ip <xx> --user <username>
-        --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"
+#### Example
+    `python add_device_to_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"`
 """
 
-from argparse import RawTextHelpFormatter
-import sys
-import json
 import argparse
-import urllib3
+import json
+import sys
+from argparse import RawTextHelpFormatter
+
 import requests
+import urllib3
 
 
 def get_device_list(ome_ip_address: str, headers: dict) -> dict:

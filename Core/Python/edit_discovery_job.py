@@ -17,28 +17,32 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
-   Script to update an existing discovery job in OME
-DESCRIPTION:
-   This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and also 
-   it updates networkaddress if user passs iprange.
-   For authentication X-Auth is used over Basic Authentication.
-   Note that the credentials entered are not stored to disk.
+#### Synopsis
+Script to update an existing discovery job in OME
 
-EXAMPLE:
-   python edit_discovery_job.py --ip <ip addr> --user admin
-    --password <passwd> --jobNamePattern <Existing Discovery Job name>
-    --targetUserName <user name> --targetPassword <password>
-    --targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx>
-    where {jobNamePattern} can be existing discovery job name(Discovery_Essentials_10.xx.xx.xx)
-    or the job name pattern(Discovery_Essentials)
+#### Description
+This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and also 
+it updates networkaddress if user passs iprange.
+For authentication X-Auth is used over Basic Authentication.
+Note that the credentials entered are not stored to disk.
+
+#### Example
+```bash
+python edit_discovery_job.py --ip <ip addr> --user admin
+--password <passwd> --jobNamePattern <Existing Discovery Job name>
+--targetUserName <user name> --targetPassword <password>
+--targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx>
+```
+where {jobNamePattern} can be existing discovery job name(Discovery_Essentials_10.xx.xx.xx)
+or the job name pattern(Discovery_Essentials)
 """
-import time
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import urllib3
+import time
+from argparse import RawTextHelpFormatter
+
 import requests
+import urllib3
 
 
 def authenticate_with_ome(ip_address, user_name, password):

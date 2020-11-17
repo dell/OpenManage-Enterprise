@@ -17,25 +17,26 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
- Script to update firmware using catalog
+#### Synopsis
+Script to update firmware using catalog
 
 Description: 
- This script exercises the OME REST API to allow updating a firmware using catalog.
+This script uses the OME REST API to allow updating a firmware using catalog.
 
- Note that the credentials entered are not stored to disk.
+Note that the credentials entered are not stored to disk.
 
-Example:
-python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
-    --password <passwd> --groupid 25315
+#### Example
+`python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
+--password <passwd> --groupid 25315`
 """
 
+import argparse
 import json
+import os
 import sys
 import time
-import argparse
-import os
 from argparse import RawTextHelpFormatter
+
 import urllib3
 
 

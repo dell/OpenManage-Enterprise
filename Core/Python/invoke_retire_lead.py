@@ -17,38 +17,37 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
- Script to retire lead of MCM group and promote the exising backup lead as lead
+#### Synopsis
+Script to retire lead of MCM group and promote the exising backup lead as lead
 
 Description: 
 This script retires the current lead and the backup lead gets promoted as the new lead
 
- Note:
- 1. Credentials entered are not stored to disk.
- 
-Example:
-python invoke_retire_lead.py --ip <lead ip> --user <username> --password <password>
+#### Example
+`python invoke_retire_lead.py --ip <lead ip> --user <username> --password <password>`
 
-retires the current lead and promotes the backup lead
+Note:
+1. Credentials entered are not stored to disk.
 
-API workflow is below:
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
-   for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
-   user name and password entered by user
-4: Retire lead and promote backup lead as the new lead
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.RetireLead
-5: Parse returned job id and monitor it to completion
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+    for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+    user name and password entered by user
+4. Retire lead and promote backup lead as the new lead
+    with POST on /ManagementDomainService/Actions/ManagementDomainService.RetireLead
+5. Parse returned job id and monitor it to completion
 """
 
 import argparse
 import json
-import requests
-import urllib3
-from argparse import RawTextHelpFormatter
 import random
 import time
+from argparse import RawTextHelpFormatter
+
+import requests
+import urllib3
 
 
 def authenticate_with_ome(ip_address, user_name, password):

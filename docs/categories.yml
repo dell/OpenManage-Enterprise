@@ -1,0 +1,89 @@
+# This file defines the categories in which each script will be placed
+# This is used as part of the automated documenatation generation process
+
+python_code_path: '../Core/Python'
+powershell_path: '../Core/PowerShell'
+deploy:
+  add_device_to_static_group:
+    - add_device_to_static_group.py
+  add_members:
+    - add_members.py
+    - Add-Members.ps1
+  edit_discovery_job:
+    - edit_discovery_job.py
+  invoke_discover_device:
+    - invoke_discover_device.py
+    - Invoke-DiscoverDevice.ps1
+  new_mcm_group:
+    - new_mcm_group.py
+    - New-McmGroup.ps1
+  new_network:
+    - new_network.py
+    - New-Network.ps1
+  new_static_group:
+    - new_static_group.py
+    - New-StaticGroup.ps1
+  set_power_state:
+    - set_power_state.py
+    - Set-PowerState.ps1
+  set_system_configuration:
+    - set_system_configuration.py
+    - Set-SystemConfiguration.ps1
+update:
+  invoke_refresh_inventory:
+    - invoke_refresh_inventory.py
+    - Invoke-RefreshInventory.ps1
+  update_firmware_using_catalog:
+    - update_firmware_using_catalog.py
+    - Update-FirmwareUsingCatalog.ps1
+  update_installed_firmware_with_dup:
+    - update_installed_firmware_with_dup.py
+    - Update-InstalledFirmwareWithDup.ps1
+monitor:
+  get_alerts_by_device:
+    - get_alerts_by_device.py
+    - Get-AlertsByDevice.ps1
+  get_alerts_by_group:
+    - get_alerts_by_group.py
+    - Get-AlertsByGroup.ps1
+  get_audit_logs:
+    - get_audit_logs.py
+    - Get-AuditLogs.ps1
+  get_chassis_inventory:
+    - get_chassis_inventory.py
+    - Get-ChassisInventory.ps1
+  get_device_inventory:
+    - get_device_inventory.py
+    - Get-DeviceInventory.ps1
+  get_device_list:
+    - get_device_list.py
+    - Get-DeviceList.ps1
+  get_firmware_baselines:
+    - get_firmware_baselines.py
+    - Get-FirmwareBaselines.ps1
+  get_group_details:
+    - get_group_details.py
+    - Get-GroupDetails.ps1
+  get_group_details_by_filter:
+    - get_group_details_by_filter.py
+    - Get-GroupDetailsByFilter.ps1
+  get_group_list:
+    - get_group_list.py
+    - Get-GroupList.ps1
+  get_identitypool_usage:
+    - get_identitypool_usage.py
+    - Get-IdentityPoolUsage.ps1
+  get_inventory_by_type:
+    - Get-InventoryByType.ps1
+  get_report_list:
+    - get_report_list.py
+    - Get-ReportList.ps1
+  invoke_report_execution:
+    - invoke_report_execution.py
+    - Invoke-ReportExecution.ps1
+maintain:
+  invoke_retire_lead:
+    - invoke_retire_lead.py
+    - Invoke-RetireLead.ps1
+  set_scale_vlan_profile:
+    - Set-ScaleVlanProfile.ps1

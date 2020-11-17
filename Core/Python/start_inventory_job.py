@@ -20,26 +20,30 @@
 #
 
 """
-SYNOPSIS:
-   Script to run inventory on specified devices managed by OM Enterprise
+#### Synopsis
+Script to run inventory on specified devices managed by OM Enterprise
 
-DESCRIPTION:
-   This script exercises the OME REST API to get the inventory for a list of devices
-   currently being managed by that instance. For authentication X-Auth
-   is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get the inventory for a list of devices
+currently being managed by that instance. For authentication X-Auth
+is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname> --desc <jobname> --groupid <OME group id>
-   python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname>  --deviceid <OME group id>
-   python start_inventory_job.py --ip <xx> --user <username> --password <pwd>  --desc <jobname> --servicetags <space seperated service tags>
+#### Example
+```
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname> --desc <jobname> --groupid <OME group id>
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname>  --deviceid <OME group id>
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd>  --desc <jobname> --servicetags <space seperated service tags>
+```
+
 """
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
-import json
-import time
 import copy
+import json
+import sys
+import time
+from argparse import RawTextHelpFormatter
+
 import urllib3
 
 
