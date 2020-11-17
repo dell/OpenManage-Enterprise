@@ -19,49 +19,49 @@
 #
 
 """
-SYNOPSIS:
-    Allow execution of a pre-defined report in OME
-    and print out report results to screen
+#### Synopsis
+Allow execution of a pre-defined report in OME
+and print out report results to screen
 
-DESCRIPTION:
-    Allow execution of a pre-defined report including custom
-    reports in OpenManage Enterprise.
-    Output results are presented in a csv format to collate
-    column names with the results
+#### Description
+Allow execution of a pre-defined report including custom
+reports in OpenManage Enterprise.
+Output results are presented in a csv format to collate
+column names with the results
 
-    Note: The group id argument is optional and is unused
-    in the report execution API at this time.
+Note: The group id argument is optional and is unused
+in the report execution API at this time.
 
-API WORKFLOW:
-    1: POST on SessionService/Sessions
-    2: If new session is created (201) parse headers
-    for x-auth token and update headers with token
-    3: All subsequent requests use X-auth token and not
-    user name and password entered by user
-    4: POST on ReportService.RunReport method
-    Parameters are the ID of the report to run
-    5: if method execution is successful returned
-    response presents a job id to track status
-    6: GET on JobService/Jobs(<jobid>) and poll
-    returned job status until completion
-    7: On success GET on ReportService/ReportDefs(ID)
-    to determine column names for the report
-    8: Extract report results (GET) at /ReportResults/ResultRows
-    and print out results
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+user name and password entered by user
+4. POST on ReportService.RunReport method
+Parameters are the ID of the report to run
+5. if method execution is successful returned
+response presents a job id to track status
+6. GET on JobService/Jobs(<jobid>) and poll
+returned job status until completion
+7. On success GET on ReportService/ReportDefs(ID)
+to determine column names for the report
+8. Extract report results (GET) at /ReportResults/ResultRows
+and print out results
 
-EXAMPLE:
-    python .\invoke_report_execution.py  --ip <ip addr> --user <username>
-        --password <password> --reportid 10051
+#### Example
+`python .\invoke_report_execution.py  --ip <ip addr> --user <username>
+    --password <password> --reportid 10051`
 """
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
+import csv
 import json
+import os
 import time
+from argparse import RawTextHelpFormatter
+
 import requests
 import urllib3
-import csv
-import os
 
 
 class OMEReportExecutor(object):

@@ -18,25 +18,26 @@
 # limitations under the License.
 #
 """
-SYNOPSIS:
-   Gets a list of all firmware baselines available from an OME server or baselines associated
-   with a specific device.
+#### Synopsis
+Gets a list of all firmware baselines available from an OME server or baselines associated
+with a specific device.
 
-DESCRIPTION:
-   This script exercises the OME REST API to find baselines associated
-   with a given server. For authentication X-Auth is used over Basic
-   Authentication. Note: The credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to find baselines associated
+with a given server. For authentication X-Auth is used over Basic
+Authentication. Note: The credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_firmware_baseline.py -i 192.168.1.93 -u admin -p somepass -r 192.168.1.45
+#### Example
+`python get_firmware_baseline.py -i 192.168.1.93 -u admin -p somepass -r 192.168.1.45`
 """
 
-import json
 import argparse
-import urllib3
-import requests
+import json
 from argparse import RawTextHelpFormatter
 from urllib.parse import urlparse
+
+import requests
+import urllib3
 
 
 def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
@@ -174,7 +175,7 @@ def get_firmware_baselines(authenticated_headers: dict,
     # If the user passed a device name, resolve that name to a device ID
     if device_name:
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                  "DeviceName eq \'%s\'" % device_name)
+                             "DeviceName eq \'%s\'" % device_name)
         if not device_id:
             print("Error: We were unable to find device name " + device_name + " on this OME server. Exiting.")
             exit(0)
@@ -182,7 +183,7 @@ def get_firmware_baselines(authenticated_headers: dict,
             device_id = device_id[0]['Id']
     elif service_tag:
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                  "DeviceServiceTag eq \'%s\'" % service_tag)
+                             "DeviceServiceTag eq \'%s\'" % service_tag)
 
         if not device_id:
             print("Error: We were unable to find service tag " + service_tag + " on this OME server. Exiting.")

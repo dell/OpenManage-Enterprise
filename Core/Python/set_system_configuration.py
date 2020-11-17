@@ -17,29 +17,29 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
- Script to perform template deployment on the target devices.
+#### Synopsis
+Script to perform template deployment on the target devices.
 
 Description: 
- This script performs template deployment.
+This script performs template deployment. Note that the credentials entered are not stored to disk.
 
- Note that the credentials entered are not stored to disk.
-
-Example:
-python set_system_configuration.py --ip <ip addr> --user admin
-    --password <passwd> --sourceid <10089> --targetid/--groupid <10081>
+#### Example
+`python set_system_configuration.py --ip <ip addr> --user admin
+    --password <passwd> --sourceid <10089> --targetid/--groupid <10081>`
 """
 
-import sys
-import json
-import time
-import urllib3
 import argparse
+import json
+import sys
+import time
 from argparse import RawTextHelpFormatter
+
 import requests
+import urllib3
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 
 # to disable urllib3 warnings while making an api call
 # urllib3.disable_warnings()

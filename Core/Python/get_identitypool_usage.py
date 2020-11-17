@@ -20,34 +20,35 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the list of virtual addresses in an Identity Pool
+#### Synopsis
+Script to get the list of virtual addresses in an Identity Pool
 
-DESCRIPTION:
-   This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
-   Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
+Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
+#### Example
+```bash
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
+```
 """
 
 import argparse
+import csv
 import json
+import os
+from argparse import RawTextHelpFormatter
+
 import requests
 import urllib3
-import os
-import csv
-from argparse import RawTextHelpFormatter
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 session_auth_token = {}
 
 

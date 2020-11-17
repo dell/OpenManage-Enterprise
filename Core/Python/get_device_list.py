@@ -20,25 +20,26 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the list of devices managed by OM Enterprise
+#### Synopsis
+Script to get the list of devices managed by OM Enterprise
 
-DESCRIPTION:
-   This script exercises the OME REST API to get a list of devices
-   currently being managed by that instance. For authentication X-Auth
-   is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a list of devices
+currently being managed by that instance. For authentication X-Auth
+is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_device_list.py --ip <xx> --user <username> --password <pwd>
+#### Example
+`python get_device_list.py --ip <xx> --user <username> --password <pwd>`
 """
 
 import argparse
-from argparse import RawTextHelpFormatter
-import json
 import csv
+import json
 import os
 import sys
+from argparse import RawTextHelpFormatter
+
 import urllib3
 
 

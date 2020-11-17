@@ -19,24 +19,25 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the details of groups managed by OM Enterprise
+#### Synopsis
+Script to get the details of groups managed by OM Enterprise
 
-DESCRIPTION:
-   This script exercises the OME REST API to get a group and the
-   device details for all devices in that group. For authentication
-   X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a group and the
+device details for all devices in that group. For authentication
+X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_group_details.py --ip <xx> --user <username> --password <pwd>
-    --groupinfo "All Devices"
+#### Example
+`python get_group_details.py --ip <xx> --user <username> --password <pwd>
+--groupinfo "All Devices"`
 """
-import json
 import argparse
+import json
 from argparse import RawTextHelpFormatter
-import urllib3
+
 import requests
+import urllib3
 
 
 def get_group_details(ip_address, user_name, password, group_info):

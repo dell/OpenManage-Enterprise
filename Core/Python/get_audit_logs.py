@@ -19,24 +19,26 @@
 #
 
 """
-SYNOPSIS:
-   Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or 
-   print them to screen.
+#### Synopsis
+Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or 
+print them to screen.
 
-DESCRIPTION:
-    It performs X-Auth with basic authentication. Note: Credentials are not stored on disk.
+#### Description
+It performs X-Auth with basic authentication. Note: Credentials are not stored on disk.
 
-EXAMPLE:
-   python get_audit_logs.py -i 192.168.1.93 -u admin -p somepass --share \\192.168.1.7\gelante\test.csv --smbuser someuser --smbpass somepass
+#### Example
+`python get_audit_logs.py -i 192.168.1.93 -u admin -p somepass
+--share \\192.168.1.7\gelante\test.csv --smbuser someuser --smbpass somepass`
 """
 
-from argparse import RawTextHelpFormatter
-from urllib.parse import urlparse
-from pprint import pprint
-import json
 import argparse
-import sys
 import csv
+import json
+import sys
+from argparse import RawTextHelpFormatter
+from pprint import pprint
+from urllib.parse import urlparse
+
 try:
     import urllib3
     import requests
@@ -54,7 +56,8 @@ except ImportError as error:
     print("You can ignore this if you do not plan on using Kerberos for authentication.")
     print("-----------------")
 except OSError as error:
-    print("Encountered an OS error. This usually means you are missing kerberos dependencies. The error was:", str(error))
+    print("Encountered an OS error. This usually means you are missing kerberos dependencies. The error was:",
+          str(error))
     sys.exit(0)
 
 

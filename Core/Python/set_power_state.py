@@ -17,25 +17,29 @@
 # limitations under the License.
 
 """
-SYNOPSIS:
-   Script to perform power control on device managed by OM Enterprise
-DESCRIPTION:
-   This script exercises the OME REST API to perform power control operations.
-   For authentication X-Auth is used over Basic Authentication.
-   Note that the credentials entered are not stored to disk.
+#### Synopsis
+Script to perform power control on device managed by OM Enterprise
 
-EXAMPLE:
-   python set_power_state.py --ip <ip addr> --user admin
-    --password <passwd> --deviceId 25527  --state {state}
-    where {state} can be "On", "Off", "Cold Boot","Warm Boot", "ShutDown"
+#### Description
+This script exercises the OME REST API to perform power control operations.
+For authentication X-Auth is used over Basic Authentication.
+Note that the credentials entered are not stored to disk.
+
+#### Example
+```bash
+python set_power_state.py --ip <ip addr> --user admin
+--password <passwd> --deviceId 25527  --state {state}
+```
+where {state} can be "On", "Off", "Cold Boot","Warm Boot", "ShutDown"
 """
+import argparse
+import json
 import sys
 import time
-import argparse
 from argparse import RawTextHelpFormatter
-import json
-import urllib3
+
 import requests
+import urllib3
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)

@@ -19,25 +19,25 @@
 #
 
 """
-SYNOPSIS:
-   Refreshes the inventory on a set of target devices
+#### Synopsis
+Refreshes the inventory on a set of target devices. This includes the configuration inventory tab.
 
-DESCRIPTION:
-    This script uses the OME REST API to refresh the inventory of a targeted server. It performs X-Auth
-    with basic authentication. Note: Credentials are not stored on disk.
+#### Description
+This script uses the OME REST API to refresh the inventory of a targeted server. It performs X-Auth
+with basic authentication. Note: Credentials are not stored on disk.
 
-EXAMPLE:
-   python invoke_refresh_device_inventory.py -i 192.168.1.93 -u admin -p somepass --idrac-ips 192.168.1.63,192.168.1.45
+#### Example
+`python invoke_refresh_inventory.py -i 192.168.1.93 -u admin -p somepass --idrac-ips 192.168.1.63,192.168.1.45`
 """
 
-from argparse import RawTextHelpFormatter
-from urllib.parse import urlparse
-from typing import List
-from pprint import pprint
-import json
 import argparse
-import time
+import json
 import sys
+import time
+from argparse import RawTextHelpFormatter
+from pprint import pprint
+from typing import List
+from urllib.parse import urlparse
 
 try:
     import urllib3

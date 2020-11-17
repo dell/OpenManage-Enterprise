@@ -19,40 +19,39 @@
 #
 
 """
-SYNOPSIS:
+#### Synopsis
  Script to update firmware for a device or applicable devices
- within a group
+ within a group using a DUP
 
-Description: 
+#### Description
  This script exercises the OME REST API to allow updating a device
  or a group of devices by using a single DUP file.
 
  Note that the credentials entered are not stored to disk.
 
-Example:
+#### Example
+```bash
 python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
     --password <passwd> --groupid 25315
     --dupfile iDRAC-with-Lifecycle-Controller_Firmware_387FW_WN64_3.21.21.21_A00.EXE
+```
 
-Allow updating a device or a group of devices using
-a single DUP file
+#### API workflow:
 
-API workflow is below:
-
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
    for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
+3. All subsequent requests use X-auth token and not
    user name and password entered by user
-4: Upload the DUP file to OME and retrieve a file
+4. Upload the DUP file to OME and retrieve a file
    token to use in subsequent requests
    POST on UpdateService.UploadFile
-5: Determine device or groups that DUP file applies to
+5. Determine device or groups that DUP file applies to
    using a POST on UpdateService.GetSingleDupReport
-6: Create a firmware update task with the required targets
+6. Create a firmware update task with the required targets
    using a POST on /api/JobService/Jobs
-7: Parse returned job id and monitor it to completion
-8: If job fails then GET Job Execution History Details
+7. Parse returned job id and monitor it to completion
+8. If job fails then GET Job Execution History Details
    and print info to screen
 """
 import os

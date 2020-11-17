@@ -19,26 +19,27 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the list of groups managed by OM Enterprise
+#### Synopsis
+Script to get the list of groups managed by OM Enterprise
 
-DESCRIPTION:
-   This script exercises the OME REST API to get a list of groups
-   currently being managed by that instance. For authentication X-Auth
-   is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a list of groups
+currently being managed by that instance. For authentication X-Auth
+is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_group_list.py --ip <xx> --user <username> --password <pwd>
+#### Example
+`python get_group_list.py --ip <xx> --user <username> --password <pwd>`
 """
 
-import json
 import argparse
-from argparse import RawTextHelpFormatter
-import urllib3
-import requests
+import json
 import pprint
 import sys
+from argparse import RawTextHelpFormatter
+
+import requests
+import urllib3
 
 
 def get_group_list(ome_ip_address, user_name, password):

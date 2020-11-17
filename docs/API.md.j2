@@ -1,0 +1,95 @@
+# API Documentation
+
+This repository is composed of two principal portions - OpenManage Enterprise (OME) API usage examples and plugins.
+
+API usage examples are stored in Core/PowerShell and Core/Python for PowerShell and Python examples respectively.
+Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
+shown below. 
+
+You can find a current copy of the OME API documentation [here](https://www.dell.com/support/manuals/en-us/dell-openmanage-enterprise/ome-3.3.1_omem-1.10.00_apiguide/about-this-document?guid=guid-e4740be0-2c49-443a-8f3d-1cb50cd4b7a3&lang=en-us). A PDF version is available [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf).
+
+## Table of Contents
+<div class="toc">
+<ul>
+<li><a href="#deploy-scripts">Deploy Scripts</a></li>
+<ul>
+{% for module_key,module_value in module_data['deploy'].items() %}
+<li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
+{% endfor %}
+</ul>
+<li><a href="#update-scripts">Update Scripts</a></li>
+<ul>
+{% for module_key,module_value in module_data['update'].items() %}
+<li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
+{% endfor %}
+</ul>
+<li><a href="#monitor-scripts">Monitor Scripts</a></li>
+<ul>
+{% for module_key,module_value in module_data['monitor'].items() %}
+<li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
+{% endfor %}
+</ul>
+<li><a href="#maintenance-scripts">Maintenance Scripts</a></li>
+<ul>
+{% for module_key,module_value in module_data['maintain'].items() %}
+<li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
+{% endfor %}
+</ul>
+</ul>
+</div>
+
+## Deploy Scripts
+Deploy scripts include those things for discovery and generating the initial inventory, configuration, and os deployment.
+{% for module_key,module_value in module_data['deploy'].items() %}
+---
+### {{ module_value['readable_name'] }}
+
+#### Available Scripts
+{% for file in module_value['available_scripts'] %}
+- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+{% endfor %}
+
+{{module_value['docstring']}}
+{% endfor %}
+
+## Update Scripts
+Update scripts include those things for BIOS, firmware, and driver updates.
+{% for module_key,module_value in module_data['update'].items() %}
+---
+### {{ module_value['readable_name'] }}
+
+#### Available Scripts
+{% for file in module_value['available_scripts'] %}
+- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+{% endfor %}
+
+{{module_value['docstring']}}
+{% endfor %}
+
+## Monitor Scripts
+Monitor scripts include those things for checking alerts, health, performance, power status, and other pre-existing status data.
+{% for module_key,module_value in module_data['monitor'].items() %}
+---
+### {{ module_value['readable_name'] }}
+
+#### Available Scripts
+{% for file in module_value['available_scripts'] %}
+- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+{% endfor %}
+
+{{module_value['docstring']}}
+{% endfor %}
+
+## Maintenance Scripts
+Maintenance scripts include those things for reprovisioning, remediation, and general upkeep of devices.
+{% for module_key,module_value in module_data['maintain'].items() %}
+---
+### {{ module_value['readable_name'] }}
+
+#### Available Scripts
+{% for file in module_value['available_scripts'] %}
+- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+{% endfor %}
+
+{{module_value['docstring']}}
+{% endfor %}

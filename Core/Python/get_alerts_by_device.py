@@ -20,25 +20,25 @@
 #
 
 """
-SYNOPSIS:
-    Script to get the alerts for a device given the name or
-    asset tag of the device
+#### Synopsis
+Script to get the alerts for a device given the name or
+asset tag of the device
 
-DESCRIPTION:
-    This script exercises the OME REST API to get a list of alerts for
-    a specific device given the name or the asset tag of the device
-    Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a list of alerts for
+a specific device given the name or the asset tag of the device
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-    python get_alerts_by_device.py --ip <xx> --user <username>
-        --password <pwd> --filterby Name --field "idrac-abcdef"
-
+#### Example
+`python get_alerts_by_device.py --ip <xx> --user <username>
+    --password <pwd> --filterby Name --field "idrac-abcdef"`
 """
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import urllib3
+from argparse import RawTextHelpFormatter
+
 import requests
+import urllib3
 
 
 def get_alerts_by_device(ip_address, user_name, password, filter_by, field):

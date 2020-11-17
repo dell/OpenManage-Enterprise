@@ -19,25 +19,24 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the list of alerts for a group in OME
+#### Synopsis
+Script to get the list of alerts for a group in OME
 
-DESCRIPTION:
-    This script exercises the OME REST API to get a list
-    of alerts for the given group. For authentication X-Auth
-    is used over Basic Authentication.
-    Note that the credentials entered are not stored to disk.
+#### Description
+This script exercises the OME REST API to get a list
+of alerts for the given group. For authentication X-Auth
+is used over Basic Authentication.
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-     python get_alerts_by_group.py --ip <ip addr> --user admin
-         --password <password> --filterby Name
-         --field "Dell iDRAC Servers"
-
+#### Example
+    `python get_alerts_by_group.py --ip <ip addr> --user admin
+        --password <password> --filterby Name
+        --field "Dell iDRAC Servers"`
 """
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
 import json
+from argparse import RawTextHelpFormatter
+
 import requests
 import urllib3
 

@@ -16,53 +16,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """
-SYNOPSIS:
- Script to create MCM group, add all members to the created group,
- and assign a backup lead
+#### Synopsis
+Script to create MCM group, add all members to the created group,
+and assign a backup lead
 
 Description: 
- This script creates a MCM group, adds all standalone domains to the
- created group and assigns a member as backup lead.
+This script creates a MCM group, adds all standalone domains to the
+created group and assigns a member as backup lead.
 
- Note:
- 1. Credentials entered are not stored to disk.
- 2. The value passed in by the user for the argument 'ip'
-    is set as the lead in the created MCM group
+Note:
+1. Credentials entered are not stored to disk.
+2. The value passed in by the user for the argument 'ip'
+is set as the lead in the created MCM group
 
-Example:
-python create_mcm_group.py --ip <ip addr> --user root
-    --password <passwd> --groupname testgroup
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+    for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+    user name and password entered by user
+4. Create MCM group with given group name
+    with PUT on /ManagementDomainService
+5. Parse returned job id and monitor it to completion
+6. Add all standalone members to the created group
+    with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
+7. Parse returned job id and monitor it to completion
+8. Assign a random member as backup lead
+    with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
+9. Parse returned job id and monitor it to completion
 
-Creates MCM group, adds all standalone members and assign a member as
-backup lead
-
-API workflow is below:
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
-   for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
-   user name and password entered by user
-4: Create MCM group with given group name
-   with PUT on /ManagementDomainService
-5: Parse returned job id and monitor it to completion
-6: Add all standalone members to the created group
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
-7: Parse returned job id and monitor it to completion
-8: Assign a random member as backup lead
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
-9: Parse returned job id and monitor it to completion
+#### Example
+`python new_mcm_group.py --ip <ip addr> --user root --password <passwd> --groupname testgroup`
 """
 
 import argparse
-import requests
-import urllib3
-from argparse import RawTextHelpFormatter
 import random
 import time
-import sys
+from argparse import RawTextHelpFormatter
+
+import requests
+import urllib3
 
 
 class SessionManager:
@@ -195,7 +190,8 @@ def add_all_members_via_lead(session_manager):
         for domain in standalone_domains:
             body.append({'GroupId': domain.get('GroupId')})
 
-        url = '{0}/ManagementDomainService/Actions/ManagementDomainService.Domains'.format(session_manager.get_base_url())
+        url = '{0}/ManagementDomainService/Actions/ManagementDomainService.Domains'.format(
+            session_manager.get_base_url())
         response = session.post(url, json=body, verify=False)
         if response.status_code == 200:
             response_data = response.json()
@@ -209,7 +205,8 @@ def add_all_members_via_lead(session_manager):
 
 
 def assign_backup_lead(session_manager):
-    url = '{0}/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead'.format(session_manager.get_base_url())
+    url = '{0}/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead'.format(
+        session_manager.get_base_url())
     session = session_manager.get_session()
     members = get_domains(session_manager)
     job_id = None
