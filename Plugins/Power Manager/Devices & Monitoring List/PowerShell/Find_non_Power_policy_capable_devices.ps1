@@ -1,6 +1,5 @@
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
-_version_ = 0.1
 Copyright (c) 2018 Dell EMC Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,9 +50,9 @@ param(
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -67,22 +66,22 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $BaseUri = "https://$($IpAddress)"
-    $DeviceCountUrl   = $BaseUri + "/api/DeviceService/Devices"
+    $DeviceCountUrl = $BaseUri + "/api/DeviceService/Devices"
     $NextLinkUrl = $null
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
 
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
@@ -90,50 +89,44 @@ Try {
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         $DeviceData = @()
-        $Total=@()
-        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-        if ($DevCountResp.StatusCode -eq 200) 
-        {
+        $Total = @()
+        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -Method Get -Headers $Headers -ContentType $Type
+        if ($DevCountResp.StatusCode -eq 200) {
             $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
             $DeviceData += $DeviceCountData.'value'
-            $Total=$DeviceCountData.'@odata.count'
-            $toskip=50
+            $Total = $DeviceCountData.'@odata.count'
+            $toskip = 50
 
-            $NextLinkUrl = $DeviceCountUrl+"?`$skip=$($toskip)&`$top=$($Total)"
-            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                if ($NextLinkResponse.StatusCode -eq 200) 
-                {
+            $NextLinkUrl = $DeviceCountUrl + "?`$skip=$($toskip)&`$top=$($Total)"
+            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+            if ($NextLinkResponse.StatusCode -eq 200) {
                 $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                 $DeviceData += $NextLinkData.'value'  
-                }
-            else{
-                    Write-Warning "Unable to fetch nextlink data"
-                }
+            }
+            else {
+                Write-Warning "Unable to fetch nextlink data"
+            }
         
-            for ($i=0;$i -ne $Total ; $i++){
+            for ($i = 0; $i -ne $Total ; $i++) {
             
-                $capability=$DeviceData[$i].DeviceCapabilities
+                $capability = $DeviceData[$i].DeviceCapabilities
                 <#if device type is chassis, check only for power capping bit 1105#>
-                if ($DeviceData[$i].'Type' -eq 2000)
-                {
-                    if($capability -notcontains 1105 )
-                    {
+                if ($DeviceData[$i].'Type' -eq 2000) {
+                    if ($capability -notcontains 1105 ) {
                         <#print Id of the devices which aren't power policy capping capable#>
-                        $DeviceData[$i].'Id' |Format-List
+                        $DeviceData[$i].'Id' | Format-List
                     }
                 }
-                else
-                {
+                else {
                     <#if device type is server, check for both power monitoring bit 1006 and power capping bit 1105#>
-                    if($capability -notcontains 1105 -or $capability -notcontains 1006 )
-                    {
+                    if ($capability -notcontains 1105 -or $capability -notcontains 1006 ) {
                         <#print Id of the devices which aren't power policy capping capable#>
-                        $DeviceData[$i].'Id' |Format-List
+                        $DeviceData[$i].'Id' | Format-List
                     }
                 }
             }
         }
-    else{
+        else {
             Write-Error "Unable to get count of managed devices .. Exiting"
         }
     }
@@ -141,6 +134,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }

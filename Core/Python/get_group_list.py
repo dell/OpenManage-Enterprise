@@ -79,8 +79,8 @@ def get_group_list(ome_ip_address, user_name, password):
 
         pprint.pprint(group_data)
 
-    except Exception as e:
-        print("Encountered an error: " + str(e))
+    except Exception as error:
+        print("Encountered an error: " + str(error))
         sys.exit(1)
 
 

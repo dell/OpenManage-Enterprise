@@ -57,8 +57,8 @@ class InventoryJobController:
             if not self.auth_success:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd", file=sys.stderr)
                 sys.exit(0)
-        except Exception as e:
-            print(e, file=sys.stderr)
+        except Exception as error:
+            print(error, file=sys.stderr)
             print("Unable to connect to OME appliance %s" % self.__session_input["ip"], file=sys.stderr)
             raise
 
@@ -92,8 +92,8 @@ class InventoryJobController:
         url = 'https://%s/api/JobService/Jobs' % self.__session_input["ip"]
         try:
             self.__request(url, payload=self._get_job_payload(targets, jobname, jobdesc), method='POST')
-        except Exception as e:
-            print(e, file=sys.stderr)
+        except Exception as error:
+            print(error, file=sys.stderr)
             print("Failed to schedule the inventory job", file=sys.stderr)
             raise
 

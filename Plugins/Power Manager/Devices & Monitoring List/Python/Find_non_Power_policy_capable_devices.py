@@ -1,9 +1,9 @@
 #
-#  Python script using OME-M APIs to create an MCM group,
+# Python script using OME-M APIs to create an MCM group,
 #  assign a backup lead and add all possible members to the
 #  created group
 #
-# Copyright (c) 2019 Dell EMC Corporation
+# Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,11 @@
 # limitations under the License.
 #
 """
-SYNOPSIS
----------------------------------------------------------------------
+SYNOPSIS:
  Script to Find devices which are not capable for power policy, 
  including servers which are not capable for power monitoring too.
 
-DESCRIPTION
----------------------------------------------------------------------
+Description: 
  This script gets all devices where a power policy cannot be applied 
  from power manager.
  Note:
@@ -37,8 +35,7 @@ DESCRIPTION
  4:User executing the script should have privilege to cerate a new file 
  in the path where script is located.
 
-EXAMPLE
----------------------------------------------------------------------
+Example:
 python Find_non_Power_policy_capable_devices.py --ip <ip addr> --user root
     --password <passwd> 
 Finds all non-policy power capable  devices
@@ -79,8 +76,8 @@ def get_non_policy_capable_devices(ip_address, user_name, password):
     """ Authenticate with OME and enumerate groups """
     try:
         AllDeviceIDs=[]
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        dev_url = "https://%s/api/DeviceService/Devices?$top=8000" % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
+        dev_url = "https://%s/api/DeviceService/Devices?$top=8000" % ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -108,19 +105,18 @@ def get_non_policy_capable_devices(ip_address, user_name, password):
                 			#if chassis check only for policy bit, since no license is needed to add to working set
                 			if "1105" not in str(json_obj1['value'][i]["DeviceCapabilities"]):
                 				writer. writerow([json_obj1['value'][i]["Id"],json_obj1['value'][i]["DeviceServiceTag"]])
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    ARGS = PARSER.parse_args()
-    get_non_policy_capable_devices(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    get_non_policy_capable_devices(args.ip, args.user, args.password)

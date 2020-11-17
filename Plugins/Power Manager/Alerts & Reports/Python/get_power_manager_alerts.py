@@ -1,8 +1,7 @@
 #
-#  Python script using OpenManage Enterprise API to get Power Manager specific Alerts in OpenManage Enterprise.
+# Python script using OpenManage Enterprise API to get Power Manager specific Alerts in OpenManage Enterprise.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -71,7 +70,7 @@ def get_power_manager_alerts(ip_address, user_name, password):
     try:
         
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -80,8 +79,8 @@ def get_power_manager_alerts(ip_address, user_name, password):
                         'SessionType': 'API'}
         
         # Define the power manager alerts URL
-        alerts_metrics_url = "https://%s/api/AlertService/Alerts?$top=10000000&$filter=contains(SubCategoryName,'Metrics')" % (ip_address)
-        alerts_power_config_url = "https://%s/api/AlertService/Alerts?$top=10000000&$filter=contains(SubCategoryName,'Power Configuration')" % (ip_address)
+        alerts_metrics_url = "https://%s/api/AlertService/Alerts?$top=10000000&$filter=contains(SubCategoryName,'Metrics')" % ip_address
+        alerts_power_config_url = "https://%s/api/AlertService/Alerts?$top=10000000&$filter=contains(SubCategoryName,'Power Configuration')" % ip_address
         
         # Defining OUTPUT format    
         output_column_headers = ['Severity', 'Source_Name', 'Time', 'Category', 'Sub_Category', 'Message_ID', 'Message']
@@ -100,13 +99,13 @@ def get_power_manager_alerts(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
         
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -120,20 +119,20 @@ def get_power_manager_alerts(ip_address, user_name, password):
                 if 'error' in alerts_metrics_json_data:
                     error_content = alerts_metrics_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager Metrics Alerts from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager Metrics Alerts from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager Metrics Alerts from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager Metrics Alerts from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager Metrics Alerts from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager Metrics Alerts from %s" % ip_address)
             else:
                 
                 alerts_metrics_count = alerts_metrics_json_data['@odata.count']
                 
                 #If the Metrics Alerts count is 0, then error out immediately
                 if alerts_metrics_count <= 0:
-                    print("No Power Manager Metric Alerts found in %s" % (ip_address))
+                    print("No Power Manager Metric Alerts found in %s" % ip_address)
                 else:
                     alerts_metrics_content = json.loads(alerts_metrics_response.content)
                     
@@ -150,7 +149,7 @@ def get_power_manager_alerts(ip_address, user_name, password):
                         print("   =======================================")
                         print(table)
                     else:
-                        print("No Power Manager Metric Alerts found in %s" % (ip_address))
+                        print("No Power Manager Metric Alerts found in %s" % ip_address)
             
             #Get Power Configuration Alerts API call with OpenManage Enterprise
             alerts_power_config_response = requests.get(alerts_power_config_url, headers=headers, verify=False)
@@ -161,20 +160,20 @@ def get_power_manager_alerts(ip_address, user_name, password):
                 if 'error' in alerts_power_config_json_data:
                     error_content = alerts_power_config_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager - Power Configuration Alerts from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager - Power Configuration Alerts from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager - Power Configuration Alerts from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager - Power Configuration Alerts from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager - Power Configuration Alerts from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager - Power Configuration Alerts from %s" % ip_address)
             else:
             
                 alerts_power_config_count = alerts_power_config_json_data['@odata.count']
                 
                 #If the Power Configuration Alerts count is 0, then error out immediately
                 if alerts_power_config_count <= 0:
-                    print("No Power Manager - Power Configuration Alerts found in %s" % (ip_address))
+                    print("No Power Manager - Power Configuration Alerts found in %s" % ip_address)
                 else:
                     alerts_power_config_content = json.loads(alerts_power_config_response.content)
                     
@@ -191,17 +190,16 @@ def get_power_manager_alerts(ip_address, user_name, password):
                         print("   ========================================================")
                         print(table)
                     else:
-                        print("No Power Manager - Power Configuration Alerts found in %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+                        print("No Power Manager - Power Configuration Alerts found in %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
+    args = parser.parse_args()
     
-    get_power_manager_alerts(ARGS.ip, ARGS.username, ARGS.password)
+    get_power_manager_alerts(args.ip, args.username, args.password)
