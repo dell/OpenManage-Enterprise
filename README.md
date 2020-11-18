@@ -31,7 +31,7 @@ If you run into problems with a script you can post [on our issues](https://gith
 
 Grant Curell
 
-If you have any questions that don't fall into the requests or probelms category feel free to reach out to grant_curell(at)dell(dot)com.
+If you have any questions that don't fall into the requests or problems category feel free to reach out to grant_curell(at)dell(dot)com.
 
 ## License
 
