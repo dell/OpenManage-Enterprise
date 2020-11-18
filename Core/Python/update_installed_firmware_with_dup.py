@@ -1,6 +1,4 @@
 #
-# Python script using OME API to update firmware on devices
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -29,7 +27,7 @@
 
  Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
     --password <passwd> --groupid 25315

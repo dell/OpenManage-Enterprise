@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 # _author_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -27,7 +25,7 @@ hosts to an existing static group. For authentication X-Auth
 is used over Basic Authentication. Note: The credentials entered
 are not stored to disk.
 
-#### Example
+#### Python Example
     `python add_device_to_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"`
 """
 

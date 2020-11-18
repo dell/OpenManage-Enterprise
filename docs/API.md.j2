@@ -6,7 +6,7 @@ API usage examples are stored in Core/PowerShell and Core/Python for PowerShell 
 Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
 shown below. 
 
-You can find a current copy of the OME API documentation [here](https://www.dell.com/support/manuals/en-us/dell-openmanage-enterprise/ome-3.3.1_omem-1.10.00_apiguide/about-this-document?guid=guid-e4740be0-2c49-443a-8f3d-1cb50cd4b7a3&lang=en-us). A PDF version is available [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf).
+You can find a current copy of the OME API documentation [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf).
 
 ## Table of Contents
 <div class="toc">
@@ -49,7 +49,14 @@ Deploy scripts include those things for discovery and generating the initial inv
 - [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
 {% endfor %}
 
-{{module_value['docstring']}}
+{{ module_value['docstring'] }}
+
+{% if module_value['powershell_example'] %}
+#### PowerShell Example
+```
+{{ module_value['powershell_example'] }}
+```
+{% endif %}
 {% endfor %}
 
 ## Update Scripts
@@ -64,6 +71,13 @@ Update scripts include those things for BIOS, firmware, and driver updates.
 {% endfor %}
 
 {{module_value['docstring']}}
+
+{% if module_value['powershell_example'] %}
+#### PowerShell Example
+```
+{{ module_value['powershell_example'] }}
+```
+{% endif %}
 {% endfor %}
 
 ## Monitor Scripts
@@ -78,6 +92,13 @@ Monitor scripts include those things for checking alerts, health, performance, p
 {% endfor %}
 
 {{module_value['docstring']}}
+
+{% if module_value['powershell_example'] %}
+#### PowerShell Example
+```
+{{ module_value['powershell_example'] }}
+```
+{% endif %}
 {% endfor %}
 
 ## Maintenance Scripts
@@ -92,4 +113,11 @@ Maintenance scripts include those things for reprovisioning, remediation, and ge
 {% endfor %}
 
 {{module_value['docstring']}}
+
+{% if module_value['powershell_example'] %}
+#### PowerShell Example
+```
+{{ module_value['powershell_example'] }}
+```
+{% endif %}
 {% endfor %}

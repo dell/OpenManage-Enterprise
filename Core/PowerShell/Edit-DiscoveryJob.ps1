@@ -19,11 +19,9 @@
   .PARAMETER IpArray
   Array of Ip addresses
   
-   .EXAMPLE
-  $cred = Get-Credential
-  .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
-   
-   In this instance you will be prompted for credentials
+ .EXAMPLE
+   $cred = Get-Credential
+   .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
 #>
 [CmdletBinding()]
 param(

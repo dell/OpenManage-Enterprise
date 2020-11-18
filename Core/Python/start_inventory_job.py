@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get device list.
-#
 # _author_ = Prasad Rao <prasad_rao1@Dell.com>
 #
 #
@@ -25,11 +23,12 @@ Script to run inventory on specified devices managed by OM Enterprise
 
 #### Description
 This script exercises the OME REST API to get the inventory for a list of devices
-currently being managed by that instance. For authentication X-Auth
-is used over Basic Authentication
+currently being managed by that instance. It *does not* refresh the configuration inventory
+page in the devices menu. To do that run the invoke_refresh_inventory script which will do
+both. For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```
 python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname> --desc <jobname> --groupid <OME group id>
 python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname>  --deviceid <OME group id>

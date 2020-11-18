@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -25,7 +23,7 @@ This script uses the OME REST API to allow updating a firmware using catalog.
 
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
 --password <passwd> --groupid 25315`
 """

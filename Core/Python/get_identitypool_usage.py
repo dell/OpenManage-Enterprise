@@ -1,6 +1,4 @@
 #
-# Python script to get the list of virtual addresses in an Identity Pool
-#
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 #
 #
@@ -29,7 +27,7 @@ Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11

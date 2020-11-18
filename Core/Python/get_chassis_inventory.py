@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get inventory data in CSV format.
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 #
@@ -28,7 +26,7 @@ This script exercises the OME REST API to get chassis inventory
 in a CSV format for external consumption
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_chassis_inventory.py -i <ip addr> -u admin -p <password>`
 """
 import argparse

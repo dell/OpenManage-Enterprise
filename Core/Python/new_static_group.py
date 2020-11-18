@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -29,7 +27,7 @@ group once the group has been successfully created.
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python new_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
 import argparse

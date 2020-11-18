@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get device list.
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 #
@@ -29,7 +27,7 @@ currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_device_list.py --ip <xx> --user <username> --password <pwd>`
 """
 

@@ -1,6 +1,4 @@
 #
-#  Python script using OME API to create a new static group
-#
 # _author_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -27,7 +25,7 @@ This script exercises the OME REST API to find baselines associated
 with a given server. For authentication X-Auth is used over Basic
 Authentication. Note: The credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_firmware_baseline.py -i 192.168.1.93 -u admin -p somepass -r 192.168.1.45`
 """
 

@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get list of reports
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -28,7 +26,7 @@ currently defined in that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_report_list.py --ip <xx> --user <username> --password <pwd>`
 """
 import argparse

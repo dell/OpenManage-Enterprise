@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a Network
-#
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -29,7 +27,7 @@ Set Minimum and Maximum to the same value to a single VLAN
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
 import argparse
@@ -149,7 +147,7 @@ if __name__ == '__main__':
 *Must include header row with at least the rows in the example below
 *NetworkType must be an integer value. Use --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
-#### Example
+#### Python Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
     args = parser.parse_args()

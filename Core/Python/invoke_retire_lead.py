@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -23,7 +21,7 @@ Script to retire lead of MCM group and promote the exising backup lead as lead
 Description: 
 This script retires the current lead and the backup lead gets promoted as the new lead
 
-#### Example
+#### Python Example
 `python invoke_retire_lead.py --ip <lead ip> --user <username> --password <password>`
 
 Note:
