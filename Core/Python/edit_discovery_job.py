@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 # 
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -26,7 +24,7 @@ it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python edit_discovery_job.py --ip <ip addr> --user admin
 --password <passwd> --jobNamePattern <Existing Discovery Job name>

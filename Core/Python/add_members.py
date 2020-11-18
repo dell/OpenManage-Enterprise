@@ -1,7 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
-#
 # Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +22,7 @@ and assign a backup lead
 This script adds all standalone domains to the
 existing group and assigns a member as backup lead.
 
-#### Example
+#### Python Example
 `python add_members.py --ip <ip addr> --user root --password <passwd>`
 
 Note:

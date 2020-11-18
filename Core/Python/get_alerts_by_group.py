@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get alerts for a group.
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -28,7 +26,7 @@ of alerts for the given group. For authentication X-Auth
 is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
     `python get_alerts_by_group.py --ip <ip addr> --user admin
         --password <password> --filterby Name
         --field "Dell iDRAC Servers"`

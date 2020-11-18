@@ -1,7 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
-#
 # Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +22,7 @@ This script exercises the OME REST API to perform power control operations.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python set_power_state.py --ip <ip addr> --user admin
 --password <passwd> --deviceId 25527  --state {state}

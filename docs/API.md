@@ -6,7 +6,7 @@ API usage examples are stored in Core/PowerShell and Core/Python for PowerShell 
 Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
 shown below. 
 
-You can find a current copy of the OME API documentation [here](https://www.dell.com/support/manuals/en-us/dell-openmanage-enterprise/ome-3.3.1_omem-1.10.00_apiguide/about-this-document?guid=guid-e4740be0-2c49-443a-8f3d-1cb50cd4b7a3&lang=en-us). A PDF version is available [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf)
+You can find a current copy of the OME API documentation [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf).
 
 ## Table of Contents
 <div class="toc">
@@ -37,6 +37,8 @@ You can find a current copy of the OME API documentation [here](https://www.dell
 <ul>
 
 <li><a href="#invoke-refresh-inventory">Invoke Refresh Inventory</a></li>
+
+<li><a href="#start-inventory-job">Start Inventory Job</a></li>
 
 <li><a href="#update-firmware-using-catalog">Update Firmware Using Catalog</a></li>
 
@@ -102,8 +104,10 @@ hosts to an existing static group. For authentication X-Auth
 is used over Basic Authentication. Note: The credentials entered
 are not stored to disk.
 
-#### Example
+#### Python Example
     `python add_device_to_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"`
+
+
 
 ---
 ### Add Members
@@ -123,7 +127,7 @@ and assign a backup lead
 This script adds all standalone domains to the
 existing group and assigns a member as backup lead.
 
-#### Example
+#### Python Example
 `python add_members.py --ip <ip addr> --user root --password <passwd>`
 
 Note:
@@ -143,12 +147,25 @@ with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
 with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
 7. Parse returned job id and monitor it to completion
 
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
+
 ---
 ### Edit Discovery Job
 
 #### Available Scripts
 
 - [edit_discovery_job.py](../Core/Python/edit_discovery_job.py)
+
+- [Edit-DiscoveryJob.ps1](../Core/PowerShell/Edit-DiscoveryJob.ps1)
 
 
 #### Synopsis
@@ -160,7 +177,7 @@ it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python edit_discovery_job.py --ip <ip addr> --user admin
 --password <passwd> --jobNamePattern <Existing Discovery Job name>
@@ -169,6 +186,16 @@ python edit_discovery_job.py --ip <ip addr> --user admin
 ```
 where {jobNamePattern} can be existing discovery job name(Discovery_Essentials_10.xx.xx.xx)
 or the job name pattern(Discovery_Essentials)
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" 
+    -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
+
+```
+
 
 ---
 ### Invoke Discover Device
@@ -188,7 +215,7 @@ This script exercises the OME REST API to discover devices.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python invoke_discover_device.py --ip <ip addr> --user admin
 --password <passwd> --targetUserName <user name>
@@ -196,6 +223,27 @@ python invoke_discover_device.py --ip <ip addr> --user admin
 --targetIpAddresses <10.xx.xx.x,10.xx.xx.xx-10.yy.yy.yy,10.xx.xx.xx> or --targetIpAddrCsvFile xyz.csv
 ```
 where {Device_Type} can be server,chassis
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    $disccred = Get-Credential
+    .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  
+    -IPAddressCsvFile .\xxxx.csv  -nodeCredentials $disccred
+     where {device_type} can be server/chassis
+     In this instance you will be prompted for credentials to use to
+     connect to the appliance
+    
+
+    PS C:\>$cred = Get-Credential
+    .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 
+    10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,...
+     where {device_type} can be server/chassis
+     In this instance you will be prompted for credentials
+
+```
+
 
 ---
 ### New Mcm Group
@@ -236,8 +284,20 @@ is set as the lead in the created MCM group
     with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
 9. Parse returned job id and monitor it to completion
 
-#### Example
+#### Python Example
 `python new_mcm_group.py --ip <ip addr> --user root --password <passwd> --groupname testgroup`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\New-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -GroupName TestGroup
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### New Network
@@ -260,8 +320,29 @@ Set Minimum and Maximum to the same value to a single VLAN
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\New-Network.ps1 -IpAddress 100.79.6.11 -Credentials $cred -ListNetworkTypes
+    
+
+    PS C:\>.\New-Network.ps1 -IpAddress 100.79.6.11 -Credentials root -ListNetworkTypes
+    
+
+    PS C:\>.\New-Network.ps1 -IpAddress 100.79.6.11 -ListNetworks
+    
+
+    PS C:\>.\New-Network.ps1 -IpAddress 100.79.6.11 -ExportExample
+    
+
+    PS C:\>.\New-Network.ps1 -IpAddress 100.79.6.11 -InFile "New-NetworkExample.csv"
+
+```
+
 
 ---
 ### New Static Group
@@ -283,8 +364,22 @@ group once the group has been successfully created.
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python new_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+         -GroupName "Test_OME_Group"
+    
+
+    PS C:\>.\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -GroupName "Test_OME"
+    In this instance you will be prompted for credentials to use
+
+```
+
 
 ---
 ### Set Power State
@@ -304,12 +399,23 @@ This script exercises the OME REST API to perform power control operations.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python set_power_state.py --ip <ip addr> --user admin
 --password <passwd> --deviceId 25527  --state {state}
 ```
 where {state} can be "On", "Off", "Cold Boot","Warm Boot", "ShutDown"
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Set-PowerState.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -DeviceId 25527  -State {state}
+     where {state} can be on/off/warm boot/cold boot/shutdown
+
+```
+
 
 ---
 ### Set System Configuration
@@ -327,9 +433,26 @@ Script to perform template deployment on the target devices.
 Description: 
 This script performs template deployment. Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python set_system_configuration.py --ip <ip addr> --user admin
     --password <passwd> --sourceid <10089> --targetid/--groupid <10081>`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
+     In this instance you will be prompted for credentials.
+    
+
+    PS C:\>$cred = Get-Credential
+    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -SourceId 25527 -GroupId 1010 -Component iDRAC
+     In this instance you will be prompted for credentials.
+
+```
+
 
 
 ## Update Scripts
@@ -352,8 +475,44 @@ Refreshes the inventory on a set of target devices. This includes the configurat
 This script uses the OME REST API to refresh the inventory of a targeted server. It performs X-Auth
 with basic authentication. Note: Credentials are not stored on disk.
 
-#### Example
+#### Python Example
 `python invoke_refresh_inventory.py -i 192.168.1.93 -u admin -p somepass --idrac-ips 192.168.1.63,192.168.1.45`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    Invoke-RefreshInventory.ps1 -IpAddress 192.168.1.93 -Credentials $creds -GroupName Test -ServiceTags AAAAAAA
+
+```
+
+
+---
+### Start Inventory Job
+
+#### Available Scripts
+
+- [start_inventory_job.py](../Core/Python/start_inventory_job.py)
+
+
+#### Synopsis
+Script to run inventory on specified devices managed by OM Enterprise
+
+#### Description
+This script exercises the OME REST API to get the inventory for a list of devices
+currently being managed by that instance. It *does not* refresh the configuration inventory
+page in the devices menu. To do that run the invoke_refresh_inventory script which will do
+both. For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Python Example
+```
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname> --desc <jobname> --groupid <OME group id>
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname>  --deviceid <OME group id>
+python start_inventory_job.py --ip <xx> --user <username> --password <pwd>  --desc <jobname> --servicetags <space seperated service tags>
+```
+
+
 
 ---
 ### Update Firmware Using Catalog
@@ -373,9 +532,24 @@ This script uses the OME REST API to allow updating a firmware using catalog.
 
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
 --password <passwd> --groupid 25315`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceId 25234
+    .\Update-FirmwareUsingCatalog -IpAddress 192.168.1.93 -Credentials $creds -UpdateActions upgrade -RepoType 
+    DELL_ONLINE -IdracIps 192.168.1.45
+    
+
+    PS C:\>.\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName Test
+    In this instance you will be prompted for credentials to use to connect to the appliance
+
+```
+
 
 ---
 ### Update Installed Firmware With Dup
@@ -397,7 +571,7 @@ Note that the credentials entered are not stored to disk.
 
  Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
     --password <passwd> --groupid 25315
@@ -423,6 +597,22 @@ python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
    and print info to screen
 
 
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Update-InstalledFirmware.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -DupFile .\BIOSxxxx.EXE -DeviceId 25234
+    
+
+    PS C:\>.\Update-InstalledFirmwareWithDup.ps1 -IpAddress "10.xx.xx.xx" -DupFile .\BIOSxxxx.EXE
+    -GroupId 1010
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
+
+
 ## Monitor Scripts
 Monitor scripts include those things for checking alerts, health, performance, power status, and other pre-existing status data.
 
@@ -445,9 +635,24 @@ This script exercises the OME REST API to get a list of alerts for
 a specific device given the name or the asset tag of the device
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_alerts_by_device.py --ip <xx> --user <username>
     --password <pwd> --filterby Name --field "idrac-abcdef"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -FilterBy name -DeviceInfo ""
+    
+
+    PS C:\>.\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -FilterBy DeviceIdentifier -DeviceInfo ""
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Get Alerts By Group
@@ -468,10 +673,25 @@ of alerts for the given group. For authentication X-Auth
 is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
     `python get_alerts_by_group.py --ip <ip addr> --user admin
         --password <password> --filterby Name
         --field "Dell iDRAC Servers"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-AlertsByGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -FilterBy Description -GroupInfo "Dell iDRAC server devices"
+    
+
+    PS C:\>.\Get-AlertsByGroup.ps1 -IpAddress "10.xx.xx.xx" -FilterBy Name -GroupInfo "Dell iDRAC Servers"
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Get Audit Logs
@@ -490,9 +710,19 @@ print them to screen.
 #### Description
 It performs X-Auth with basic authentication. Note: Credentials are not stored on disk.
 
-#### Example
+#### Python Example
 `python get_audit_logs.py -i 192.168.1.93 -u admin -p somepass
 --share \192.168.1.7\gelante    est.csv --smbuser someuser --smbpass somepass`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred1 = Get-Credentials
+    $cred2 = Get-Credentials
+    python get_audit_logs.py -IpAddress 192.168.1.5 -Credentials $cred1 -Share \\192.168.1.7\gelante -SmbCreds $cred2
+
+```
+
 
 ---
 ### Get Chassis Inventory
@@ -512,8 +742,21 @@ This script exercises the OME REST API to get chassis inventory
 in a CSV format for external consumption
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_chassis_inventory.py -i <ip addr> -u admin -p <password>`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-ChassisInventory.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    
+
+    PS C:\>.\Get-ChassisInventory.ps1 -IpAddress "10.xx.xx.xx"
+    In this instance you will be prompted for credentials to use
+
+```
+
 
 ---
 ### Get Device Inventory
@@ -534,9 +777,27 @@ for a device given ID/Name/Service Tag
 and Inventory type (os,cpus,disks,memory,controllers) of the device
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_device_inventory.py -i <ip addr> -u admin
     -p <password> -fby Name -f "iDRAC-abcdef" -invtype os`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -InventoryType {InventoryType} -FilterBy Name -DeviceInfo idrac-BZ0M630
+     where {InventoryType} can be cpus or memory or controllers or disks or os
+    
+
+    PS C:\>.\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -InventoryType {InventoryType} -FilterBy SvcTag 
+    -DeviceInfo BZ0M630
+    where {InventoryType} can be cpus or memory or controllers or disks or os
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Get Device List
@@ -557,8 +818,19 @@ currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_device_list.py --ip <xx> --user <username> --password <pwd>`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -OutFormat json
+    .\Get-DeviceList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -OutFormat CSV -OutFilePath .\\test.csv
+
+```
+
 
 ---
 ### Get Firmware Baselines
@@ -579,8 +851,17 @@ This script exercises the OME REST API to find baselines associated
 with a given server. For authentication X-Auth is used over Basic
 Authentication. Note: The credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_firmware_baseline.py -i 192.168.1.93 -u admin -p somepass -r 192.168.1.45`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    Get-FirmwareBaselines.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -IdracIp 192.168.1.45
+
+```
+
 
 ---
 ### Get Group Details
@@ -601,9 +882,24 @@ device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_group_details.py --ip <xx> --user <username> --password <pwd>
 --groupinfo "All Devices"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-GroupDetails.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    -GroupInfo "Dell iDRAC server devices"
+    
+
+    PS C:\>.\Get-GroupDetails.ps1 -IpAddress "10.xx.xx.xx" -GroupInfo 1008
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Get Group Details By Filter
@@ -625,9 +921,25 @@ device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_group_details_by_filter.py --ip <xx> --user <username> --password <pwd>
     --filterby Name --field "All Devices"`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-GroupDetailsByFilter.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -FilterBy Description -GroupInfo "Dell iDRAC server devices"
+    
+
+    PS C:\>.\Get-GroupDetailsByFilter.ps1 -IpAddress "10.xx.xx.xx" -FilterBy
+    Name -GroupInfo "Dell iDRAC Servers"
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Get Group List
@@ -648,8 +960,21 @@ currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_group_list.py --ip <xx> --user <username> --password <pwd>`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-GroupList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    
+
+    PS C:\>.\Get-GroupList.ps1 -IpAddress "10.xx.xx.xx"
+    In this instance you will be prompted for credentials to use
+
+```
+
 
 ---
 ### Get Identitypool Usage
@@ -670,12 +995,33 @@ Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
 ```
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    
+
+    PS C:\>.\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx"
+    In this instance you will be prompted for credentials to use
+    
+
+    PS C:\>.\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3
+    In this instance you will be prompted for credentials to use
+    
+
+    PS C:\>.\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3 -OutFile C:\Temp\export.csv
+    In this instance you will be prompted for credentials to use
+
+```
+
 
 ---
 ### Get Report List
@@ -696,8 +1042,22 @@ currently defined in that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_report_list.py --ip <xx> --user <username> --password <pwd>`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-ReportList.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    
+
+    PS C:\>.\Get-ReportList.ps1 -IpAddress "10.xx.xx.xx"
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 ---
 ### Invoke Report Execution
@@ -739,9 +1099,23 @@ to determine column names for the report
 8. Extract report results (GET) at /ReportResults/ResultRows
 and print out results
 
-#### Example
+#### Python Example
 `python .\invoke_report_execution.py  --ip <ip addr> --user <username>
     --password <password> --reportid 10051`
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -ReportId 10043
+    
+
+    PS C:\>.\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -ReportId 10043
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+
 
 
 ## Maintenance Scripts
@@ -763,7 +1137,7 @@ Script to retire lead of MCM group and promote the exising backup lead as lead
 Description: 
 This script retires the current lead and the backup lead gets promoted as the new lead
 
-#### Example
+#### Python Example
 `python invoke_retire_lead.py --ip <lead ip> --user <username> --password <password>`
 
 Note:
@@ -778,3 +1152,14 @@ Note:
 4. Retire lead and promote backup lead as the new lead
     with POST on /ManagementDomainService/Actions/ManagementDomainService.RetireLead
 5. Parse returned job id and monitor it to completion
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Invoke-RetireLead.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+    In this instance you will be prompted for credentials to use to
+    connect to the appliance
+
+```
+

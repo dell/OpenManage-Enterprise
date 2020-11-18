@@ -1,8 +1,4 @@
 #
-# Python script using OME-M APIs to create an MCM group,
-#  assign a backup lead and add all possible members to the
-#  created group
-#
 # Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +43,7 @@ is set as the lead in the created MCM group
     with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
 9. Parse returned job id and monitor it to completion
 
-#### Example
+#### Python Example
 `python new_mcm_group.py --ip <ip addr> --user root --password <passwd> --groupname testgroup`
 """
 

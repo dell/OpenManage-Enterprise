@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get device inventory.
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 #
@@ -29,7 +27,7 @@ for a device given ID/Name/Service Tag
 and Inventory type (os,cpus,disks,memory,controllers) of the device
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_device_inventory.py -i <ip addr> -u admin
     -p <password> -fby Name -f "iDRAC-abcdef" -invtype os`
 """

@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get group details
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -28,7 +26,7 @@ device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_group_details.py --ip <xx> --user <username> --password <pwd>
 --groupinfo "All Devices"`
 """

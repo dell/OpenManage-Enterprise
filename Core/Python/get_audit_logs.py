@@ -1,6 +1,4 @@
 #
-#  Python script using OME API to create a new static group
-#
 # _author_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -26,7 +24,7 @@ print them to screen.
 #### Description
 It performs X-Auth with basic authentication. Note: Credentials are not stored on disk.
 
-#### Example
+#### Python Example
 `python get_audit_logs.py -i 192.168.1.93 -u admin -p somepass
 --share \\192.168.1.7\gelante\test.csv --smbuser someuser --smbpass somepass`
 """

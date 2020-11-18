@@ -1,6 +1,4 @@
 #
-# Python script using OME API to run a pre-defined report
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -49,7 +47,7 @@ to determine column names for the report
 8. Extract report results (GET) at /ReportResults/ResultRows
 and print out results
 
-#### Example
+#### Python Example
 `python .\invoke_report_execution.py  --ip <ip addr> --user <username>
     --password <password> --reportid 10051`
 """

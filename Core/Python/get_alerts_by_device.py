@@ -1,6 +1,4 @@
 #
-# Python script using OME API to get alerts for a device.
-#
 # _author_ = Raajeev Kalyanaraman <Raajeev.Kalyanaraman@Dell.com>
 #
 #
@@ -29,7 +27,7 @@ This script exercises the OME REST API to get a list of alerts for
 a specific device given the name or the asset tag of the device
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python get_alerts_by_device.py --ip <xx> --user <username>
     --password <pwd> --filterby Name --field "idrac-abcdef"`
 """

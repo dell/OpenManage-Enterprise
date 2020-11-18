@@ -11,6 +11,7 @@ deploy:
     - Add-Members.ps1
   edit_discovery_job:
     - edit_discovery_job.py
+    - Edit-DiscoveryJob.ps1
   invoke_discover_device:
     - invoke_discover_device.py
     - Invoke-DiscoverDevice.ps1
@@ -39,6 +40,8 @@ update:
   update_installed_firmware_with_dup:
     - update_installed_firmware_with_dup.py
     - Update-InstalledFirmwareWithDup.ps1
+  start_inventory_job:
+    - start_inventory_job.py
 monitor:
   get_alerts_by_device:
     - get_alerts_by_device.py

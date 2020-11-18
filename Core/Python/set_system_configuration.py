@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -23,7 +21,7 @@ Script to perform template deployment on the target devices.
 Description: 
 This script performs template deployment. Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 `python set_system_configuration.py --ip <ip addr> --user admin
     --password <passwd> --sourceid <10089> --targetid/--groupid <10081>`
 """

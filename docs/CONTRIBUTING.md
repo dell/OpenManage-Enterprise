@@ -251,7 +251,7 @@ There is a great tutorial on writing good Python code [here](https://realpython.
         For authentication X-Auth is used over Basic Authentication
         Note that the credentials entered are not stored to disk.
 
-        #### Example
+        #### Python Example
         `python new_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
         """
 

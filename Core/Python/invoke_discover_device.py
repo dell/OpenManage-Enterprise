@@ -1,6 +1,4 @@
 #
-# Python script using OME API to create a new static group
-#
 # _maintained_by_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
@@ -25,7 +23,7 @@ This script exercises the OME REST API to discover devices.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
 
-#### Example
+#### Python Example
 ```bash
 python invoke_discover_device.py --ip <ip addr> --user admin
 --password <passwd> --targetUserName <user name>

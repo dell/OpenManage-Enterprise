@@ -54,6 +54,7 @@ limitations under the License.
     .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceId 25234
     .\Update-FirmwareUsingCatalog -IpAddress 192.168.1.93 -Credentials $creds -UpdateActions upgrade -RepoType DELL_ONLINE -IdracIps 192.168.1.45
 
+  .EXAMPLE
     .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName Test
      In this instance you will be prompted for credentials to use to connect to the appliance
 #>
