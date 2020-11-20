@@ -6,7 +6,7 @@ API usage examples are stored in Core/PowerShell and Core/Python for PowerShell 
 Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
 shown below. 
 
-You can find a current copy of the OME API documentation [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_api-guide2_en-us.pdf).
+You can find a current copy of the OME API documentation [here](https://dl.dell.com/topicspdf/dell-openmanage-enterprise_Reference-Guide2_en-us.pdf).
 
 ## Table of Contents
 <div class="toc">
