@@ -579,6 +579,11 @@ if __name__ == '__main__':
         print("WARNING: To reflect firmware changes you may have to power cycle the server first before running this. "
               "It is situation dependent.")
 
+        if args.groupname == 'All Devices':
+            print("WARNING: No argument was provided for groupname. Defaulting to \'All Devices\' for the "
+                  "configuration inventory refresh. See help for details. This will also display if the argument"
+                  " was manually set to \'All Devices\' and can be safely ignored.")
+
         refresh_device_inventory(headers, args.ip, args.groupname, args.skip_config_inventory, DEVICE_IDS_ARG,
                                  SERVICE_TAGS_ARG, IDRAC_IPS_ARG, DEVICE_NAMES_ARG)
 
