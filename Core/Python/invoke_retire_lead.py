@@ -18,7 +18,7 @@
 #### Synopsis
 Script to retire lead of MCM group and promote the exising backup lead as lead
 
-Description: 
+#### Description:
 This script retires the current lead and the backup lead gets promoted as the new lead
 
 #### Python Example

@@ -43,11 +43,11 @@ update:
   start_inventory_job:
     - start_inventory_job.py
 monitor:
+  get_alerts:
+    - get_alerts.py
   get_alerts_by_device:
-    - get_alerts_by_device.py
     - Get-AlertsByDevice.ps1
   get_alerts_by_group:
-    - get_alerts_by_group.py
     - Get-AlertsByGroup.ps1
   get_audit_logs:
     - get_audit_logs.py

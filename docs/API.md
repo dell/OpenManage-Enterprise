@@ -48,6 +48,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <li><a href="#monitor-scripts">Monitor Scripts</a></li>
 <ul>
 
+<li><a href="#get-alerts">Get Alerts</a></li>
+
 <li><a href="#get-alerts-by-device">Get Alerts By Device</a></li>
 
 <li><a href="#get-alerts-by-group">Get Alerts By Group</a></li>
@@ -70,6 +72,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-identitypool-usage">Get Identitypool Usage</a></li>
 
+<li><a href="#get-inventory-by-type">Get Inventory By Type</a></li>
+
 <li><a href="#get-report-list">Get Report List</a></li>
 
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
@@ -79,6 +83,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <ul>
 
 <li><a href="#invoke-retire-lead">Invoke Retire Lead</a></li>
+
+<li><a href="#set-scale-vlan-profile">Set Scale Vlan Profile</a></li>
 
 </ul>
 </ul>
@@ -259,7 +265,7 @@ PS C:\>$cred = Get-Credential
 Script to create MCM group, add all members to the created group,
 and assign a backup lead
 
-Description: 
+#### Description:
 This script creates a MCM group, adds all standalone domains to the
 created group and assigns a member as backup lead.
 
@@ -430,7 +436,7 @@ PS C:\>$cred = Get-Credential
 #### Synopsis
 Script to perform template deployment on the target devices.
 
-Description: 
+#### Description:
 This script performs template deployment. Note that the credentials entered are not stored to disk.
 
 #### Python Example
@@ -527,7 +533,7 @@ python start_inventory_job.py --ip <xx> --user <username> --password <pwd>  --de
 #### Synopsis
 Script to update firmware using catalog
 
-Description: 
+#### Description:
 This script uses the OME REST API to allow updating a firmware using catalog.
 
 Note that the credentials entered are not stored to disk.
@@ -617,27 +623,67 @@ PS C:\>$cred = Get-Credential
 Monitor scripts include those things for checking alerts, health, performance, power status, and other pre-existing status data.
 
 ---
-### Get Alerts By Device
+### Get Alerts
 
 #### Available Scripts
 
-- [get_alerts_by_device.py](../Core/Python/get_alerts_by_device.py)
+- [get_alerts.py](../Core/Python/get_alerts.py)
+
+
+#### Synopsis
+Retrieves alerts from a target OME Instance.
+
+#### Description
+This script provides a large number of ways to get alerts with various filters. With no arguments it will pull all
+alerts from the OME instance. The below filters are available:
+
+- top - Pull top records
+- skip - Skip N number of records
+- orderby - Order by a specific column
+- id - Filter by the OME internal event ID
+- Alert device ID - Filter by the OME internal ID for the device
+- Alert Device Identifier / Service Tag - Filter by the device identifier or service tag of a device
+- Device type - Filter by device type (server, chassis, etc)
+- Severity type - The severity of the alert - warning, critical, info, etc
+- Status type - The status of the device - normal, warning, critical, etc
+- Category Name - The type of alert generated. Audit, configuration, storage, system health, etc
+- Subcategory ID - Filter by a specific subcategory. The list is long - see the --get-subcategories option for details
+- Subcategory name - Same as above except the name of the category instead of the ID
+- Message - Filter by the message generated with the alert
+- TimeStampBegin - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
+- TimeStampEnd - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
+- Device name - Filter by a specific device name
+- Group name - Filter alerts by a group name
+- Group description - Filter alerts by a group description
+
+Authentication is done over x-auth with basic authentication. Note: Credentials are not stored on disk.
+
+#### Python Examples
+```
+python get_alerts --ip 192.168.1.93 --password somepass --top 1 --skip 5
+python get_alerts --ip 192.168.1.93 --password somepass --alerts-by-group-name "Test" --severity-type CRITICAL --top 5
+python get_alerts --ip 192.168.1.93 --password somepass --orderby Message --category-name AUDIT --alert-device-type STORAGE
+```
+
+
+
+---
+### Get Alerts By Device
+
+#### Available Scripts
 
 - [Get-AlertsByDevice.ps1](../Core/PowerShell/Get-AlertsByDevice.ps1)
 
 
 #### Synopsis
-Script to get the alerts for a device given the name or
-asset tag of the device
-
+Script to retrieve the alerts for a device
 #### Description
-This script exercises the OME REST API to get a list of alerts for
-a specific device given the name or the asset tag of the device
+This script exercises the OME REST API to get the alerts
+for a device. The device can be filtered using the Device Name
+or Asset Tag
+This example uses ODATA queries with filter constructs.
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
-`python get_alerts_by_device.py --ip <xx> --user <username>
-    --password <pwd> --filterby Name --field "idrac-abcdef"`
 
 
 #### PowerShell Example
@@ -659,24 +705,18 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_alerts_by_group.py](../Core/Python/get_alerts_by_group.py)
-
 - [Get-AlertsByGroup.ps1](../Core/PowerShell/Get-AlertsByGroup.ps1)
 
 
 #### Synopsis
-Script to get the list of alerts for a group in OME
-
+Script to retrieve the alerts for a group
 #### Description
-This script exercises the OME REST API to get a list
-of alerts for the given group. For authentication X-Auth
-is used over Basic Authentication.
+This script exercises the OME REST API to get the alerts
+for a group. The group can be filtered using the Group Name
+or Description.
+This example uses ODATA queries with filter constructs.
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
-    `python get_alerts_by_group.py --ip <ip addr> --user admin
-        --password <password> --filterby Name
-        --field "Dell iDRAC Servers"`
 
 
 #### PowerShell Example
@@ -1024,6 +1064,34 @@ PS C:\>$cred = Get-Credential
 
 
 ---
+### Get Inventory By Type
+
+#### Available Scripts
+
+- [Get-InventoryByType.ps1](../Core/PowerShell/Get-InventoryByType.ps1)
+
+
+#### Synopsis
+Script to retrieve the inventory for a device by inventory type.
+#### Description
+This script exercises the OME REST API to get the inventory
+for a device by inventory type. The inventory type can be os 
+or cpus or controllers or memory or disks.
+Note that the credentials entered are not stored to disk.
+
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -DeviceId 25627 -InventoryType {InventoryType}
+    where {InventoryType} can be cpus or memory or controllers or disks or os
+
+```
+
+
+---
 ### Get Report List
 
 #### Available Scripts
@@ -1134,7 +1202,7 @@ Maintenance scripts include those things for reprovisioning, remediation, and ge
 #### Synopsis
 Script to retire lead of MCM group and promote the exising backup lead as lead
 
-Description: 
+#### Description:
 This script retires the current lead and the backup lead gets promoted as the new lead
 
 #### Python Example
@@ -1160,6 +1228,31 @@ PS C:\>$cred = Get-Credential
     .\Invoke-RetireLead.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
     In this instance you will be prompted for credentials to use to
     connect to the appliance
+
+```
+
+
+---
+### Set Scale Vlan Profile
+
+#### Available Scripts
+
+- [Set-ScaleVlanProfile.ps1](../Core/PowerShell/Set-ScaleVlanProfile.ps1)
+
+
+#### Synopsis
+Script to set the ScaleVlanProfile property for a fabric
+#### Description
+Script allows enumeration of all fabrics on the given system and 
+allows the user to select a fabric on which the ScaleVlanProfile
+property can be changed to the input value (Enabled / Disabled)
+
+
+
+#### PowerShell Example
+```
+PS C:\>$credentials = Get-Credentials
+    Set-ScaleVlanProfile.ps1 -IpAddress 100.200.100.101 -Credentials $cred -ProfileState Enabled
 
 ```
 

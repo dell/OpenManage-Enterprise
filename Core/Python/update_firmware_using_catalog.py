@@ -18,7 +18,7 @@
 #### Synopsis
 Script to update firmware using catalog
 
-Description: 
+#### Description:
 This script uses the OME REST API to allow updating a firmware using catalog.
 
 Note that the credentials entered are not stored to disk.

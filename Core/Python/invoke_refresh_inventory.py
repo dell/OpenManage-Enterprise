@@ -116,7 +116,7 @@ def get_group_id_by_name(ome_ip_address: str, group_name: str, authenticated_hea
     return -1
 
 
-def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
+def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> list:
     """
     This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
     handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
@@ -126,6 +126,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
         authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
         url: The API url against which you would like to make a request
         odata_filter: An optional parameter for providing an odata filter to run against the API endpoint.
+        max_pages: The maximum number of pages you would like to return
 
     Returns: Returns a list of dictionaries of the data received from OME
 
@@ -152,7 +153,14 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) ->
         # Grab the base URI
         next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
 
+    i = 1
     while next_link_url is not None:
+        # Break if we have reached the maximum number of pages to be returned
+        if max_pages:
+            if i >= max_pages:
+                break
+            else:
+                i = i + 1
         response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
         next_link_url = None
         if response.status_code == 200:
@@ -316,14 +324,8 @@ def get_device_id(authenticated_headers: dict,
                   " failure in the connection." % ome_ip_address)
             sys.exit(0)
 
-        if len(device_list) <= 0:
-            print("No devices found on this OME server: " + ome_ip_address + ". Exiting.")
-            sys.exit(0)
-
-        for device_dictionary in device_list:
-            if device_dictionary['DeviceManagement'][0]['NetworkAddress'] == device_idrac_ip.strip():
-                device_id = device_dictionary['Id']
-                break
+        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+                             "DeviceServiceTag eq \'%s\'" % service_tag)
 
         if not device_idrac_ip:
             print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
