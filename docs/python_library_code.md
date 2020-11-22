@@ -41,7 +41,7 @@ Used to create a session to OME. You can then pass the resulting dictionary head
 
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
 
-    def get_data(authenticated_headers: dict, url: str, odata_filter: str = None) -> list:
+    def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> list:
         """
         This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
         handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
@@ -51,6 +51,7 @@ This is used to perform any sort of interaction with a REST API resource. It inc
             authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
             url: The API url against which you would like to make a request
             odata_filter: An optional parameter for providing an odata filter to run against the API endpoint.
+            max_pages: The maximum number of pages you would like to return
     
         Returns: Returns a list of dictionaries of the data received from OME
     
@@ -77,7 +78,14 @@ This is used to perform any sort of interaction with a REST API resource. It inc
             # Grab the base URI
             next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
     
+        i = 1
         while next_link_url is not None:
+            # Break if we have reached the maximum number of pages to be returned
+            if max_pages:
+                if i >= max_pages:
+                    break
+                else:
+                    i = i + 1
             response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
             next_link_url = None
             if response.status_code == 200:

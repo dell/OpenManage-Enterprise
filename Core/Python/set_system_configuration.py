@@ -18,7 +18,7 @@
 #### Synopsis
 Script to perform template deployment on the target devices.
 
-Description: 
+#### Description:
 This script performs template deployment. Note that the credentials entered are not stored to disk.
 
 #### Python Example

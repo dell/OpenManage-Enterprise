@@ -18,7 +18,7 @@
 Script to create MCM group, add all members to the created group,
 and assign a backup lead
 
-Description: 
+#### Description:
 This script creates a MCM group, adds all standalone domains to the
 created group and assigns a member as backup lead.
 

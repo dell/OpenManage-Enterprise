@@ -26,9 +26,32 @@ import subprocess
 import sys
 from os import scandir
 from os.path import abspath, basename, join
+from collections import OrderedDict
 
 import jinja2
 import yaml
+
+
+def _get_powershell_example(script_to_process: str):
+    """ Utility method for getting the PowerShell example """
+    logging.info("Retrieving PowerShell example for " + script_to_process)
+    pipe = subprocess.Popen(["powershell.exe",
+                             "Get-Help",
+                             abspath(join(categories_dictionary['powershell_path'], script_to_process)),
+                             "-Examples"],
+                            stdout=subprocess.PIPE)
+    output = pipe.stdout.read().decode('utf-8').split("-------------------------- EXAMPLE 1 "
+                                                      "--------------------------")[1].strip()
+    output = output.splitlines()
+
+    # Remove blank lines - PowerShell otherwise prints with several unnecessary blank lines
+    example = ""
+    for line_to_clean in filter(lambda x: not re.match(r'^\s*$', x), output):
+        example = example + line_to_clean + '\n'
+    example = re.sub(r"-------------------------- EXAMPLE \d --------------------------", "\n", example)
+
+    return example
+
 
 logging.info("Reading in YML...")
 with open('categories.yml') as category_file:
@@ -42,6 +65,7 @@ for entry in scandir(categories_dictionary['python_code_path']):
         python_file_list.append(entry.path)
 
 logging.info("Scanning Python files for docstrings and extracting them...")
+script_tracker = {}  # Used to track if a key has Python scripts, PowerShell scripts, or both
 for module_path in python_file_list:
 
     with open(module_path) as fd:
@@ -70,38 +94,100 @@ for module_path in python_file_list:
 
     # Call PowerShell's help and then extract examples from the help page
     powershell_example = None
+    script_tracker[key] = {}
+    script_tracker[key]['has_powershell'] = False
+    script_tracker[key]['has_python'] = False
     for script in categories_dictionary[category][key]:
         if script.endswith('.ps1'):
+            if script_tracker[key]['has_powershell']:
+                logging.error("It looks like a PowerShell script for " + key + " may have been listed twice. Fix and"
+                              " then rerun this script.")
+                sys.exit(0)
             logging.info("Retrieving PowerShell example for " + script)
-            p = subprocess.Popen(["powershell.exe",
-                                  "Get-Help",
-                                  abspath(join(categories_dictionary['powershell_path'], script)),
-                                  "-Examples"],
-                                 stdout=subprocess.PIPE)
-            powershell = p.stdout.read().decode('utf-8').split("-------------------------- EXAMPLE 1 "
-                                                               "--------------------------")[1].strip()
-            powershell = powershell.splitlines()
-
-            # Remove blank lines - PowerShell otherwise prints with several unnecessary blank lines
-            powershell_example = ""
-            for line in filter(lambda x: not re.match(r'^\s*$', x), powershell):
-                powershell_example = powershell_example + line + '\n'
-            powershell_example = re.sub(r"-------------------------- EXAMPLE \d --------------------------", "\n",
-                                        powershell_example)
-            break
+            powershell_example = _get_powershell_example(script)
+            script_tracker[key]['has_powershell'] = True
+        elif script.endswith('py'):
+            if script_tracker[key]['has_python']:
+                logging.error("It looks like a Python script for " + key + " may have been listed twice. Fix and"
+                              " then rerun this script.")
+                sys.exit(0)
+            script_tracker[key]['has_python'] = True
+        else:
+            logging.error(key + " has a script listed that does not end with either"
+                          " ps1 or .py. This is probably an error. Fix and then rerun this script.")
+            sys.exit(0)
 
     if not powershell_example:
         logging.warning("No PowerShell script found for " + key)
 
-    if category in categories_dictionary:
-        module_data[category][key] = {
-            'path': abspath(module_path),
-            'docstring': docstring,
-            'readable_name': key.replace('_', ' ').title(),
-            'available_scripts': categories_dictionary[category][key],
-            'anchor_link': '#' + key.replace('_', '-').lower(),
-            'powershell_example': powershell_example
-        }
+    module_data[category][key] = {
+        'path': abspath(module_path),
+        'docstring': docstring,
+        'readable_name': key.replace('_', ' ').title(),
+        'available_scripts': categories_dictionary[category][key],
+        'anchor_link': '#' + key.replace('_', '-').lower(),
+        'powershell_example': powershell_example
+    }
+
+# Handle cases where a PowerShell script exists, but a Python script does not
+# TODO - This doesn't check to see if there are PowerShell files on the file system that aren't in categories
+for category, scripts in categories_dictionary.items():
+    if category == 'deploy' or category == 'update' or category == 'monitor' or category == 'maintain':
+        for key in scripts:
+            if key not in script_tracker:
+                logging.warning("No Python script found for " + key)
+                for script in categories_dictionary[category][key]:
+                    script_tracker[key] = {}
+                    script_tracker[key]['has_powershell'] = False
+                    script_tracker[key]['has_python'] = False
+                    if script.endswith('.ps1'):
+                        if script_tracker[key]['has_powershell']:
+                            logging.error("It looks like a PowerShell script for " + key + " may have been listed "
+                                          "twice. Fix and then rerun this script.")
+                            sys.exit(0)
+
+                        # Get synopsis from PowerShell
+                        logging.info("Retrieving synopsis for " + script)
+                        p = subprocess.Popen(["powershell.exe",
+                                              "Get-Help",
+                                              abspath(join(categories_dictionary['powershell_path'], script))],
+                                             stdout=subprocess.PIPE)
+                        powershell = p.stdout.read().decode('utf-8')
+                        powershell_no_blanklines = ""
+                        for line in filter(lambda x: not re.match(r'^\s*$', x), powershell.splitlines()):
+                            powershell_no_blanklines = powershell_no_blanklines + line + '\n'
+                        results = re.search('SYNOPSIS(.*)SYNTAX', powershell_no_blanklines, re.DOTALL)
+                        docstring = "#### Synopsis" + results.group(1)
+
+                        # Get description from PowerShell
+                        results = re.search('DESCRIPTION(.*)RELATED LINKS', powershell_no_blanklines, re.DOTALL)
+                        docstring = docstring + "#### Description" + results.group(1)
+
+                        # Get rid of the leading whitespaces on each line which would convert the line to code
+                        # in markdown
+                        docstring = re.sub(r"\n(\s){2,}", "\n", docstring)
+
+                        module_data[category][key] = {
+                            'path': abspath(join(categories_dictionary['powershell_path'], script)),
+                            'docstring': docstring,
+                            'readable_name': key.replace('_', ' ').title(),
+                            'available_scripts': categories_dictionary[category][key],
+                            'anchor_link': '#' + key.replace('_', '-').lower(),
+                            'powershell_example': _get_powershell_example(script)
+                        }
+                        script_tracker[key]['has_powershell'] = True
+                    elif script.endswith('py'):
+                        logging.error("We shouldn't be here. Is there something strange about this script?")
+                        sys.exit(0)
+                    else:
+                        logging.error(key + " has a script listed that does not end with either"
+                                            " ps1 or .py. This is probably an error. Fix and then rerun this script.")
+                        sys.exit(0)
+
+# Alphabetize all dictionaries by key
+for category, scripts in module_data.items():
+    if category == 'deploy' or category == 'update' or category == 'monitor' or category == 'maintain':
+        module_data[category] = OrderedDict(sorted(module_data[category].items()))
 
 logging.info("Creating API doc from jinja2 template...")
 templateLoader = jinja2.FileSystemLoader(searchpath="./")
