@@ -140,7 +140,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
 
     if '@odata.nextLink' in count_data:
         # Grab the base URI
-        next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
+        next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
 
     i = 1
     while next_link_url is not None:
@@ -160,7 +160,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
             # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
             # is present we get a link to the page with the next set of results.
             if '@odata.nextLink' in requested_data:
-                next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + \
+                next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
                                 requested_data['@odata.nextLink']
 
             if 'value' in requested_data:
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False, help="Username for the OME Appliance", default="admin")
     parser.add_argument("--password", "-p", required=True, help="Password for the OME Appliance")
-    parser.add_argument("--top", required=False, help="Top records to return. Default value is 20.")
+    parser.add_argument("--top", required=False, help="Top records to return.")
     parser.add_argument('--pages', required=False, type=int,
                         help="You will generally not need to change this unless you are using a large value for top"
                              " - typically more than 50 devices. In the UI the results come in pages. Even when"
@@ -194,12 +194,12 @@ if __name__ == '__main__':
                              " more than one page of results you can set this.")
     parser.add_argument("--skip", required=False, help="The number of records, starting at the top, to skip.")
     parser.add_argument("--orderby",
-                        choices=['Id', 'AlertDeviceId', 'AlertDeviceIdentifier', 'AlertDeviceType', 'SeverityType',
-                                 'StatusType', 'CategoryId', 'SubCategoryId', 'SubCategoryName', 'Message',
-                                 'TimeStampDescending', 'TimeStampAscending', 'AlertDeviceName'], required=False,
+                        choices=['AlertDeviceIdentifier', 'AlertDeviceType', 'SeverityType',
+                                 'StatusType', 'SubCategoryName', 'Message', 'TimeStampDescending',
+                                 'TimeStampAscending', 'AlertDeviceName'], required=False,
                         help="Order to apply to the output.")
     parser.add_argument("--id", required=False, help="Filter by the OME internal event ID.")
-    parser.add_argument("--alert-device-id", required=False, help="Filter by device ID.")
+    parser.add_argument("--alert-device-id", required=False, help="Filter by OME internal device ID.")
     parser.add_argument("--alert-device-identifier", "--service-tag", required=False,
                         help="Filter by the device identifier. For servers this is the service tag.")
     parser.add_argument("--alert-device-type",
@@ -211,7 +211,7 @@ if __name__ == '__main__':
                         required=False, help="Filter by status type of the device.")
     parser.add_argument("--category-name",
                         choices=['AUDIT', 'CONFIGURATION', 'MISCELLANEOUS', 'STORAGE', 'SYSTEM_HEALTH', 'UPDATES',
-                                 'WORK_NOTES'], required=False, help="Filter by category ID.")
+                                 'WORK_NOTES'], required=False, help="Filter by category name.")
     parser.add_argument("--get-subcategories", required=False, action='store_true',
                         help="Grabs a list of subcategories from the OME instance.")
     parser.add_argument("--subcategory-id", required=False,
@@ -225,7 +225,7 @@ if __name__ == '__main__':
                         help="Filter by starting time of alerts. This is not currently implemented. See: "
                              "https://github.com/dell/OpenManage-Enterprise/issues/101")
     parser.add_argument("--time-stamp-end", required=False,
-                        help="Filter by ending time of alert. This is not currently implemented. See: "
+                        help="Filter by ending time of alerts. This is not currently implemented. See: "
                              "https://github.com/dell/OpenManage-Enterprise/issues/101")
     parser.add_argument("--alert-device-name", required=False, help="Filter by the OME device name.")
     parser.add_argument("--alerts-by-group-name", required=False,
@@ -276,6 +276,9 @@ if __name__ == '__main__':
 
         if args.severity_type:
             odata_filter.append("SeverityType eq %s" % SEVERITY_TYPE[args.severity_type])
+
+        if args.status_type:
+            odata_filter.append("StatusType eq %s" % STATUS_TYPE[args.status_type])
 
         if args.category_name:
             odata_filter.append("CategoryId eq %s" % CATEGORY_ID[args.category_name])
@@ -331,7 +334,7 @@ if __name__ == '__main__':
         if len(odata_filter) > 0:
             url_filter = ''
             for index, filter_data in enumerate(odata_filter):
-                # Do not append &$ on the last element of the filter
+                # Do not append and on the last element of the filter
                 if index == len(odata_filter) - 1:
                     url_filter = url_filter + filter_data
                 else:

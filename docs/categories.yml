@@ -45,10 +45,7 @@ update:
 monitor:
   get_alerts:
     - get_alerts.py
-  get_alerts_by_device:
-    - Get-AlertsByDevice.ps1
-  get_alerts_by_group:
-    - Get-AlertsByGroup.ps1
+    - Get-Alerts.ps1
   get_audit_logs:
     - get_audit_logs.py
     - Get-AuditLogs.ps1

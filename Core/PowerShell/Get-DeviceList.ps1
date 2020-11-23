@@ -1,5 +1,4 @@
 ﻿<#
-PowerShell Script using OME API to get the device list.
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
 Copyright (c) 2020 Dell EMC Corporation
@@ -118,21 +117,27 @@ function Get-UniqueFileName {
 function Get-Data {
   <#
   .SYNOPSIS
-  Used to interact with API resources
+    Used to interact with API resources
 
   .DESCRIPTION
-  This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
-  handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
-  pages to get a complete listing.
+    This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+    handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+    pages to get a complete listing.
 
   .PARAMETER Url
-  The API url against which you would like to make a request
+    The API url against which you would like to make a request
+
+  .PARAMETER OdataFilter
+    An optional parameter for providing an odata filter to run against the API endpoint.
+
+  .PARAMETER MaxPages
+    The maximum number of pages you would like to return
 
   .INPUTS
-  None. You cannot pipe objects to Get-Data.
+    None. You cannot pipe objects to Get-Data.
 
   .OUTPUTS
-  dict. A dictionary containing the results of the API call
+    dict. A dictionary containing the results of the API call
 
 #>
 
@@ -140,25 +145,27 @@ function Get-Data {
   param (
 
     [Parameter(Mandatory)]
-    [string] 
-    # The API url against which you would like to make a request
+    [string]
     $Url,
 
     [Parameter(Mandatory = $false)]
     [string]
-    # (Optional) A filter to run against the API endpoint
-    $Filter
+    $OdataFilter,
+
+    [Parameter(Mandatory = $false)]
+    [int]
+    $MaxPages = $null
   )
 
   $Data = @()
   $NextLinkUrl = $null
   try {
 
-    if ($PSBoundParameters.ContainsKey('Filter')) {
-      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+    if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
 
       if ($CountData.'@odata.count' -lt 1) {
-        Write-Error "No results were found for filter $($Filter)."
+        Write-Error "No results were found for filter $($OdataFilter)."
         return $null
       } 
     }
@@ -177,8 +184,16 @@ function Get-Data {
     if ($CountData.'@odata.nextLink') {
       $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
     }
+
+    $i = 1
     while ($NextLinkUrl) {
-      $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
+      if ($MaxPages) {
+        if ($i -ge $MaxPages) {
+          break
+        }
+        $i = $i + 1
+      }
+      $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
         -ContentType $Type -SkipCertificateCheck
           
       if ($null -ne $NextLinkData.'value') {
