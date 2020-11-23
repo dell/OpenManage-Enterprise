@@ -50,10 +50,6 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-alerts">Get Alerts</a></li>
 
-<li><a href="#get-alerts-by-device">Get Alerts By Device</a></li>
-
-<li><a href="#get-alerts-by-group">Get Alerts By Group</a></li>
-
 <li><a href="#get-audit-logs">Get Audit Logs</a></li>
 
 <li><a href="#get-chassis-inventory">Get Chassis Inventory</a></li>
@@ -629,6 +625,8 @@ Monitor scripts include those things for checking alerts, health, performance, p
 
 - [get_alerts.py](../Core/Python/get_alerts.py)
 
+- [Get-Alerts.ps1](../Core/PowerShell/Get-Alerts.ps1)
+
 
 #### Synopsis
 Retrieves alerts from a target OME Instance.
@@ -666,69 +664,12 @@ python get_alerts --ip 192.168.1.93 --password somepass --orderby Message --cate
 ```
 
 
-
----
-### Get Alerts By Device
-
-#### Available Scripts
-
-- [Get-AlertsByDevice.ps1](../Core/PowerShell/Get-AlertsByDevice.ps1)
-
-
-#### Synopsis
-Script to retrieve the alerts for a device
-#### Description
-This script exercises the OME REST API to get the alerts
-for a device. The device can be filtered using the Device Name
-or Asset Tag
-This example uses ODATA queries with filter constructs.
-Note that the credentials entered are not stored to disk.
-
-
-
 #### PowerShell Example
 ```
-PS C:\>$cred = Get-Credential
-    .\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -FilterBy name -DeviceInfo ""
-    
-
-    PS C:\>.\Get-AlertsByDevice.ps1 -IpAddress "10.xx.xx.xx" -FilterBy DeviceIdentifier -DeviceInfo ""
-    In this instance you will be prompted for credentials to use to
-    connect to the appliance
-
-```
-
-
----
-### Get Alerts By Group
-
-#### Available Scripts
-
-- [Get-AlertsByGroup.ps1](../Core/PowerShell/Get-AlertsByGroup.ps1)
-
-
-#### Synopsis
-Script to retrieve the alerts for a group
-#### Description
-This script exercises the OME REST API to get the alerts
-for a group. The group can be filtered using the Group Name
-or Description.
-This example uses ODATA queries with filter constructs.
-Note that the credentials entered are not stored to disk.
-
-
-
-#### PowerShell Example
-```
-PS C:\>$cred = Get-Credential
-    .\Get-AlertsByGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -FilterBy Description -GroupInfo "Dell iDRAC server devices"
-    
-
-    PS C:\>.\Get-AlertsByGroup.ps1 -IpAddress "10.xx.xx.xx" -FilterBy Name -GroupInfo "Dell iDRAC Servers"
-    In this instance you will be prompted for credentials to use to
-    connect to the appliance
+PS C:\>$creds = Get-Credential
+    Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -CategoryName SYSTEM_HEALTH -Top 10
+    Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -Top 5 -Skip 3 -Orderby TimeStampAscending -StatusType 
+    CRITICAL
 
 ```
 

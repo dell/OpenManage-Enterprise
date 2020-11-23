@@ -4,85 +4,101 @@
 
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
 
-    function Get-Data {
+        function Get-Data {
         <#
         .SYNOPSIS
-          Used to interact with API resources
+            Used to interact with API resources
 
         .DESCRIPTION
-          This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
-          handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
-          pages to get a complete listing.
+            This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+            handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+            pages to get a complete listing.
 
         .PARAMETER Url
-        The API url against which you would like to make a request
+            The API url against which you would like to make a request
+
+        .PARAMETER OdataFilter
+            An optional parameter for providing an odata filter to run against the API endpoint.
+
+        .PARAMETER MaxPages
+            The maximum number of pages you would like to return
 
         .INPUTS
-        None. You cannot pipe objects to Get-Data.
+            None. You cannot pipe objects to Get-Data.
 
         .OUTPUTS
-        dict. A dictionary containing the results of the API call
+            dict. A dictionary containing the results of the API call
 
-      #>
-      
+        #>
+
         [CmdletBinding()]
         param (
 
             [Parameter(Mandatory)]
-            [string] 
-            # The API url against which you would like to make a request
+            [string]
             $Url,
 
             [Parameter(Mandatory = $false)]
             [string]
-            # (Optional) A filter to run against the API endpoint
-            $Filter
+            $OdataFilter,
+
+            [Parameter(Mandatory = $false)]
+            [int]
+            $MaxPages = $null
         )
 
         $Data = @()
         $NextLinkUrl = $null
         try {
 
-            if ($PSBoundParameters.ContainsKey('Filter')) {
-                $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($Filter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+            if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+            $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
 
-                if ($CountData.'@odata.count' -lt 1) {
-                    Write-Error "No results were found for filter $($Filter)."
-                    return $null
-                } 
+            if ($CountData.'@odata.count' -lt 1) {
+                Write-Error "No results were found for filter $($OdataFilter)."
+                return $null
+            } 
             }
             else {
-                $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
-                    -SkipCertificateCheck
+            $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+                -SkipCertificateCheck
             }
 
             if ($null -ne $CountData.'value') {
-                $Data += $CountData.'value'
+            $Data += $CountData.'value'
             }
             else {
-                $Data += $CountData
+            $Data += $CountData
             }
             
             if ($CountData.'@odata.nextLink') {
-                $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+            $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
             }
+
+            $i = 1
             while ($NextLinkUrl) {
-                $NextLinkData = Invoke-RestMethod -Uri $NextLinkUrl -Method Get -Credential $Credentials `
-                    -ContentType $Type -SkipCertificateCheck
+            if ($MaxPages) {
+                if ($i -ge $MaxPages) {
+                break
+                }
+                $i = $i + 1
+            }
+            $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
+                -ContentType $Type -SkipCertificateCheck
                 
-                if ($null -ne $NextLinkData.'value') {
-                    $Data += $NextLinkData.'value'
-                }
-                else {
-                    $Data += $NextLinkData
-                }    
+            if ($null -ne $NextLinkData.'value') {
+                $Data += $NextLinkData.'value'
+            }
+            else {
+                $Data += $NextLinkData
+            }    
                 
-                if ($NextLinkData.'@odata.nextLink') {
-                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                }
-                else {
-                    $NextLinkUrl = $null
-                }
+            if ($NextLinkData.'@odata.nextLink') {
+                $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+            }
+            else {
+                $NextLinkUrl = $null
+            }
             }
         
             return $Data
@@ -93,7 +109,7 @@ This is used to perform any sort of interaction with a REST API resource. It inc
             return $null
         }
 
-    }
+        }
 
 ## Resolve a device to its ID
 

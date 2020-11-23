@@ -151,7 +151,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
 
     if '@odata.nextLink' in count_data:
         # Grab the base URI
-        next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
+        next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
 
     i = 1
     while next_link_url is not None:
@@ -172,7 +172,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
             # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
             # is present we get a link to the page with the next set of results.
             if '@odata.nextLink' in requested_data:
-                next_link_url = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(url)) + \
+                next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
                                 requested_data['@odata.nextLink']
 
             if 'value' in requested_data:
