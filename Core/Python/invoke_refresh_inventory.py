@@ -241,12 +241,12 @@ def track_job_to_completion(ome_ip_address: str,
                 print("Job completed successfully!")
                 break
             elif int(job_status) in failed_job_status:
-                job_incomplete = False
+                job_incomplete = True
 
                 if job_status_str == "Warning":
                     print("Completed with errors")
                 else:
-                    print("Discovering of device failed... ")
+                    print("Error: Job failed.")
 
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
@@ -557,23 +557,23 @@ if __name__ == '__main__':
             sys.exit(0)
 
         if args.device_ids:
-            DEVICE_IDS_ARG = args.device_ids.split(',')
+            device_ids_arg = args.device_ids.split(',')
         else:
-            DEVICE_IDS_ARG = None
+            device_ids_arg = None
         if args.service_tags:
-            SERVICE_TAGS_ARG = args.service_tags.split(',')
+            service_tags_arg = args.service_tags.split(',')
         else:
-            SERVICE_TAGS_ARG = None
+            service_tags_arg = None
         if args.idrac_ips:
-            IDRAC_IPS_ARG = args.idrac_ips.split(',')
+            idrac_ips_arg = args.idrac_ips.split(',')
         else:
-            IDRAC_IPS_ARG = None
+            idrac_ips_arg = None
         if args.device_names:
-            DEVICE_NAMES_ARG = args.device_names.split(',')
+            device_names_arg = args.device_names.split(',')
         else:
-            DEVICE_NAMES_ARG = None
+            device_names_arg = None
 
-        if DEVICE_IDS_ARG is None and SERVICE_TAGS_ARG is None and IDRAC_IPS_ARG is None and DEVICE_NAMES_ARG is None:
+        if device_ids_arg is None and service_tags_arg is None and idrac_ips_arg is None and device_names_arg is None:
             print("Error: You must provide one or more of the following: device IDs, service tags, idrac IPs, or "
                   "device names.")
             sys.exit(0)
@@ -586,8 +586,8 @@ if __name__ == '__main__':
                   "configuration inventory refresh. See help for details. This will also display if the argument"
                   " was manually set to \'All Devices\' and can be safely ignored.")
 
-        refresh_device_inventory(headers, args.ip, args.groupname, args.skip_config_inventory, DEVICE_IDS_ARG,
-                                 SERVICE_TAGS_ARG, IDRAC_IPS_ARG, DEVICE_NAMES_ARG)
+        refresh_device_inventory(headers, args.ip, args.groupname, args.skip_config_inventory, device_ids_arg,
+                                 service_tags_arg, idrac_ips_arg, device_names_arg)
 
     except Exception as error:
         print("Unexpected error:", str(error))
