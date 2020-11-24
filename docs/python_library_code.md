@@ -41,6 +41,16 @@ Used to create a session to OME. You can then pass the resulting dictionary head
 
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
 
+    from urllib.parse import urlparse
+
+    try:
+        import urllib3
+        import requests
+    except ModuleNotFoundError:
+        print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
+              "urllib3`")
+        sys.exit(0)
+
     def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> list:
         """
         This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
@@ -181,49 +191,13 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
 
         return device_id
 
-## Retrieving a group using its ID
-
-If you need to retrieve a group by ID, use this function.
-
-    def get_group_id_by_name(ome_ip_address: str, group_name: str, authenticated_headers: dict) -> int:
-        """
-        Retrieves the ID of a group given its name.
-
-        Args:
-            ome_ip_address: The IP address of the OME server
-            group_name: The name of the group whose ID you want to resolve.
-            authenticated_headers: Headers used for authentication to the OME server
-
-        Returns: Returns the ID of the group as an integer or -1 if it couldn't be found.
-
-        """
-
-        print("Searching for the requested group.")
-        groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, group_name)
-
-        group_response = requests.get(groups_url, headers=authenticated_headers, verify=False)
-
-        if group_response.status_code == 200:
-            json_data = json.loads(group_response.content)
-
-            if json_data['@odata.count'] > 1:
-                print("WARNING: We found more than one name that matched the group name: " + group_name +
-                    ". We are picking the first entry.")
-            if json_data['@odata.count'] == 1 or json_data['@odata.count'] > 1:
-                group_id = json_data['value'][0]['Id']
-                if not isinstance(group_id, int):
-                    print("The server did not return an integer ID. Something went wrong.")
-                    return -1
-                return group_id
-            print("Error: We could not find the group " + group_name + ". Exiting.")
-            return -1
-        print("Unable to retrieve groups. Exiting.")
-        return -1
 
 ## Track a Job to Completion
 
 Track a job and wait for it to complete before continuing.
 
+    from pprint import pprint
+    
     def track_job_to_completion(ome_ip_address: str,
                                 authenticated_headers: dict,
                                 tracked_job_id,
@@ -277,12 +251,12 @@ Track a job and wait for it to complete before continuing.
                     print("Job completed successfully!")
                     break
                 elif int(job_status) in failed_job_status:
-                    job_incomplete = False
+                    job_incomplete = True
 
                     if job_status_str == "Warning":
                         print("Completed with errors")
                     else:
-                        print("Discovering of device failed... ")
+                        print("Error: Job failed.")
 
                     job_hist_url = str(job_url) + "/ExecutionHistories"
                     job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)

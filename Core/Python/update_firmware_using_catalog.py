@@ -639,7 +639,7 @@ if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", required=True, help="OME Appliance IP")
-    parser.add_argument("--user", required=True,
+    parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
     parser.add_argument("--password", required=True,

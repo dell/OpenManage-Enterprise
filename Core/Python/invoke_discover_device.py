@@ -1,5 +1,5 @@
 #
-# _maintained_by_ = Grant Curell <grant_curell@dell.com>
+# _maintainer_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2020 Dell EMC Corporation
 #
@@ -292,12 +292,12 @@ def track_job_to_completion(ome_ip_address: str,
                 print("Job completed successfully!")
                 break
             elif int(job_status) in failed_job_status:
-                job_incomplete = False
+                job_incomplete = True
 
                 if job_status_str == "Warning":
                     print("Completed with errors")
                 else:
-                    print("Discovering of device failed... ")
+                    print("Error: Job failed.")
 
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", required=True, help="OME Appliance IP")
-    parser.add_argument("--user", required=True,
+    parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
     parser.add_argument("--password", required=True,

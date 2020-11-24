@@ -394,19 +394,19 @@ PS C:\>$cred = Get-Credential
 
 
 #### Synopsis
-Script to perform power control on device managed by OM Enterprise
+Script to change the power state of a device, set of devices, and/or group in OME.
 
 #### Description
-This script exercises the OME REST API to perform power control operations.
-For authentication X-Auth is used over Basic Authentication.
-Note that the credentials entered are not stored to disk.
+This script employs the OME REST API to perform power control operations. It accepts idrac IPs, group names, device
+names, service tags, or device ids as arguments. It can optionally write the output of the operation to a CSV file.
+For authentication X-Auth is used over Basic Authentication. Note that the credentials entered are not stored to disk.
 
 #### Python Example
-```bash
-python set_power_state.py --ip <ip addr> --user admin
---password <passwd> --deviceId 25527  --state {state}
-```
-where {state} can be "On", "Off", "Cold Boot","Warm Boot", "ShutDown"
+'''
+python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --idrac-ips 192.168.1.45 --state {state} --csv-file test.csv
+python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --device-names 格蘭特,192.168.1.63 --state {state}
+'''
+where {state} can be "POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL", "MASTER_BUS_RESET"
 
 
 #### PowerShell Example
