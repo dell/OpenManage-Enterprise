@@ -117,11 +117,6 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
     else:
         count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
 
-        if count_data.status_code == 400:
-            print("Received an error while retrieving data from %s:" % url)
-            pprint(count_data.json()['error'])
-            return []
-
     if 'value' in count_data:
         data = count_data['value']
     else:

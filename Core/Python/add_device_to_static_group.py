@@ -20,229 +20,209 @@
 Add one or more hosts to an existing static group.
 
 #### Description
-This script exercises the OME REST API to add one or more
-hosts to an existing static group. For authentication X-Auth
-is used over Basic Authentication. Note: The credentials entered
-are not stored to disk.
+This script exercises the OME REST API to add one or more hosts to an existing static group. You can provide specific
+ devices or you can provide the job ID for a previous discovery job containing a set of servers. The script will pull
+ from the discovery job and add those servers to a gorup. For authentication X-Auth is used over Basic Authentication.
+Note: The credentials entered are not stored to disk.
 
 #### Python Example
-    `python add_device_to_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"`
+    ```
+    python add_device_to_static_group.py --idrac-ips 192.168.1.45,192.168.1.63 --groupname 格蘭特 --password somepass --ip 192.168.1.93 --use-discovery-job-id 14028
+    python add_device_to_static_group.py --service-tags servtag1,servtag2,servtag3 --groupname 格蘭特 --password somepass --ip 192.168.1.93
+    ```
 """
 
 import argparse
 import json
 import sys
+from pprint import pprint
 from argparse import RawTextHelpFormatter
+from urllib.parse import urlparse
 
-import requests
-import urllib3
+try:
+    import urllib3
+    import requests
+except ModuleNotFoundError:
+    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
+          "urllib3`")
+    sys.exit(0)
 
 
-def get_device_list(ome_ip_address: str, headers: dict) -> dict:
+def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
     """
-    Retrieves a dictionary of all devices being handled by this OME server
-
-    Args:
-        ome_ip_address: The IP address of the OME server
-        headers: Headers used for authentication to the OME server
-
-    Returns: A dictionary of all devices managed by the this OME server
-
-    """
-
-    print("Retrieving a list of all devices...")
-    next_link_url = "https://%s/api/DeviceService/Devices" % ome_ip_address
-    device_data = None
-
-    while next_link_url is not None:
-        device_response = requests.get(next_link_url, headers=headers, verify=False)
-        next_link_url = None
-        if device_response.status_code == 200:
-            data = device_response.json()
-            if data['@odata.count'] <= 0:
-                print("No devices are managed by OME server: " + ome_ip_address + ". Exiting.")
-                return {}
-            if '@odata.nextLink' in data:
-                next_link_url = "https://%s" + data['@odata.nextLink']
-            if device_data is None:
-                device_data = data["value"]
-            else:
-                device_data += data["value"]
-        else:
-            print("Unable to retrieve device list from %s" % ome_ip_address)
-            return {}
-
-    # Create id - service tag index to avoid O(n) lookups on each search
-    # This is relevant when operating on hundreds of devices
-    id_service_tag_dict = {}
-    for device in device_data:
-        id_service_tag_dict[device["DeviceServiceTag"]] = device["Id"]
-
-    return id_service_tag_dict
-
-
-def get_group_id_by_name(ome_ip_address: str, group_name: str, headers: dict) -> int:
-    """
-    Retrieves the ID of a group given its name.
-
-    Args:
-        ome_ip_address: The IP address of the OME server
-        group_name: The name of the group whose ID you want to resolve.
-        headers: Headers used for authentication to the OME server
-
-    Returns: Returns the ID of the group as an integer or -1 if it couldn't be found.
-
-    """
-
-    print("Searching for the requested group.")
-    groups_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, group_name)
-
-    group_response = requests.get(groups_url, headers=headers, verify=False)
-
-    if group_response.status_code == 200:
-        json_data = json.loads(group_response.content)
-
-        if json_data['@odata.count'] > 1:
-            print("WARNING: We found more than one name that matched the group name: " + group_name +
-                  ". We are picking the first entry.")
-
-        if json_data['@odata.count'] == 1 or json_data['@odata.count'] > 1:
-            group_id = json_data['value'][0]['Id']
-            if not isinstance(group_id, int):
-                print("The server did not return an integer ID. Something went wrong.")
-                return -1
-            return group_id
-
-        print("Error: We could not find the group " + group_name + ". Exiting.")
-        return -1
-
-    print("Unable to retrieve groups. Exiting.")
-    return -1
-
-
-def get_device_id_by_name(ome_ip_address: str, device_name: str, headers: dict) -> int:
-    """
-    Resolves the name of a server to an OME ID
-
-    Args:
-        ome_ip_address: IP address of the OME server
-        device_name: Name of the device whose ID you want to resolve
-        headers: Headers used for authentication to the OME server
-
-    Returns:
-        The ID of the server or 0 if it couldn't find it
-    """
-
-    url = "https://%s/api/DeviceService/Devices?$filter=DeviceName eq \'%s\'" % (ome_ip_address, device_name)
-
-    response = requests.get(url, headers=headers, verify=False)
-    print("Getting the device ID for system with name " + device_name + "...")
-
-    if response.status_code == 200:
-        json_data = response.json()
-
-        if json_data['@odata.count'] > 1:
-            print("WARNING: We found more than one name that matched the device name: " + device_name +
-                  ". We are skipping this entry.")
-        elif json_data['@odata.count'] == 1:
-            server_id = json_data['value'][0]['Id']
-            if not isinstance(server_id, int):
-                print("The server did not return an integer ID. Something went wrong.")
-                return -1
-            return server_id
-        else:
-            print("WARNING: No results returned for device ID look up for name " + device_name + ". Skipping it.")
-            return 0
-    else:
-        print("Connection failed with response code " + str(response.status_code) + " while we were retrieving a "
-                                                                                    "device ID from the server.")
-        return -1
-
-    return -1
-
-
-def add_device_to_static_group(ome_ip_address: str, ome_username: str, ome_password: str, group_name: str,
-                               device_names: list = None, device_tags: list = None):
-    """
-    Adds a device to an existing static group
+    Authenticates with OME and creates a session
 
     Args:
         ome_ip_address: IP address of the OME server
         ome_username:  Username for OME
         ome_password: OME password
-        group_name: The group name to which you want to add servers
-        device_names: A list of device names which you want added to the group
-        device_tags: A list of device service tags which you want added to the group
+
+    Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect.
+    """
+
+    authenticated_headers = {'content-type': 'application/json'}
+    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
+    user_details = {'UserName': ome_username,
+                    'Password': ome_password,
+                    'SessionType': 'API'}
+    session_info = requests.post(session_url, verify=False,
+                                 data=json.dumps(user_details),
+                                 headers=authenticated_headers)
+
+    if session_info.status_code == 201:
+        authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        return authenticated_headers
+
+    print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
+          "and IP?")
+    raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
+                    "password, and IP?")
+
+
+def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> list:
+    """
+    This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+    handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+    pages to get a complete listing.
+
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        url: The API url against which you would like to make a request
+        odata_filter: An optional parameter for providing an odata filter to run against the API endpoint.
+        max_pages: The maximum number of pages you would like to return
+
+    Returns: Returns a list of dictionaries of the data received from OME
 
     """
 
-    try:
-        session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
-        group_add_device_url = "https://%s/api/GroupService/Actions/GroupService.AddMemberDevices" % ome_ip_address
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': ome_username,
-                        'Password': ome_password,
-                        'SessionType': 'API'}
+    next_link_url = None
 
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+    if odata_filter:
+        count_data = requests.get(url + '?$filter=' + odata_filter, headers=authenticated_headers, verify=False)
 
-            group_id = get_group_id_by_name(ome_ip_address, group_name, headers)
+        if count_data.status_code == 400:
+            print("Received an error while retrieving data from %s:" % url + '?$filter=' + odata_filter)
+            pprint(count_data.json()['error'])
+            return []
 
-            if group_id == -1:
-                sys.exit(1)
+        count_data = count_data.json()
+        if count_data['@odata.count'] <= 0:
+            print("No results found!")
+            return []
+    else:
+        count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
 
-            device_ids = []
-            if device_names:
-                for device in device_names:
-                    device_id = get_device_id_by_name(ome_ip_address, device, headers)
-                    if device_id > 0:
-                        device_ids.append(device_id)
-                    elif device_id == -1:
-                        sys.exit(1)
-            elif device_tags:
-                id_service_tag_dict = get_device_list(ome_ip_address, headers)
+    if 'value' in count_data:
+        data = count_data['value']
+    else:
+        data = count_data
 
-                if len(id_service_tag_dict) == 0:
-                    sys.exit(1)
+    if '@odata.nextLink' in count_data:
+        # Grab the base URI
+        next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
 
-                # Check for each service tag in our index
-                for device_tag in device_tags:
-                    if device_tag in id_service_tag_dict:
-                        device_ids.append(id_service_tag_dict[device_tag])
-                    else:
-                        print("WARNING: Could not find the service tag " + device_tag + ". Skipping.")
+    i = 1
+    while next_link_url is not None:
+        # Break if we have reached the maximum number of pages to be returned
+        if max_pages:
+            if i >= max_pages:
+                break
+            else:
+                i = i + 1
+        response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
+        next_link_url = None
+        if response.status_code == 200:
+            requested_data = response.json()
+            if requested_data['@odata.count'] <= 0:
+                print("No results found!")
+                return []
 
-            if len(device_ids) > 0:
-                # Add devices to the group
-                payload = {
-                    "GroupId": group_id,
-                    "MemberDeviceIds": device_ids
-                }
-                create_resp = requests.post(group_add_device_url, headers=headers,
-                                            verify=False, data=json.dumps(payload))
-                if create_resp.status_code == 200 or create_resp.status_code == 204:
-                    if create_resp.text != "":
-                        print("Finished adding devices to group. Response returned was: ", create_resp.text)
-                    else:
-                        print("Finished adding devices to group.")
-                elif create_resp.status_code == 400 \
-                        and "Unable to update group members because the entered ID(s)" in \
-                        json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["Message"]:
-                    print("The IDs " +
-                          str(json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["MessageArgs"]) +
-                          " were invalid. This usually means the servers were already in the requested group.")
-                elif create_resp.status_code == 400:
-                    print("Device add failed. Error:")
-                    print(json.dumps(create_resp.json(), indent=4, sort_keys=False))
-                else:
-                    print("Unknown error occurred. Received HTTP response code: " + str(create_resp.status_code) +
-                          " with error: " + create_resp.text)
-    except Exception as error:
-        print("Unexpected error:", str(error))
+            # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
+            # is present we get a link to the page with the next set of results.
+            if '@odata.nextLink' in requested_data:
+                next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
+                                requested_data['@odata.nextLink']
+
+            if 'value' in requested_data:
+                data += requested_data['value']
+            else:
+                data += requested_data
+        else:
+            print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
+                  " with error: " + response.text)
+            raise Exception("Unknown error occurred. Received HTTP response code: " + str(response.status_code)
+                            + " with error: " + response.text)
+
+    return data
+
+
+def get_device_id(authenticated_headers: dict,
+                  ome_ip_address: str,
+                  service_tag: str = None,
+                  device_idrac_ip: str = None,
+                  device_name: str = None) -> int:
+    """
+    Resolves a service tag, idrac IP or device name to a device ID
+
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        service_tag: (optional) The service tag of a host
+        device_idrac_ip: (optional) The idrac IP of a host
+        device_name: (optional): The name of a host
+
+    Returns: Returns the device ID or -1 if it couldn't be found
+    """
+
+    if not service_tag and not device_idrac_ip and not device_name:
+        print("No argument provided to get_device_id. Must provide service tag, device idrac IP or device name.")
+        return -1
+
+    # If the user passed a device name, resolve that name to a device ID
+    if device_name:
+        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+                             "DeviceName eq \'%s\'" % device_name)
+        if len(device_id) == 0:
+            print("Error: We were unable to find device name " + device_name + " on this OME server. Exiting.")
+            return -1
+
+        device_id = device_id[0]['Id']
+
+    elif service_tag:
+        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+                             "DeviceServiceTag eq \'%s\'" % service_tag)
+
+        if len(device_id) == 0:
+            print("Error: We were unable to find service tag " + service_tag + " on this OME server. Exiting.")
+            return -1
+
+        device_id = device_id[0]['Id']
+
+    elif device_idrac_ip:
+        device_id = -1
+        device_ids = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+                              "DeviceManagement/any(d:d/NetworkAddress eq '%s')" % device_idrac_ip)
+
+        if len(device_ids) == 0:
+            print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
+            return -1
+
+        # TODO - This is necessary because the filter above could possibly return mulitple results
+        # TODO - See https://github.com/dell/OpenManage-Enterprise/issues/87
+        for device_id in device_ids:
+            if device_id['DeviceManagement'][0]['NetworkAddress'] == device_idrac_ip:
+                device_id = device_id['Id']
+
+        if device_id == -1:
+            print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
+            return -1
+    else:
+        device_id = -1
+
+    return device_id
 
 
 if __name__ == '__main__':
@@ -256,16 +236,138 @@ if __name__ == '__main__':
                         help="Password for the OME Appliance")
     parser.add_argument("--groupname", "-g", required=True,
                         help="The name of the group to which you want to add servers.")
-    mutex_group = parser.add_mutually_exclusive_group(required=True)
-    mutex_group.add_argument("--devicenames", "-n", help="The names of the device you want to add to the group in "
-                                                         "format: \'device1,device2,device3,etc\'")
-    mutex_group.add_argument("--devicetags", "-t", help="A list of service tags which you want to add to the group "
-                                                        "in format: \'tag1,tag2,tag3,etc\'")
+    parser.add_argument("--device-ids", "-d", help="A comma separated list of device-ids which you want to add to a "
+                                                   "group.")
+    parser.add_argument("--service-tags", "-s", help="A comma separated list of service tags which you want to add "
+                                                     "to a group.")
+    parser.add_argument("--idrac-ips", "-r", help="A comma separated list of idrac IPs which you want to add to a "
+                                                  "group.")
+    parser.add_argument("--device-names", "-n", help="A comma separated list of device names which you want to add "
+                                                     "to a group.")
+    parser.add_argument("--use-discovery-job-id", required=False, help="This option allows you to provide the job ID"
+                        " from a discovery job and will pull the servers from that job ID and assign them to the "
+                        "specified group. You can either retrieve the job ID programatically or you can get it "
+                        "manually from the UI by clicking on the job and pulling it from the URL. Ex: "
+                        "https://192.168.1.93/core/console/console.html#/core/monitor/monitor_portal/jobsDetails?jobsId=14026")
     args = parser.parse_args()
 
-    if args.devicetags:
-        add_device_to_static_group(args.ip, args.user, args.password, args.groupname,
-                                   device_tags=args.devicetags.split(","))
-    elif args.devicenames:
-        add_device_to_static_group(args.ip, args.user, args.password, args.groupname,
-                                   device_names=args.devicenames.split(","))
+    try:
+
+        headers = authenticate(args.ip, args.user, args.password)
+
+        if not headers:
+            sys.exit(0)
+
+        group_add_device_url = "https://%s/api/GroupService/Actions/GroupService.AddMemberDevices" % args.ip
+
+        group_url = "https://%s/api/GroupService/Groups" % args.ip
+        groups = get_data(headers, group_url, "Name eq '%s'" % args.groupname)
+
+        if len(groups) < 1:
+            print("Error: We were unable to find a group matching the name %s." % args.groupname)
+            sys.exit(0)
+
+        group_id = groups[0]['Id']
+
+        if group_id == -1:
+            sys.exit(1)
+
+        target_ids = []
+
+        if args.device_ids:
+            device_ids_arg = args.device_ids.split(',')
+        else:
+            device_ids_arg = None
+
+        if args.service_tags:
+            service_tags = args.service_tags.split(',')
+            for service_tag in service_tags:
+                target = get_device_id(headers, args.ip, service_tag=service_tag)
+                if target != -1:
+                    target_ids.append(target)
+                else:
+                    print("Could not resolve ID for: " + service_tag)
+        else:
+            service_tags = None
+
+        if args.idrac_ips:
+            device_idrac_ips = args.idrac_ips.split(',')
+            for device_idrac_ip in device_idrac_ips:
+                target = get_device_id(headers, args.ip, device_idrac_ip=device_idrac_ip)
+                if target != -1:
+                    target_ids.append(target)
+                else:
+                    print("Could not resolve ID for: " + device_idrac_ip)
+        else:
+            device_idrac_ips = None
+
+        if args.device_names:
+            device_names = args.device_names.split(',')
+            for device_name in device_names:
+                target = get_device_id(headers, args.ip, device_name=device_name)
+                if target != -1:
+                    target_ids.append(target)
+                else:
+                    print("Could not resolve ID for: " + device_name)
+        else:
+            device_names = None
+
+        if args.use_discovery_job_id:
+            job_info = get_data(headers, "https://%s/api/JobService/Jobs(%s)" % (args.ip, args.use_discovery_job_id))
+
+            if 'ExecutionHistories@odata.navigationLink' in job_info:
+                job_info = get_data(headers, "https://" + args.ip + job_info['ExecutionHistories@odata.navigationLink'])
+            else:
+                print("Error: Something went wrong getting the job with ID " + str(args.args.use_discovery_job_id))
+
+            details_url = "https://" + args.ip + job_info[0]['ExecutionHistoryDetails@odata.navigationLink']
+            if 'ExecutionHistoryDetails@odata.navigationLink' in job_info[0]:
+                job_info = get_data(headers, details_url)
+            else:
+                print("Error: Something went wrong getting the execution details at: " + details_url)
+
+            if len(job_info) > 0:
+                for host in job_info:
+                    target = get_device_id(headers, args.ip, device_idrac_ip=host['Key'])
+                    if target != -1:
+                        target_ids.append(target)
+                    else:
+                        print("Could not resolve ID for: " + host['Key'])
+            else:
+                print("FAIL")
+
+        # Eliminate any duplicate IDs in the list
+        target_ids = list(dict.fromkeys(target_ids))
+
+        if len(target_ids) < 1:
+            print("Error: No IDs found. Did you provide an argument?")
+            sys.exit(0)
+
+        # Add devices to the group
+        print("Adding devices to the group...")
+        payload = {
+            "GroupId": group_id,
+            "MemberDeviceIds": target_ids
+        }
+        create_resp = requests.post(group_add_device_url, headers=headers,
+                                    verify=False, data=json.dumps(payload))
+        if create_resp.status_code == 200 or create_resp.status_code == 204:
+            if create_resp.text != "":
+                print("Finished adding devices to group. Response returned was: ", create_resp.text)
+            else:
+                print("Finished adding devices to group.")
+        elif create_resp.status_code == 400 \
+                and "Unable to update group members because the entered ID(s)" in \
+                json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["Message"]:
+            print("The IDs " +
+                  str(json.loads(create_resp.content)["error"]["@Message.ExtendedInfo"][0]["MessageArgs"]) +
+                  " were invalid. This usually means the servers were already in the requested group.")
+        elif create_resp.status_code == 400:
+            print("Device add failed. Error:")
+            print(json.dumps(create_resp.json(), indent=4, sort_keys=False))
+        else:
+            print("Unknown error occurred. Received HTTP response code: " + str(create_resp.status_code) +
+                  " with error: " + create_resp.text)
+
+    except Exception as error:
+        pprint(error)
