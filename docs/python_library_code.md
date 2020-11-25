@@ -84,11 +84,6 @@ This is used to perform any sort of interaction with a REST API resource. It inc
         else:
             count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
 
-            if count_data.status_code == 400:
-                print("Received an error while retrieving data from %s:" % url)
-                pprint(count_data.json()['error'])
-                return []
-
         if 'value' in count_data:
             data = count_data['value']
         else:
@@ -201,8 +196,8 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
     
         return device_id
 
-
-You frequently not only want to resolve them, but check the output and then add the device IDs to a list of IDs. Below is a common pattern for this behavior.
+### Helpful device ID pattern 
+You frequently not only want to resolve device IDs, but check the output and then add the device IDs to a list of IDs. Below is a common pattern for this behavior.
 
         target_ids = []
 

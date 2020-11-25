@@ -101,13 +101,16 @@ Deploy scripts include those things for discovery and generating the initial inv
 Add one or more hosts to an existing static group.
 
 #### Description
-This script exercises the OME REST API to add one or more
-hosts to an existing static group. For authentication X-Auth
-is used over Basic Authentication. Note: The credentials entered
-are not stored to disk.
+This script exercises the OME REST API to add one or more hosts to an existing static group. You can provide specific
+ devices or you can provide the job ID for a previous discovery job containing a set of servers. The script will pull
+ from the discovery job and add those servers to a gorup. For authentication X-Auth is used over Basic Authentication.
+Note: The credentials entered are not stored to disk.
 
 #### Python Example
-    `python add_device_to_static_group.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group" --devicenames "cmc1,host3,192.168.1.5"`
+    ```
+    python add_device_to_static_group.py --idrac-ips 192.168.1.45,192.168.1.63 --groupname 格蘭特 --password somepass --ip 192.168.1.93 --use-discovery-job-id 14028
+    python add_device_to_static_group.py --service-tags servtag1,servtag2,servtag3 --groupname 格蘭特 --password somepass --ip 192.168.1.93
+    ```
 
 
 

@@ -206,6 +206,50 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
             return $DeviceId
         }
 
+### Helpful device ID pattern 
+You frequently not only want to resolve device IDs, but check the output and then add the device IDs to a list of IDs. Below is a common pattern for this behavior.
+
+    $Targets = @()
+
+    if ($PSBoundParameters.ContainsKey('ServiceTags')) {
+        foreach ($ServiceTag in $ServiceTags) {
+            $Target = Get-DeviceId -OmeIpAddress $IpAddress -ServiceTag $ServiceTag
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for service tag $($ServiceTag)"
+                Exit
+            }
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('IdracIps')) {
+        foreach ($IdracIp in $IdracIps) {
+            $Target = Get-DeviceId $IpAddress -DeviceIdracIp $IdracIp
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for idrac IP $($IdracIp)"
+                Exit
+            }
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('DeviceNames')) {
+        foreach ($DeviceName in $DeviceNames) {
+            $Target = Get-DeviceId $IpAddress -DeviceName $DeviceName
+            if ($Target -ne -1) {
+                $Targets += $Target
+            }
+            else {
+                Write-Error "Error - could not get ID for device name $($DeviceName)"
+                Exit
+            }
+        }
+    }
+
 ## Track a Job to Completion
 
 Track a job and wait for it to complete before continuing.
