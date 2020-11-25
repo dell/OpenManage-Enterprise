@@ -40,8 +40,6 @@ update:
   update_installed_firmware_with_dup:
     - update_installed_firmware_with_dup.py
     - Update-InstalledFirmwareWithDup.ps1
-  start_inventory_job:
-    - start_inventory_job.py
 monitor:
   get_alerts:
     - get_alerts.py

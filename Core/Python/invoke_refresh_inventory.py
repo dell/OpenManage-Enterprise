@@ -349,10 +349,11 @@ def refresh_device_inventory(authenticated_headers: dict,
                              ome_ip_address: str,
                              group_name: str,
                              skip_config_inventory: bool,
-                             device_ids: List[int] = None,
-                             service_tags: List[str] = None,
-                             device_idrac_ips: List[str] = None,
-                             device_names: List[str] = None):
+                             device_ids: list = None,
+                             service_tags: str = None,
+                             device_idrac_ips: str = None,
+                             device_names: str = None,
+                             ignore_group: bool = False):
     """
     Refresh the inventory of targeted hosts
 
@@ -365,34 +366,35 @@ def refresh_device_inventory(authenticated_headers: dict,
         service_tags: (optional) The service tag of a host whose inventory you want to refresh
         device_idrac_ips: (optional) The idrac IP of a host whose inventory you want to refresh
         device_names: (optional): The name of a host whose inventory you want to refresh
+        ignore_group: (optional): Controls whether you want to ignore using groups or not
     """
 
     jobs_url = "https://%s/api/JobService/Jobs" % ome_ip_address
 
     target_ids = []
 
-    if args.service_tags:
-        service_tags = args.service_tags.split(',')
+    if service_tags:
+        service_tags = service_tags.split(',')
         for service_tag in service_tags:
-            target = get_device_id(headers, args.ip, service_tag=service_tag)
+            target = get_device_id(headers, ome_ip_address, service_tag=service_tag)
             if target != -1:
                 target_ids.append(target)
             else:
                 print("Could not resolve ID for: " + service_tag)
 
-    if args.idrac_ips:
+    if device_idrac_ips:
         device_idrac_ips = args.idrac_ips.split(',')
         for device_idrac_ip in device_idrac_ips:
-            target = get_device_id(headers, args.ip, device_idrac_ip=device_idrac_ip)
+            target = get_device_id(headers, ome_ip_address, device_idrac_ip=device_idrac_ip)
             if target != -1:
                 target_ids.append(target)
             else:
                 print("Could not resolve ID for: " + device_idrac_ip)
 
-    if args.device_names:
-        device_names = args.device_names.split(',')
+    if device_names:
+        device_names = device_names.split(',')
         for device_name in device_names:
-            target = get_device_id(headers, args.ip, device_name=device_name)
+            target = get_device_id(headers, ome_ip_address, device_name=device_name)
             if target != -1:
                 target_ids.append(target)
             else:
@@ -402,11 +404,22 @@ def refresh_device_inventory(authenticated_headers: dict,
         for device_id in device_ids:
             target_ids.append(device_id)
 
-    group_id = get_group_id_by_name(ome_ip_address, group_name, authenticated_headers)
+    if not skip_config_inventory:
+        group_id = get_group_id_by_name(ome_ip_address, group_name, authenticated_headers)
 
-    if group_id == -1:
-        print("We were unable to find the ID for group name " + group_name + " ... exiting.")
-        sys.exit(0)
+        if group_id == -1:
+            print("We were unable to find the ID for group name " + group_name + " ... exiting.")
+            sys.exit(0)
+
+    if not ignore_group:
+        group_devices = get_data(headers, "https://%s/api/GroupService/Groups(%s)/Devices" % (ome_ip_address, group_id))
+
+        if len(group_devices) < 1:
+            print("Error: There was a problem retrieving the devices for group " + args.groupname + ". Exiting")
+            sys.exit(0)
+
+        for device in group_devices:
+            target_ids.append(device['Id'])
 
     targets_payload = []
     for id_to_refresh in target_ids:
@@ -568,6 +581,8 @@ if __name__ == '__main__':
                              " version change is reflected in idrac. A config inventory is launched in the GUI by "
                              "clicking \"Run inventory\" on quick links on the devices page. A regular inventory is "
                              "the same as clicking \"Run inventory\" on a specific device\'s page.")
+    parser.add_argument("--ignore-group", default=False, action='store_true', help="Used when you only want to run a"
+                        " regular inventory and you do not want to provide a group.")
     args = parser.parse_args()
 
     try:
@@ -593,21 +608,19 @@ if __name__ == '__main__':
         else:
             device_names_arg = None
 
-        if device_ids_arg is None and service_tags_arg is None and idrac_ips_arg is None and device_names_arg is None:
-            print("Error: You must provide one or more of the following: device IDs, service tags, idrac IPs, or "
-                  "device names.")
-            sys.exit(0)
-
         print("WARNING: To reflect firmware changes you may have to power cycle the server first before running this. "
               "It is situation dependent.")
 
         if args.groupname == 'All Devices':
             print("WARNING: No argument was provided for groupname. Defaulting to \'All Devices\' for the "
-                  "configuration inventory refresh. See help for details. This will also display if the argument"
-                  " was manually set to \'All Devices\' and can be safely ignored.")
+                  "inventory refresh. See help for details. This will also display if the argument  was manually set "
+                  "to \'All Devices\' and can be safely ignored. If you do not want to use a group AND you do not want"
+                  " to update the configuration inventory tab, use the --skip-config-inventory and --ignore-group"
+                  " switches together. If you want to use a group to update regular inventories only and not the"
+                  " configuration inventory tab use the --skip-config-inventory switch by itself.")
 
         refresh_device_inventory(headers, args.ip, args.groupname, args.skip_config_inventory, device_ids_arg,
-                                 service_tags_arg, idrac_ips_arg, device_names_arg)
+                                 service_tags_arg, idrac_ips_arg, device_names_arg, args.ignore_group)
 
     except Exception as error:
         print("Unexpected error:", str(error))
