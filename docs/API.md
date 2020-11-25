@@ -38,8 +38,6 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#invoke-refresh-inventory">Invoke Refresh Inventory</a></li>
 
-<li><a href="#start-inventory-job">Start Inventory Job</a></li>
-
 <li><a href="#update-firmware-using-catalog">Update Firmware Using Catalog</a></li>
 
 <li><a href="#update-installed-firmware-with-dup">Update Installed Firmware With Dup</a></li>
@@ -490,33 +488,6 @@ PS C:\>$cred = Get-Credential
     Invoke-RefreshInventory.ps1 -IpAddress 192.168.1.93 -Credentials $creds -GroupName Test -ServiceTags AAAAAAA
 
 ```
-
-
----
-### Start Inventory Job
-
-#### Available Scripts
-
-- [start_inventory_job.py](../Core/Python/start_inventory_job.py)
-
-
-#### Synopsis
-Script to run inventory on specified devices managed by OM Enterprise
-
-#### Description
-This script exercises the OME REST API to get the inventory for a list of devices
-currently being managed by that instance. It *does not* refresh the configuration inventory
-page in the devices menu. To do that run the invoke_refresh_inventory script which will do
-both. For authentication X-Auth is used over Basic Authentication
-Note that the credentials entered are not stored to disk.
-
-#### Python Example
-```
-python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname> --desc <jobname> --groupid <OME group id>
-python start_inventory_job.py --ip <xx> --user <username> --password <pwd> --name <jobname>  --deviceid <OME group id>
-python start_inventory_job.py --ip <xx> --user <username> --password <pwd>  --desc <jobname> --servicetags <space seperated service tags>
-```
-
 
 
 ---
