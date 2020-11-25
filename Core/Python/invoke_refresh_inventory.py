@@ -137,12 +137,22 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
     if odata_filter:
         count_data = requests.get(url + '?$filter=' + odata_filter, headers=authenticated_headers, verify=False)
 
+        if count_data.status_code == 400:
+            print("Received an error while retrieving data from %s:" % url + '?$filter=' + odata_filter)
+            pprint(count_data.json()['error'])
+            return []
+
         count_data = count_data.json()
         if count_data['@odata.count'] <= 0:
             print("No results found!")
             return []
     else:
         count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
+
+        if count_data.status_code == 400:
+            print("Received an error while retrieving data from %s:" % url)
+            pprint(count_data.json()['error'])
+            return []
 
     if 'value' in count_data:
         data = count_data['value']
@@ -275,10 +285,10 @@ def track_job_to_completion(ome_ip_address: str,
 
 
 def get_device_id(authenticated_headers: dict,
-                      ome_ip_address: str,
-                      service_tag: str = None,
-                      device_idrac_ip: str = None,
-                      device_name: str = None) -> int:
+                  ome_ip_address: str,
+                  service_tag: str = None,
+                  device_idrac_ip: str = None,
+                  device_name: str = None) -> int:
     """
     Resolves a service tag, idrac IP or device name to a device ID
 
@@ -292,8 +302,6 @@ def get_device_id(authenticated_headers: dict,
     Returns: Returns the device ID or -1 if it couldn't be found
     """
 
-    device_id = -1
-
     if not service_tag and not device_idrac_ip and not device_name:
         print("No argument provided to get_device_id. Must provide service tag, device idrac IP or device name.")
         return -1
@@ -301,35 +309,43 @@ def get_device_id(authenticated_headers: dict,
     # If the user passed a device name, resolve that name to a device ID
     if device_name:
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                  "DeviceName eq \'%s\'" % device_name)
-        if not device_id:
+                             "DeviceName eq \'%s\'" % device_name)
+        if len(device_id) == 0:
             print("Error: We were unable to find device name " + device_name + " on this OME server. Exiting.")
-            sys.exit(0)
-        else:
-            device_id = device_id[0]['Id']
+            return -1
+
+        device_id = device_id[0]['Id']
+
     elif service_tag:
-        device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                  "DeviceServiceTag eq \'%s\'" % service_tag)
-
-        if not device_id:
-            print("Error: We were unable to find service tag " + service_tag + " on this OME server. Exiting.")
-            sys.exit(0)
-        else:
-            device_id = device_id[0]['Id']
-    elif device_idrac_ip:
-        device_list = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address)
-
-        if not device_list:
-            print("Unable to get device list from %s. This could happen for many reasons but the most likely is a"
-                  " failure in the connection." % ome_ip_address)
-            sys.exit(0)
-
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
                              "DeviceServiceTag eq \'%s\'" % service_tag)
 
-        if not device_idrac_ip:
+        if len(device_id) == 0:
+            print("Error: We were unable to find service tag " + service_tag + " on this OME server. Exiting.")
+            return -1
+
+        device_id = device_id[0]['Id']
+
+    elif device_idrac_ip:
+        device_id = -1
+        device_ids = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
+                              "DeviceManagement/any(d:d/NetworkAddress eq '%s')" % device_idrac_ip)
+
+        if len(device_ids) == 0:
             print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
-            sys.exit(0)
+            return -1
+
+        # TODO - This is necessary because the filter above could possibly return mulitple results
+        # TODO - See https://github.com/dell/OpenManage-Enterprise/issues/87
+        for device_id in device_ids:
+            if device_id['DeviceManagement'][0]['NetworkAddress'] == device_idrac_ip:
+                device_id = device_id['Id']
+
+        if device_id == -1:
+            print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
+            return -1
+    else:
+        device_id = -1
 
     return device_id
 
@@ -358,29 +374,38 @@ def refresh_device_inventory(authenticated_headers: dict,
 
     jobs_url = "https://%s/api/JobService/Jobs" % ome_ip_address
 
-    targets = []
+    target_ids = []
 
-    if service_tags:
+    if args.service_tags:
+        service_tags = args.service_tags.split(',')
         for service_tag in service_tags:
-            target = get_device_id(authenticated_headers, ome_ip_address, service_tag=service_tag)
+            target = get_device_id(headers, args.ip, service_tag=service_tag)
             if target != -1:
-                targets.append(target)
+                target_ids.append(target)
+            else:
+                print("Could not resolve ID for: " + service_tag)
 
-    if device_idrac_ips:
+    if args.idrac_ips:
+        device_idrac_ips = args.idrac_ips.split(',')
         for device_idrac_ip in device_idrac_ips:
-            target = get_device_id(authenticated_headers, ome_ip_address, device_idrac_ip=device_idrac_ip)
+            target = get_device_id(headers, args.ip, device_idrac_ip=device_idrac_ip)
             if target != -1:
-                targets.append(target)
+                target_ids.append(target)
+            else:
+                print("Could not resolve ID for: " + device_idrac_ip)
 
-    if device_names:
+    if args.device_names:
+        device_names = args.device_names.split(',')
         for device_name in device_names:
-            target = get_device_id(authenticated_headers, ome_ip_address, device_name=device_name)
+            target = get_device_id(headers, args.ip, device_name=device_name)
             if target != -1:
-                targets.append(target)
+                target_ids.append(target)
+            else:
+                print("Could not resolve ID for: " + device_name)
 
     if device_ids:
         for device_id in device_ids:
-            targets.append(device_id)
+            target_ids.append(device_id)
 
     group_id = get_group_id_by_name(ome_ip_address, group_name, authenticated_headers)
 
@@ -389,7 +414,7 @@ def refresh_device_inventory(authenticated_headers: dict,
         sys.exit(0)
 
     targets_payload = []
-    for id_to_refresh in targets:
+    for id_to_refresh in target_ids:
         targets_payload.append({
             "Id": id_to_refresh,
             "Data": "",
