@@ -22,7 +22,7 @@ limitations under the License.
    all devices contained by that group
  .DESCRIPTION
 
-   This script exercises the OME REST API to get the details
+   This script uses the OME REST API to get the details
    for a group and for devices in that group. The group can
    be filtered using the Group ID or Name or Description.
    This example does not use ODATA queries with filter
@@ -176,5 +176,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

@@ -22,7 +22,7 @@ limitations under the License.
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to execute a pre-canned
+   This script uses the OME REST API to execute a pre-canned
    report (this can include custom reports defined by the user)
    and tracks completion of the report. On completion the report
    result is printed to screen.
@@ -247,5 +247,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

@@ -99,7 +99,7 @@ Deploy scripts include those things for discovery and generating the initial inv
 Add one or more hosts to an existing static group.
 
 #### Description
-This script exercises the OME REST API to add one or more hosts to an existing static group. You can provide specific
+This script uses the OME REST API to add one or more hosts to an existing static group. You can provide specific
  devices or you can provide the job ID for a previous discovery job containing a set of servers. The script will pull
  from the discovery job and add those servers to a gorup. For authentication X-Auth is used over Basic Authentication.
 Note: The credentials entered are not stored to disk.
@@ -175,7 +175,7 @@ PS C:\>$cred = Get-Credential
 Script to update an existing discovery job in OME
 
 #### Description
-This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and also 
+This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also 
 it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
@@ -214,9 +214,21 @@ PS C:\>$cred = Get-Credential
 Script to discover devices managed by OME Enterprise
 
 #### Description
-This script exercises the OME REST API to discover devices.
+
+Currently the PowerShell version of this script offers substantially more capability. See:
+https://github.com/dell/OpenManage-Enterprise/issues/119
+
+**Python**
+This script uses the OME REST API to discover devices.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
+
+**PowerShell**
+This script currently allows the discovery of servers, chassis, and network devices. Storage devices are not
+currently supported. If it would be helpful to you leave a comment on
+https://github.com/dell/OpenManage-Enterprise/issues/114 to let us know this is a priority for you. Currently only
+SNMPv2c is supported for network devices. It does not support SNMPv1 and OME does not currently support SNMPv3. If
+SNMPv1 is a priority for you please open an issue at https://github.com/dell/OpenManage-Enterprise/issues.
 
 #### Python Example
 ```bash
@@ -230,20 +242,15 @@ where {Device_Type} can be server,chassis
 
 #### PowerShell Example
 ```
-PS C:\>$cred = Get-Credential
-    $disccred = Get-Credential
-    .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type}  
-    -IPAddressCsvFile .\xxxx.csv  -nodeCredentials $disccred
-     where {device_type} can be server/chassis
-     In this instance you will be prompted for credentials to use to
-     connect to the appliance
+PS C:\>$creds = Get-Credential # Your OME credentials
+    $servcreds = Get-Credential # Your OME credentials
+    .\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -ServerIps 192.168.1.63-192.168.1.65 
+    -ServerCredentials $servcreds -GroupName TestGroup -JobCheckSleepInterval 10 -ServerCsv Book1.csv,'IP address' 
+    -ChassisCsv Book1.csv,'ChassisIp' -ChassisCredentials $chassiscreds
     
 
-    PS C:\>$cred = Get-Credential
-    .\Invoke-DiscoverDevice.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceType {device_type} -IpArray 
-    10.xx.xx.xx,10.xx.xx.xx-10.yy.yy.yy,...
-     where {device_type} can be server/chassis
-     In this instance you will be prompted for credentials
+    PS C:\>.\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -NetworkDeviceIps 
+    192.168.1.24,192.168.1.34 -SnmpCommunityString 'SomeString'
 
 ```
 
@@ -316,7 +323,7 @@ PS C:\>$cred = Get-Credential
 Script to create a new network with VLAN
 
 #### Description
-This script exercises the OME REST API to create a new network
+This script uses the OME REST API to create a new network
 A network consists of a Minimum and Maximum VLAN ID to create a range
 Set Minimum and Maximum to the same value to a single VLAN
 
@@ -361,7 +368,7 @@ PS C:\>$cred = Get-Credential
 Script to create a new static group
 
 #### Description
-This script exercises the OME REST API to create a new static
+This script uses the OME REST API to create a new static
 group. The user is responsible for adding devices to the
 group once the group has been successfully created.
 For authentication X-Auth is used over Basic Authentication
@@ -374,11 +381,10 @@ Note that the credentials entered are not stored to disk.
 #### PowerShell Example
 ```
 PS C:\>$cred = Get-Credential
-    .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
-         -GroupName "Test_OME_Group"
+    .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName "Test_OME_Group"
     
 
-    PS C:\>.\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -GroupName "Test_OME"
+    PS C:\>.\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -GroupName "Test_OME" -GroupDescription "This is my group"
     In this instance you will be prompted for credentials to use
 
 ```
@@ -542,7 +548,7 @@ PS C:\>$cred = Get-Credential
  within a group using a DUP
 
 #### Description
- This script exercises the OME REST API to allow updating a device
+ This script uses the OME REST API to allow updating a device
  or a group of devices by using a single DUP file.
 
  Note that the credentials entered are not stored to disk.
@@ -693,7 +699,7 @@ PS C:\>$cred1 = Get-Credentials
 Script to get chassis inventory details in CSV format
 
 #### Description
-This script exercises the OME REST API to get chassis inventory
+This script uses the OME REST API to get chassis inventory
 in a CSV format for external consumption
 Note that the credentials entered are not stored to disk.
 
@@ -727,7 +733,7 @@ PS C:\>$cred = Get-Credential
 Script to get the device inventory details
 
 #### Description
-This script exercises the OME REST API to get detailed inventory
+This script uses the OME REST API to get detailed inventory
 for a device given ID/Name/Service Tag
 and Inventory type (os,cpus,disks,memory,controllers) of the device
 Note that the credentials entered are not stored to disk.
@@ -768,7 +774,7 @@ PS C:\>$cred = Get-Credential
 Script to get the list of devices managed by OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of devices
+This script uses the OME REST API to get a list of devices
 currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -802,7 +808,7 @@ Gets a list of all firmware baselines available from an OME server or baselines 
 with a specific device.
 
 #### Description
-This script exercises the OME REST API to find baselines associated
+This script uses the OME REST API to find baselines associated
 with a given server. For authentication X-Auth is used over Basic
 Authentication. Note: The credentials entered are not stored to disk.
 
@@ -832,7 +838,7 @@ PS C:\>$cred = Get-Credential
 Script to get the details of groups managed by OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a group and the
+This script uses the OME REST API to get a group and the
 device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -871,7 +877,7 @@ Script to get the details of groups managed by OM Enterprise
 This script uses OData filters for extracting information
 
 #### Description
-This script exercises the OME REST API to get a group and the
+This script uses the OME REST API to get a group and the
 device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -910,7 +916,7 @@ PS C:\>$cred = Get-Credential
 Script to get the list of groups managed by OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of groups
+This script uses the OME REST API to get a list of groups
 currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -945,7 +951,7 @@ PS C:\>$cred = Get-Credential
 Script to get the list of virtual addresses in an Identity Pool
 
 #### Description
-This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
+This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
 Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -989,7 +995,7 @@ PS C:\>$cred = Get-Credential
 #### Synopsis
 Script to retrieve the inventory for a device by inventory type.
 #### Description
-This script exercises the OME REST API to get the inventory
+This script uses the OME REST API to get the inventory
 for a device by inventory type. The inventory type can be os 
 or cpus or controllers or memory or disks.
 Note that the credentials entered are not stored to disk.
@@ -1020,7 +1026,7 @@ PS C:\>$cred = Get-Credential
 Script to get the list of reports defined in OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of reports
+This script uses the OME REST API to get a list of reports
 currently defined in that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.

@@ -121,7 +121,7 @@ function Get-Data {
       None. You cannot pipe objects to Get-Data.
   
     .OUTPUTS
-      dict. A dictionary containing the results of the API call
+      dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
   
   #>
   
@@ -150,7 +150,7 @@ function Get-Data {
   
         if ($CountData.'@odata.count' -lt 1) {
           Write-Error "No results were found for filter $($OdataFilter)."
-          return $null
+          return @{}
         } 
       }
       else {
@@ -200,7 +200,7 @@ function Get-Data {
     }
     catch [System.Net.Http.HttpRequestException] {
       Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
-      return $null
+      return @{}
     }
   
   }
@@ -281,7 +281,7 @@ function Get-DeviceId {
     if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
         $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
         foreach ($Device in $DeviceList) {
-            if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $IdracIp) {
+            if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $DeviceIdracIp) {
                 $DeviceId = $Device."Id"
                 break
             }
@@ -366,11 +366,18 @@ function Invoke-TrackJobToCompletion {
             $HistoryId = $ExecRespInfo.value[0].Id
             $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
                                              -ContentType $Type -Credential $Credentials -SkipCertificateCheck
-            Write-Host ($HistoryResp.value)
+            Write-Host "------------------- ERROR -------------------"
+            Write-Host $HistoryResp.value
+            Write-Host "------------------- ERROR -------------------"
             return $false
         }
         else { continue }
     } until ($Ctr -ge $MaxRetries)
+
+    if ($Ctr -ge $MaxRetries) {
+      Write-Warning "Job exceeded max retries! Check OME for details on what has hung."
+      return $false
+    }
 
     return $true
 }

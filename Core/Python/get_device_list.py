@@ -22,7 +22,7 @@
 Script to get the list of devices managed by OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of devices
+This script uses the OME REST API to get a list of devices
 currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.

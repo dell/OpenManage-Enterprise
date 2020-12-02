@@ -230,7 +230,7 @@ function Get-Data {
       None. You cannot pipe objects to Get-Data.
   
     .OUTPUTS
-      dict. A dictionary containing the results of the API call
+      dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
   
   #>
   
@@ -259,7 +259,7 @@ function Get-Data {
   
         if ($CountData.'@odata.count' -lt 1) {
           Write-Error "No results were found for filter $($OdataFilter)."
-          return $null
+          return @{}
         } 
       }
       else {
@@ -309,7 +309,7 @@ function Get-Data {
     }
     catch [System.Net.Http.HttpRequestException] {
       Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
-      return $null
+      return @{}
     }
   
   }

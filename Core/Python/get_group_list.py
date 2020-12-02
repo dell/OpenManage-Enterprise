@@ -21,7 +21,7 @@
 Script to get the list of groups managed by OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of groups
+This script uses the OME REST API to get a list of groups
 currently being managed by that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.

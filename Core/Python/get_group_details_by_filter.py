@@ -22,7 +22,7 @@ Script to get the details of groups managed by OM Enterprise
 This script uses OData filters for extracting information
 
 #### Description
-This script exercises the OME REST API to get a group and the
+This script uses the OME REST API to get a group and the
 device details for all devices in that group. For authentication
 X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.

@@ -22,7 +22,7 @@
 Script to get the device inventory details
 
 #### Description
-This script exercises the OME REST API to get detailed inventory
+This script uses the OME REST API to get detailed inventory
 for a device given ID/Name/Service Tag
 and Inventory type (os,cpus,disks,memory,controllers) of the device
 Note that the credentials entered are not stored to disk.

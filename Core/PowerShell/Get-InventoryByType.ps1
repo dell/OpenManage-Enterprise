@@ -5,7 +5,7 @@
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to get the inventory
+   This script uses the OME REST API to get the inventory
    for a device by inventory type. The inventory type can be os 
    or cpus or controllers or memory or disks.
   
@@ -105,5 +105,5 @@ Try {
   }
 }
 catch {
-  Write-Error "Exception occured - $($_.Exception.Message)"
+  Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

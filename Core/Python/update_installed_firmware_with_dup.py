@@ -22,7 +22,7 @@
  within a group using a DUP
 
 #### Description
- This script exercises the OME REST API to allow updating a device
+ This script uses the OME REST API to allow updating a device
  or a group of devices by using a single DUP file.
 
  Note that the credentials entered are not stored to disk.

@@ -22,7 +22,7 @@ limitations under the License.
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and networkaddress if user passses the iparray.
+   This script uses the OME REST API to update an existing discovery job(if found) with the credentials and networkaddress if user passses the iparray.
 
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -295,5 +295,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

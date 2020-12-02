@@ -21,7 +21,7 @@
 Script to get the list of reports defined in OM Enterprise
 
 #### Description
-This script exercises the OME REST API to get a list of reports
+This script uses the OME REST API to get a list of reports
 currently defined in that instance. For authentication X-Auth
 is used over Basic Authentication
 Note that the credentials entered are not stored to disk.

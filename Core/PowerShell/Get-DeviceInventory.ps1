@@ -22,7 +22,7 @@ limitations under the License.
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to get the inventory
+   This script uses the OME REST API to get the inventory
    for a device. The device can be filtered using the Device Name
     Service Tag or Device Id
    This example uses ODATA queries with filter constructs.
@@ -157,5 +157,5 @@ Try {
   }
 }
 catch {
-  Write-Error "Exception occured - $($_.Exception.Message)"
+  Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

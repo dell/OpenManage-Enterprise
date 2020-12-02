@@ -245,7 +245,7 @@ There is a great tutorial on writing good Python code [here](https://realpython.
         Script to create a new static group
 
         #### Description
-        This script exercises the OME REST API to create a new static
+        This script uses the OME REST API to create a new static
         group. The user is responsible for adding devices to the
         group once the group has been successfully created.
         For authentication X-Auth is used over Basic Authentication

@@ -21,7 +21,7 @@ Gets a list of all firmware baselines available from an OME server or baselines 
 with a specific device.
 
 #### Description
-This script exercises the OME REST API to find baselines associated
+This script uses the OME REST API to find baselines associated
 with a given server. For authentication X-Auth is used over Basic
 Authentication. Note: The credentials entered are not stored to disk.
 
