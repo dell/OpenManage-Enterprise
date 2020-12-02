@@ -21,7 +21,7 @@ limitations under the License.
    Script to update firmware for a device or applicable devices
    within a group 
  .DESCRIPTION
-   This script exercises the OME REST API to allow updating 
+   This script uses the OME REST API to allow updating 
    a device or a group of devices by using a single DUP file.
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -426,5 +426,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

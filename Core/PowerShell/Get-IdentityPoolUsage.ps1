@@ -21,7 +21,7 @@ limitations under the License.
    Script to get the list of virtual addresses in an Identity Pool
  .DESCRIPTION
 
-   This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
+   This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
    Will export to a CSV file called Get-IdentityPoolUsage.csv in the current directory
    For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.

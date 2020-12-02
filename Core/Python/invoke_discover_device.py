@@ -19,9 +19,21 @@
 Script to discover devices managed by OME Enterprise
 
 #### Description
-This script exercises the OME REST API to discover devices.
+
+Currently the PowerShell version of this script offers substantially more capability. See:
+https://github.com/dell/OpenManage-Enterprise/issues/119
+
+**Python**
+This script uses the OME REST API to discover devices.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
+
+**PowerShell**
+This script currently allows the discovery of servers, chassis, and network devices. Storage devices are not
+currently supported. If it would be helpful to you leave a comment on
+https://github.com/dell/OpenManage-Enterprise/issues/114 to let us know this is a priority for you. Currently only
+SNMPv2c is supported for network devices. It does not support SNMPv1 and OME does not currently support SNMPv3. If
+SNMPv1 is a priority for you please open an issue at https://github.com/dell/OpenManage-Enterprise/issues.
 
 #### Python Example
 ```bash

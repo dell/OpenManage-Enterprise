@@ -40,8 +40,15 @@ def _get_powershell_example(script_to_process: str):
                              abspath(join(categories_dictionary['powershell_path'], script_to_process)),
                              "-Examples"],
                             stdout=subprocess.PIPE)
-    output = pipe.stdout.read().decode('utf-8').split("-------------------------- EXAMPLE 1 "
-                                                      "--------------------------")[1].strip()
+
+    try:
+        output = pipe.stdout.read().decode('utf-8').split("-------------------------- EXAMPLE 1 "
+                                                          "--------------------------")[1].strip()
+    except IndexError:
+        print("Received an index error while processing " + script_to_process + ". This typically means the help "
+              "section of the PowerShell is not formatted correctly. Try running 'Get-Help " + script_to_process +
+              " -Examples' and verify that the examples output correctly.")
+        sys.exit(0)
     output = output.splitlines()
 
     # Remove blank lines - PowerShell otherwise prints with several unnecessary blank lines

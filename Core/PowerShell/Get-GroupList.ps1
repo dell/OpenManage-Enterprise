@@ -21,7 +21,7 @@ limitations under the License.
    Script to get the list of groups managed by OM Enterprise
  .DESCRIPTION
 
-   This script exercises the OME REST API to get a list of groups
+   This script uses the OME REST API to get a list of groups
    currently being managed by that instance. For authentication X-Auth
    is used over Basic Authentication
 
@@ -60,5 +60,5 @@ Try {
 
 }
 catch {
-  Write-Error "Exception occured - $($_.Exception.Message)"
+  Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

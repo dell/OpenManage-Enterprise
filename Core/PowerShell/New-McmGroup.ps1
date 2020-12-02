@@ -22,7 +22,7 @@ limitations under the License.
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to create mcm group, find memebers and add the members to the group.
+   This script uses the OME REST API to create mcm group, find memebers and add the members to the group.
 
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -362,5 +362,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

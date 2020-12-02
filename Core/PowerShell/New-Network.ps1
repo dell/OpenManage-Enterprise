@@ -21,7 +21,7 @@ limitations under the License.
    Script to create a static group in OME
  .DESCRIPTION
 
-   This script exercises the OME REST API to create a new network
+   This script uses the OME REST API to create a new network
    A network consists of a Minimum and Maximum VLAN ID to create a range
    Set Minimum and Maximum to the same value to a single VLAN
    

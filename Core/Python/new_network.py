@@ -20,7 +20,7 @@
 Script to create a new network with VLAN
 
 #### Description
-This script exercises the OME REST API to create a new network
+This script uses the OME REST API to create a new network
 A network consists of a Minimum and Maximum VLAN ID to create a range
 Set Minimum and Maximum to the same value to a single VLAN
 

@@ -21,7 +21,7 @@ limitations under the License.
    Script to get chassis inventory details in CSV format
  .DESCRIPTION
 
-    This script exercises the OME REST API to get chassis inventory
+    This script uses the OME REST API to get chassis inventory
     in a CSV format for external consumption. For authentication X-Auth
     is used over Basic Authentication
 
@@ -91,7 +91,7 @@ function Get-ManagedDeviceCount($IpAddress, $Headers, $Type) {
 
     }
     catch {
-        Write-Error "Exception occured - $($_.Exception.Message)"
+        Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
     }
     return $Count
 }
@@ -113,7 +113,7 @@ function Get-NonServerMacAddress($DeviceInfo) {
         }
     }
     catch {
-        Write-Error "Exception occured - $($_.Exception.Message)"
+        Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
     }
     return $DeviceMgmtAddresses
 
@@ -156,7 +156,7 @@ function  Write-OutputCsvFile ($CsvData, $CsvColumns) {
         write-Host "Completed writing output to file chassis_inventory.csv"
     }
     catch {
-        Write-Error "Exception occured - $($_.Exception.Message)"
+        Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
     }
 }
 
@@ -222,7 +222,7 @@ function Get-ServerMacAddress ($DeviceInfo, $IpAddress, $Headers, $Type) {
         }
     }
     catch {
-        Write-Error "Exception occured - $($_.Exception.Message)"
+        Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
     }
       
     return $DeviceMgmtAddresses
@@ -359,7 +359,7 @@ function Get-DeviceInventory($IpAddress, $Headers, $Type) {
         }
     }
     catch {
-        Write-Error "Exception occured - $($_.Exception.Message)"
+        Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
     }
 }
 
@@ -381,5 +381,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

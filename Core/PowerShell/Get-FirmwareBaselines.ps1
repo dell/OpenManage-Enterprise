@@ -22,7 +22,7 @@ limitations under the License.
     with a specific device.
   .DESCRIPTION
 
-    This script exercises the OME REST API to find baselines associated
+    This script uses the OME REST API to find baselines associated
     with a given server. For authentication X-Auth is used over Basic
     Authentication. Note: The credentials entered are not stored to disk.
 
@@ -77,7 +77,7 @@ function Get-Data {
     None. You cannot pipe objects to Get-Data.
 
   .OUTPUTS
-    dict. A dictionary containing the results of the API call
+    dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
 
 #>
 
@@ -106,7 +106,7 @@ function Get-Data {
 
       if ($CountData.'@odata.count' -lt 1) {
         Write-Error "No results were found for filter $($OdataFilter)."
-        return $null
+        return @{}
       } 
     }
     else {
@@ -156,7 +156,7 @@ function Get-Data {
   }
   catch [System.Net.Http.HttpRequestException] {
     Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
-    return $null
+    return @{}
   }
 
 }
@@ -257,7 +257,7 @@ try {
 
   if ($PSBoundParameters.ContainsKey('IdracIp')) {
     foreach ($Device in $DeviceList) {
-      if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $IdracIp) {
+      if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $DeviceIdracIp) {
         $DeviceId = $Device."Id"
         break
       }

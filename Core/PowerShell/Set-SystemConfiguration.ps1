@@ -20,7 +20,7 @@ limitations under the License.
  .SYNOPSIS
    Script to deploy template
  .DESCRIPTION
-    This script exercises the OME REST API to depoy template.
+    This script uses the OME REST API to depoy template.
     Note that the credentials entered are not stored to disk.
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -491,5 +491,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

@@ -17,33 +17,32 @@ limitations under the License.
 #>
 
 <#
- .SYNOPSIS
-   Script to create a static group in OME
- .DESCRIPTION
+  .SYNOPSIS
+    Script to create a static group in OME
+  .DESCRIPTION
 
-   This script exercises the OME REST API to create a new 
-   static group in OME. The user will need to manually add
-   devices to this newly created group. For authentication
-   X-Auth is used over Basic Authentication
+    This script uses the OME REST API to create a new 
+    static group in OME. The user will need to manually add
+    devices to this newly created group. For authentication
+    X-Auth is used over Basic Authentication
 
-   Note that the credentials entered are not stored to disk.
+    Note that the credentials entered are not stored to disk.
 
- .PARAMETER IpAddress
-   This is the IP address of the OME Appliance
- .PARAMETER Credentials
-   Credentials used to talk to the OME Appliance
- .PARAMETER GroupName
-   Name for the static group to be created
+  .PARAMETER IpAddress
+    This is the IP address of the OME Appliance
+  .PARAMETER Credentials
+    Credentials used to talk to the OME Appliance
+  .PARAMETER GroupName
+    Name for the static group to be created
+  .PARAMETER GroupDescription
+    An optional description for your group
+  .EXAMPLE
+    $cred = Get-Credential
+    .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName "Test_OME_Group"
 
-
- .EXAMPLE
-   $cred = Get-Credential
-   .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
-        -GroupName "Test_OME_Group"
-
- .EXAMPLE
-   .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -GroupName "Test_OME"
-   In this instance you will be prompted for credentials to use
+  .EXAMPLE
+    .\New-StaticGroup.ps1 -IpAddress "10.xx.xx.xx" -GroupName "Test_OME" -GroupDescription "This is my group"
+    In this instance you will be prompted for credentials to use
 #>
 [CmdletBinding()]
 param(
@@ -54,74 +53,34 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [string] $GroupName    
+    [string] $GroupName,
+
+    [Parameter(Mandatory=$false)]
+    [string] $GroupDescription = ""
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-
-}
 
 Try {
-    Set-CertPolicy
-    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
-    $StaticGrp = "https://$($IpAddress)/api/GroupService/Groups?`$filter=Name eq 'Static Groups'"
+    Write-Host "Getting the ID for Static Groups..."
     $Type = "application/json"
-    $UserName = $Credentials.username
-    $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
-    $Headers = @{}
-
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $StaticGrpResp = Invoke-WebRequest -Uri $StaticGrp -Method Get -Headers $Headers -ContentType $Type
-        if ($StaticGrpResp.StatusCode -eq 200) {
-            $StaticGrpInfo = $StaticGrpResp.Content | ConvertFrom-Json
-            $StaticGrpId = $StaticGrpInfo.Value[0].Id
-            $GrpInfo = @{
-                "Name"             = $GroupName;
-                "Description"      = "";
-                "MembershipTypeId" = 12;
-                "ParentId"         = [uint32]$StaticGrpId
-            }
-            $GrpPayload = @{"GroupModel" = $GrpInfo } | ConvertTo-Json
-            $GrpCreateUrl = "https://$($IpAddress)/api/GroupService/Actions/GroupService.CreateGroup"
-
-            $CreateResp = Invoke-WebRequest -Uri $GrpCreateUrl -Me Post -H $Headers -Con $Type -Body $GrpPayload
-            if ($CreateResp.StatusCode -eq 200) {
-                Write-Host "new group created - ID:$($CreateResp)"
-            }
-            else {
-                ## going to throw an exception if the group name already exists
-            }
-
+    $StaticGrpResp = Invoke-RestMethod -Uri "https://$($IpAddress)/api/GroupService/Groups?`$filter=Name eq 'Static Groups'" `
+                                       -Method Get -Credential $Credentials -SkipCertificateCheck
+                                          
+    $StaticGrpId = $StaticGrpResp.value[0].Id
+    $GrpPayload = @{
+        GroupModel = @{
+            Name             = $GroupName;
+            Description      = $GroupDescription;
+            MembershipTypeId = 12;
+            ParentId         = [uint32]$StaticGrpId
         }
-    }
-    else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
-    }
+    } | ConvertTo-Json -Depth 6
+
+    Write-Host "Creating new group..."
+    $CreateResp = Invoke-RestMethod -Uri "https://$($IpAddress)/api/GroupService/Actions/GroupService.CreateGroup" `
+                                    -Method POST -ContentType $Type -Body $GrpPayload -Credential $Credentials -SkipCertificateCheck
+    Write-Host "New group created - ID: $($CreateResp)"
 }
 catch {
-    Write-Error "Check if the group name already exists in OME and retry...Exception: $($_.Exception.Message)"
+    Write-Error "Check if the group name already exists in OME and retry... Exception was: $($_.Exception.Message)"
 }

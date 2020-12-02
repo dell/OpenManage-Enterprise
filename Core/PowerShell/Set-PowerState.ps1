@@ -20,7 +20,7 @@ limitations under the License.
  .SYNOPSIS
    Script to perform power control on device
  .DESCRIPTION
-    This script exercises the OME REST API to power on
+    This script uses the OME REST API to power on
     /power off/reset(warm boot)/power cycle (cold boot)/shutdown
     devices managed by OME.
     Note that the credentials entered are not stored to disk.
@@ -329,5 +329,5 @@ Try {
     }
 }
 catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

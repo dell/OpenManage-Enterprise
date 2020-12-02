@@ -20,7 +20,7 @@
 Add one or more hosts to an existing static group.
 
 #### Description
-This script exercises the OME REST API to add one or more hosts to an existing static group. You can provide specific
+This script uses the OME REST API to add one or more hosts to an existing static group. You can provide specific
  devices or you can provide the job ID for a previous discovery job containing a set of servers. The script will pull
  from the discovery job and add those servers to a gorup. For authentication X-Auth is used over Basic Authentication.
 Note: The credentials entered are not stored to disk.
@@ -319,12 +319,14 @@ if __name__ == '__main__':
                 job_info = get_data(headers, "https://" + args.ip + job_info['ExecutionHistories@odata.navigationLink'])
             else:
                 print("Error: Something went wrong getting the job with ID " + str(args.args.use_discovery_job_id))
+                sys.exit(0)
 
-            details_url = "https://" + args.ip + job_info[0]['ExecutionHistoryDetails@odata.navigationLink']
             if 'ExecutionHistoryDetails@odata.navigationLink' in job_info[0]:
+                details_url = "https://" + args.ip + job_info[0]['ExecutionHistoryDetails@odata.navigationLink']
                 job_info = get_data(headers, details_url)
             else:
-                print("Error: Something went wrong getting the execution details at: " + details_url)
+                print("Error: Something went wrong getting the execution details")
+                sys.exit(0)
 
             if len(job_info) > 0:
                 for host in job_info:
@@ -334,7 +336,8 @@ if __name__ == '__main__':
                     else:
                         print("Could not resolve ID for: " + host['Key'])
             else:
-                print("FAIL")
+                print("The job info array returned empty. Exiting.")
+                sys.exit(0)
 
         # Eliminate any duplicate IDs in the list
         target_ids = list(dict.fromkeys(target_ids))

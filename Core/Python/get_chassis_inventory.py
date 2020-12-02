@@ -22,7 +22,7 @@
 Script to get chassis inventory details in CSV format
 
 #### Description
-This script exercises the OME REST API to get chassis inventory
+This script uses the OME REST API to get chassis inventory
 in a CSV format for external consumption
 Note that the credentials entered are not stored to disk.
 

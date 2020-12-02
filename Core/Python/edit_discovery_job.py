@@ -19,7 +19,7 @@
 Script to update an existing discovery job in OME
 
 #### Description
-This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and also 
+This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also 
 it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
