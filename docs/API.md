@@ -66,8 +66,6 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-identitypool-usage">Get Identitypool Usage</a></li>
 
-<li><a href="#get-inventory-by-type">Get Inventory By Type</a></li>
-
 <li><a href="#get-report-list">Get Report List</a></li>
 
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
@@ -980,34 +978,6 @@ PS C:\>$cred = Get-Credential
 
     PS C:\>.\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3 -OutFile C:\Temp\export.csv
     In this instance you will be prompted for credentials to use
-
-```
-
-
----
-### Get Inventory By Type
-
-#### Available Scripts
-
-- [Get-InventoryByType.ps1](../Core/PowerShell/Get-InventoryByType.ps1)
-
-
-#### Synopsis
-Script to retrieve the inventory for a device by inventory type.
-#### Description
-This script uses the OME REST API to get the inventory
-for a device by inventory type. The inventory type can be os 
-or cpus or controllers or memory or disks.
-Note that the credentials entered are not stored to disk.
-
-
-
-#### PowerShell Example
-```
-PS C:\>$cred = Get-Credential
-    .\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -DeviceId 25627 -InventoryType {InventoryType}
-    where {InventoryType} can be cpus or memory or controllers or disks or os
 
 ```
 
