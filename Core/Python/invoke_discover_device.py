@@ -53,6 +53,7 @@ import sys
 import time
 from argparse import RawTextHelpFormatter
 from pprint import pprint
+from getpass import getpass
 
 try:
     import urllib3
@@ -344,11 +345,11 @@ if __name__ == '__main__':
     parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", required=True,
+    parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--targetUserName", required=True,
                         help="Username to discover devices")
-    parser.add_argument("--targetPassword", required=True,
+    parser.add_argument("--targetPassword", required=False,
                         help="Password to discover devices")
     parser.add_argument("--deviceType", required=True,
                         choices=('server', 'chassis'),
@@ -361,9 +362,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass("Password for OME Appliance: ")
     discover_user_name = args.targetUserName
-    discover_password = args.targetPassword
+    if args.targetPassword:
+        discover_password = args.targetPassword
+    else:
+        discover_password: getpass("Password to discover devices: ")
     ip_array = args.targetIpAddresses
     csv_file_path = args.targetIpAddrCsvFile
     device_type = args.deviceType

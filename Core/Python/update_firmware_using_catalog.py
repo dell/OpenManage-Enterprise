@@ -34,6 +34,7 @@ import os
 import sys
 import time
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import urllib3
 
@@ -642,7 +643,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", required=True,
+    parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--updateactions", required=True, nargs="*",
                         help="Update action required",
@@ -670,16 +671,21 @@ if __name__ == '__main__':
     parser.add_argument("--refresh", required=False, default=False, type=str2bool,
                         help="refresh/create online catalog or use existing one.")
     args = parser.parse_args()
-    if args.repotype == 'CIFS' and (args.reposourceip is None or args.catalogpath is None
-                                    or args.repouser is None or args.repopassword is None):
-        parser.error("CIFS repository requires --reposourceip, --catalogpath, "
-                     "--repouser and --repopassword.")
+    if args.repotype == 'CIFS':
+        if args.reposourceip is None or args.catalogpath is None or args.repouser is None:
+            parser.error("CIFS repository requires --reposourceip, --catalogpath, "
+                         "--repouser and --repopassword.")
+        if not args.repopassword:
+            args.repopassword = getpass("Password for CIFS repository: ")
     if args.repotype == 'NFS' and (args.reposourceip is None or args.catalogpath is None):
         parser.error("NFS repository requires --reposourceip, --catalogpath.")
 
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass("Password for OME Appliance: ")
     UPDATE_ACTIONS = set()
     for action in args.updateactions:
         if action == "flash-all":

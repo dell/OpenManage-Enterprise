@@ -36,6 +36,7 @@ import json
 import sys
 from argparse import RawTextHelpFormatter
 from os import path
+from getpass import getpass
 
 import requests
 import urllib3
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--list-networks", "-ln", required=False, action='store_true',
                         help="List existing Networks")
@@ -151,6 +152,8 @@ if __name__ == '__main__':
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
 
     headers = {'content-type': 'application/json'}
 

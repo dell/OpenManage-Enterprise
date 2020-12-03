@@ -33,6 +33,7 @@ import argparse
 import csv
 import json
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -273,12 +274,16 @@ if __name__ == '__main__':
     parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass()
+
     try:
         auth_success, headers = authenticate_with_ome(ip_address, user_name,
                                                       password)
