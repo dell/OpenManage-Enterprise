@@ -9,7 +9,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
 ## General Practices
 
 - Make sure any pull requests to the repo rebase cleanly without conflict on master
-- Commits should be signed off with your name in the format `Signed-off-by: FirstName LastName <gelante@someemail.domain` at the end. A good commit looks like this:
+- Commits should be signed off with your name in the format `Signed-off-by: FirstName LastName <gelante@someemail.domain>` at the end. A good commit looks like this:
 
         file_I_modified: General description of change <---- this is the title
         - If you didn't modify one specific file then use a descriptive message for the title
