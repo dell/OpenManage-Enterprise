@@ -1,6 +1,10 @@
 ## OME/OME-M and Plugin API Samples / Cookbooks
 
-This repository hosts cookbooks for OME/OME-M and associated plugins. For script samples specific to OME/OME-M please look for script samples contained in "Core". Plugin script samples are in the "Plugin" folder and categorized further by plugin name.
+This repository hosts cookbooks for OME/OME-M and associated plugins. For script examples specific to OME/OME-M please look for script samples contained in "Core". Plugin script examples are in the "Plugin" folder and categorized further by plugin name.
+
+## Ensure OME is up to date!
+
+There is a known bug in older versions of OME which casuses the API to target multiple hosts when only one or a few targets are specified. We suggest you update to 3.5.0 or higher.
 
 ## Script Documentation
 
