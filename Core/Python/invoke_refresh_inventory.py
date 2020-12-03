@@ -34,7 +34,6 @@ import sys
 import time
 from argparse import RawTextHelpFormatter
 from pprint import pprint
-from typing import List
 from urllib.parse import urlparse
 
 try:
@@ -73,7 +72,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
     if session_info.status_code == 201:
         authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
         return authenticated_headers
-    
+
     print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
           "and IP?")
     raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
@@ -624,4 +623,3 @@ if __name__ == '__main__':
 
     except Exception as error:
         print("Unexpected error:", str(error))
-

@@ -727,7 +727,7 @@ if __name__ == '__main__':
                     raise ValueError("None of the devices are managed through OME... Exiting")
                 if len(intersection_set) != len(servicetags):
                     unmanaged_devices = list(set(servicetags).difference(intersection_set))
-                    raise ValueError("Devices {} not managed through OME ... Exiting" %
+                    raise ValueError("Devices {%s} not managed through OME ... Exiting" %
                                      unmanaged_devices)
                 DEVICE_IDS = [mapping[tag] for tag in intersection_set]
             elif args.deviceid:

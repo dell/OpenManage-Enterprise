@@ -59,8 +59,9 @@ class GetDeviceList:
             if not self.auth_success:
                 print("Unable to authenticate with OME .. Check IP/Username/Pwd")
                 return
-        except Exception:
-            print("Unable to connect to OME appliance %s" % self.__session_input["ip"])
+
+        except Exception as error:
+            print("Unable to connect to OME appliance %s. The error was %s" % (self.__session_input["ip"], error))
             return
 
         try:
