@@ -35,6 +35,7 @@ import time
 from argparse import RawTextHelpFormatter
 from pprint import pprint
 from urllib.parse import urlparse
+from getpass import getpass
 
 try:
     import urllib3
@@ -551,7 +552,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False,
                         help="Username for the OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for the OME Appliance")
     parser.add_argument("--groupname", "-g", required=False, default="All Devices",
                         help="The name of the group containing the devices whose inventory you want to refresh. "
@@ -583,6 +584,8 @@ if __name__ == '__main__':
     parser.add_argument("--ignore-group", default=False, action='store_true', help="Used when you only want to run a"
                         " regular inventory and you do not want to provide a group.")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
 
     try:
         headers = authenticate(args.ip, args.user, args.password)

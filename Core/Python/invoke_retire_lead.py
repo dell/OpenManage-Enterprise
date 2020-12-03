@@ -43,6 +43,7 @@ import json
 import random
 import time
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -224,12 +225,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", "-i", required=True, help="MSM IP (Lead chassis)")
     parser.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
-    parser.add_argument("--password", "-p", required=True, help="Password for MSM")
+    parser.add_argument("--password", "-p", required=False, help="Password for MSM")
     args = parser.parse_args()
 
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass()
     try:
         auth_success, headers = authenticate_with_ome(ip_address, user_name,
                                                       password)

@@ -58,7 +58,7 @@ import json
 import os
 import time
 from argparse import RawTextHelpFormatter
-
+from getpass import getpass
 import requests
 import urllib3
 
@@ -330,7 +330,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", required=True,
+    parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--dupfile", required=True,
                         help="Path to DUP file that will be flashed")
@@ -342,7 +342,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass()
     DUP_FILE = args.dupfile
     PARAM_MAP = {}
     TARGET_DATA = []

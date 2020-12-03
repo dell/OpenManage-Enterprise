@@ -57,6 +57,7 @@ import json
 import os
 import time
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -214,7 +215,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--reportid", "-r", required=True,
                         help="a valid report id to execute")
@@ -225,6 +226,8 @@ if __name__ == '__main__':
                         help="Optional param - redirect the output to file")
 
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
 
     try:
         REPORT_EXEC = OMEReportExecutor(args.ip, args.user,

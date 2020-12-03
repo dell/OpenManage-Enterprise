@@ -18,7 +18,7 @@
 
 """
 #### Synopsis
-Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or 
+Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or
 print them to screen.
 
 #### Description
@@ -36,6 +36,7 @@ import sys
 from argparse import RawTextHelpFormatter
 from pprint import pprint
 from urllib.parse import urlparse
+from getpass import getpass
 
 try:
     import urllib3
@@ -176,13 +177,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False, help="Username for the OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True, help="Password for the OME Appliance")
+    parser.add_argument("--password", "-p", required=False, help="Password for the OME Appliance")
     parser.add_argument("--share", "-s", required=False,
                         help="A path to the share which you want to in format "
                              "\\\\<ip_address>\\<share_name>\\<file_name>")
     parser.add_argument("--smbuser", "-su", required=False, help="The username for SMB")
     parser.add_argument("--smbpass", "-sp", required=False, help="Password for SMB")
     args = parser.parse_args()
+
+    if not args.password:
+        args.password = getpass()
 
     try:
         headers = authenticate(args.ip, args.user, args.password)

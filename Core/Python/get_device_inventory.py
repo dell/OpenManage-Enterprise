@@ -34,6 +34,7 @@ Note that the credentials entered are not stored to disk.
 import argparse
 import json
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--filterby", "-fby", required=True,
                         choices=('Id', 'Name', 'SvcTag'),
@@ -120,5 +121,8 @@ if __name__ == '__main__':
                         choices=('cpus', 'os', 'disks', 'controllers', 'memory'),
                         help="Get inventory by cpus/os/disks/controllers,memory")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
+
     get_device_inventory(args.ip, args.user, args.password,
                          args.filterby, str(args.field), args.inventorytype)

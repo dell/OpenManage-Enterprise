@@ -33,6 +33,7 @@ Note that the credentials entered are not stored to disk.
 import argparse
 import json
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -131,9 +132,12 @@ if __name__ == '__main__':
     parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--groupinfo", "-g", required=True,
                         help="Group id/Name/Description - case insensitive")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
+
     get_group_details(args.ip, args.user, args.password, str(args.groupinfo))
