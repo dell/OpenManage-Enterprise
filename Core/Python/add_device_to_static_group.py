@@ -35,8 +35,8 @@ Note: The credentials entered are not stored to disk.
 import argparse
 import json
 import sys
-from pprint import pprint
 from argparse import RawTextHelpFormatter
+from pprint import pprint
 from urllib.parse import urlparse
 
 try:
