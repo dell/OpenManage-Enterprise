@@ -61,6 +61,7 @@ import sys
 from argparse import RawTextHelpFormatter
 from pprint import pprint
 from urllib.parse import urlparse
+from getpass import getpass
 
 try:
     import urllib3
@@ -187,7 +188,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False, help="Username for the OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True, help="Password for the OME Appliance")
+    parser.add_argument("--password", "-p", required=False, help="Password for the OME Appliance")
     parser.add_argument("--top", required=False, help="Top records to return.")
     parser.add_argument('--pages', required=False, type=int,
                         help="You will generally not need to change this unless you are using a large value for top"
@@ -239,6 +240,9 @@ if __name__ == '__main__':
                         help="The description of the group on which you want to filter.")
 
     args = parser.parse_args()
+
+    if not args.password:
+        args.password = getpass()
 
     SEVERITY_TYPE = {'WARNING': '8', 'CRITICAL': '16', 'INFO': '2', 'NORMAL': '4', 'UNKNOWN': '1'}
     STATUS_TYPE = {'NORMAL': '1000', 'UNKNOWN': '2000', 'WARNING': '3000', 'CRITICAL': '4000', 'NOSTATUS': '5000'}

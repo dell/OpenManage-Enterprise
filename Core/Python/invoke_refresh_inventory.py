@@ -36,6 +36,7 @@ from argparse import RawTextHelpFormatter
 from pprint import pprint
 from typing import List
 from urllib.parse import urlparse
+from getpass import getpass
 
 try:
     import urllib3
@@ -73,7 +74,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
     if session_info.status_code == 201:
         authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
         return authenticated_headers
-    
+
     print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
           "and IP?")
     raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
@@ -552,7 +553,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False,
                         help="Username for the OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for the OME Appliance")
     parser.add_argument("--groupname", "-g", required=False, default="All Devices",
                         help="The name of the group containing the devices whose inventory you want to refresh. "
@@ -584,6 +585,8 @@ if __name__ == '__main__':
     parser.add_argument("--ignore-group", default=False, action='store_true', help="Used when you only want to run a"
                         " regular inventory and you do not want to provide a group.")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
 
     try:
         headers = authenticate(args.ip, args.user, args.password)

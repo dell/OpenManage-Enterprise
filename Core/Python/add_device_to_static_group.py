@@ -38,6 +38,7 @@ import sys
 from pprint import pprint
 from argparse import RawTextHelpFormatter
 from urllib.parse import urlparse
+from getpass import getpass
 
 try:
     import urllib3
@@ -232,7 +233,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False,
                         help="Username for the OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for the OME Appliance")
     parser.add_argument("--groupname", "-g", required=True,
                         help="The name of the group to which you want to add servers.")
@@ -250,6 +251,9 @@ if __name__ == '__main__':
                         "manually from the UI by clicking on the job and pulling it from the URL. Ex: "
                         "https://192.168.1.93/core/console/console.html#/core/monitor/monitor_portal/jobsDetails?jobsId=14026")
     args = parser.parse_args()
+
+    if not args.password:
+        args.password = getpass()
 
     try:
 

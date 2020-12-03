@@ -1,5 +1,5 @@
 #
-# 
+#
 # Copyright (c) 2020 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 Script to update an existing discovery job in OME
 
 #### Description
-This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also 
+This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also
 it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
@@ -38,6 +38,7 @@ import argparse
 import json
 import time
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -218,13 +219,13 @@ if __name__ == '__main__':
     parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", required=True,
+    parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--jobNamePattern", required=True,
                         help="Job name pattern")
     parser.add_argument("--targetUserName", required=True,
                         help="Username to discover devices")
-    parser.add_argument("--targetPassword", required=True,
+    parser.add_argument("--targetPassword", required=False,
                         help="Password to discover devices")
     parser.add_argument("--targetIpAddresses",
                         help="ip address to modify discovery job config group")
@@ -232,9 +233,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    password = args.password
+    if args.password:
+        password = args.password
+    else:
+        password = getpass("Password for OME Appliance: ")
     device_user_name = args.targetUserName
-    device_password = args.targetPassword
+    if args.targetPassword:
+        device_password = args.targetPassword
+    else:
+        device_password = getpass("Password to discover devices: ")
     ip_array = args.targetIpAddresses
     discovery_job_name = args.jobNamePattern
 

@@ -33,6 +33,7 @@ import argparse
 import json
 from argparse import RawTextHelpFormatter
 from urllib.parse import urlparse
+from getpass import getpass
 
 import requests
 import urllib3
@@ -239,7 +240,7 @@ if __name__ == '__main__':
     PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     PARSER.add_argument("--user", "-u", required=False,
                         help="Username for the OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    PARSER.add_argument("--password", "-p", required=False,
                         help="Password for the OME Appliance")
     exclusive_group = PARSER.add_mutually_exclusive_group(required=False)
     exclusive_group.add_argument("--device-id", "-d", help="The device ID ")
@@ -247,6 +248,8 @@ if __name__ == '__main__':
     exclusive_group.add_argument("--idrac-ip", "-r", help="A device idrac IP")
     exclusive_group.add_argument("--device-name", "-n", help="The name of the device in OME")
     ARGS = PARSER.parse_args()
+    if not ARGS.password:
+        ARGS.password = getpass()
 
     try:
         headers = authenticate(ARGS.ip, ARGS.user, ARGS.password)

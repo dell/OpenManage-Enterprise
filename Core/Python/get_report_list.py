@@ -32,6 +32,7 @@ Note that the credentials entered are not stored to disk.
 import argparse
 import json
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 import requests
 import urllib3
@@ -91,7 +92,10 @@ if __name__ == '__main__':
     parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
     parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    parser.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
+
     get_report_list(args.ip, args.user, args.password)

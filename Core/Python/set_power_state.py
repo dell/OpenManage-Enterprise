@@ -40,6 +40,7 @@ import csv
 from pprint import pprint
 from urllib.parse import urlparse
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 
 try:
     import urllib3
@@ -401,7 +402,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", required=False,
                         help="Username for OME Appliance",
                         default="admin")
-    parser.add_argument("--password", required=True,
+    parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
     parser.add_argument("--groupname", "-g", required=False, default="All Devices",
                         help="The name of the group containing the devices whose power state you want to change.")
@@ -419,6 +420,8 @@ if __name__ == '__main__':
                         choices=("POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL",
                                  "MASTER_BUS_RESET"), help="Type of power operation you would like to perform.")
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
 
     POWER_STATE_MAPPING = {
         "Power On": "2",
