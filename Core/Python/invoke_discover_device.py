@@ -84,9 +84,13 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
     user_details = {'UserName': ome_username,
                     'Password': ome_password,
                     'SessionType': 'API'}
-    session_info = requests.post(session_url, verify=False,
-                                 data=json.dumps(user_details),
-                                 headers=authenticated_headers)
+    try:
+        session_info = requests.post(session_url, verify=False,
+                                     data=json.dumps(user_details),
+                                     headers=authenticated_headers)
+    except requests.exceptions.ConnectionError:
+        print("Failed to connect to OME. This typically indicates a network connectivity problem. Can you ping OME?")
+        sys.exit(0)
 
     if session_info.status_code == 201:
         authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']

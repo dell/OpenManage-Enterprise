@@ -15,6 +15,8 @@ deploy:
   invoke_discover_device:
     - invoke_discover_device.py
     - Invoke-DiscoverDevice.ps1
+  invoke_manage_query_groups:
+    - invoke_manage_query_groups.py
   new_mcm_group:
     - new_mcm_group.py
     - New-McmGroup.ps1
