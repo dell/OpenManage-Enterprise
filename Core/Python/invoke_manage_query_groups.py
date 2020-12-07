@@ -53,7 +53,7 @@ Get a listing of devices in the group TestGroup and their characteristics
 invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --get-group-filters TestGroup
 Get a listing of all the filters used by TestGroup
 
-invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --create y --groupname "Grant Group" --description "query created using python OME script" --fid 238 --comparison-values 151 --oid 1
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --create "Grant Group" --description "query created using python OME script" --fid 238 --comparison-values 151 --oid 1
 Create a group called Grant Group which looks for devices equal to (1) sub-type (238) compellent storage (151)
 
 invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --fid 231,229 --oid 1,1 --comparison-fields AAAAAAA,1000 --loid 2,2 --create "Service Tag or Normal Status"
