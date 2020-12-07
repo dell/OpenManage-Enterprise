@@ -22,6 +22,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#invoke-discover-device">Invoke Discover Device</a></li>
 
+<li><a href="#invoke-manage-query-groups">Invoke Manage Query Groups</a></li>
+
 <li><a href="#new-mcm-group">New Mcm Group</a></li>
 
 <li><a href="#new-network">New Network</a></li>
@@ -173,7 +175,7 @@ PS C:\>$cred = Get-Credential
 Script to update an existing discovery job in OME
 
 #### Description
-This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also 
+This script uses the OME REST API to update an existing discovery job(if found) with the credentials and also
 it updates networkaddress if user passs iprange.
 For authentication X-Auth is used over Basic Authentication.
 Note that the credentials entered are not stored to disk.
@@ -251,6 +253,63 @@ PS C:\>$creds = Get-Credential # Your OME credentials
     192.168.1.24,192.168.1.34 -SnmpCommunityString 'SomeString'
 
 ```
+
+
+---
+### Invoke Manage Query Groups
+
+#### Available Scripts
+
+- [invoke_manage_query_groups.py](../Core/Python/invoke_manage_query_groups.py)
+
+
+#### Synopsis
+Python script for using the OME API to manage query groups
+
+#### Description
+Provides limited support for creating query groups via the API. Right now it only has support for devices. If you have
+a use case requiring extension please comment on https://github.com/dell/OpenManage-Enterprise/issues/126 to let us
+know there is a demand for this capability. For details on functionality see workflow.
+
+##### WORKFLOW
+
+The first step to creating a filter is to obtain the relevant IDs from OME. These can change over time so you should
+get them from your specific instance. You can do this by running the script with the switch '--get-values'. This will
+create a file called ome_query_values.txt. This file contains a listing of OID, FID, and comparison-fields values
+available in your OME instance. FID corresponds to the field on which you want to query. For example, in my instance,
+if I were to go to the UI and select "Device Sub-Type", that would correspond to FID 238. If I want to check if A
+Device SubType were equivalent to something, I would use this value. Next you need to determine the value you are
+comparing against. In my instance, 151 corresponds to 'Compellent Storage'. If I wanted to create a query group looking
+ for devices with subtype 'Compellent Storage', I would pass the argument '--fid 238 --comparison-fields 151'. Finally,
+  you need a comparison operator. This is at the beginning of the file ome_query_values.txt. In my case, ID 1
+  corresponds to equivalence so I will pass --oid 1. If you want to chain multiple queries together you can use the
+  --loid argument. 1 corresponds to AND and 2 corresponds to OR. If you are chaining multiple filters, pass an loid
+  argument for each filter. For example if you want two filters to be related with an OR statement, pass 2,2.
+
+For example, if I wanted to create a group that finds devices with service tag AAAAAAA or has a normal device status,
+I could use --fid 231,229 --oid 1,1 --comparison-fields AAAAAAA,1000 --loid 2,2
+
+#### Python Examples
+```
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --get-values
+Reach out to OME and obtain the supported values for --fid and --oid
+
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --get-group-devices TestGroup
+Get a listing of devices in the group TestGroup and their characteristics
+
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --get-group-filters TestGroup
+Get a listing of all the filters used by TestGroup
+
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --create y --groupname "Grant Group" --description "query created using python OME script" --fid 238 --comparison-values 151 --oid 1
+Create a group called Grant Group which looks for devices equal to (1) sub-type (238) compellent storage (151)
+
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --fid 231,229 --oid 1,1 --comparison-fields AAAAAAA,1000 --loid 2,2 --create "Service Tag or Normal Status"
+Create a group called "Service Tag or Normal Status" which looks for service tags (231) equal to (1) AAAAAAA or (2) device with status (229) equal to (1) normal status (1000)
+
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --delete "Some Group"
+Deletes a group with the name "Some Group"
+```
+
 
 
 ---
@@ -663,7 +722,7 @@ PS C:\>$creds = Get-Credential
 
 
 #### Synopsis
-Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or 
+Retrieves the audit logs from a target OME instance and can either save them in an CSV on a fileshare or
 print them to screen.
 
 #### Description
@@ -950,7 +1009,7 @@ Script to get the list of virtual addresses in an Identity Pool
 
 #### Description
 This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
-Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
+Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
