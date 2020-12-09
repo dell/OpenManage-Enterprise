@@ -408,7 +408,7 @@ if __name__ == '__main__':
                         default="admin")
     parser.add_argument("--password", required=False,
                         help="Password for OME Appliance")
-    parser.add_argument("--groupname", "-g", required=False, default="All Devices",
+    parser.add_argument("--groupname", "-g", required=False,
                         help="The name of the group containing the devices whose power state you want to change.")
     parser.add_argument("--device-ids", "-d", help="A comma separated list of device-ids whose power state you want to"
                                                    " change.")
