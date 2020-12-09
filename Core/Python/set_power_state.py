@@ -480,6 +480,8 @@ if __name__ == '__main__':
                     target_ids.append(target)
                 else:
                     print("Could not resolve ID for: " + device_name)
+        else:
+            device_names = None
 
         group_id = None
         group_url = "https://%s/api/GroupService/Groups" % args.ip
