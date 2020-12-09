@@ -384,7 +384,7 @@ def get_device_id(authenticated_headers: dict,
             print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
             return -1
 
-        # TODO - This is necessary because the filter above could possibly return mulitple results
+        # TODO - This is necessary because the filter above could possibly return multiple results
         # TODO - See https://github.com/dell/OpenManage-Enterprise/issues/87
         for device_id in device_ids:
             if device_id['DeviceManagement'][0]['NetworkAddress'] == device_idrac_ip:
