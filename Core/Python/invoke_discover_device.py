@@ -433,6 +433,8 @@ if __name__ == '__main__':
             job_id = get_job_id(ip_address, headers, discovery_config_group_id)
             if job_id != -1:
                 track_job_to_completion(ip_address, headers, job_id)
+            else:
+                print("There was a problem retrieving the job ID for discovering. Exiting.")
         else:
             print("unable to discover devices ", discovery_resp.text)
 
