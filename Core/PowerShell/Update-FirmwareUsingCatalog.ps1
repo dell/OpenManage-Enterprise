@@ -87,7 +87,7 @@ param(
 
     [Parameter(Mandatory)]
     [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
-    [String]$RepoType,
+    [String]$RepoType = "DELL_ONLINE",
 
     [Parameter(Mandatory = $false)]
     [System.Net.IPAddress] $ResourceIp,
@@ -757,6 +757,7 @@ try {
     $CatalogId = $null
     $RepoId = $null
     $CatalogRepositorySource = $null
+    $SLEEPINTERVAL = 20
     if ($RepoType -eq 'DELL_ONLINE') {
         $CatalogRepositorySource = "downloads.dell.com"
     }
