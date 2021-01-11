@@ -1,3 +1,8 @@
+## Translations
+
+- [簡體中文 (Simplified Chinese)](docs/translations/README_zh.md)
+- [繁體中文 (Traditional Chinese)](docs/translations/README_zh_TW.md)
+
 ## OME/OME-M and Plugin API Samples / Cookbooks
 
 This repository hosts cookbooks for OME/OME-M and associated plugins. Script examples specific to OME/OME-M are in the Core directory. Plugin script examples are in the "Plugin" folder and categorized further by plugin name.
