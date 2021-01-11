@@ -239,6 +239,17 @@ You frequently not only want to resolve device IDs, but check the output and the
         else:
             device_names = None
 
+### Get Group ID by Name
+
+        group_url = "https://%s/api/GroupService/Groups" % args.ip
+        groups = get_data(headers, group_url, "Name eq '%s'" % args.groupname)
+
+        if len(groups) < 1:
+            print("Error: We were unable to find a group matching the name %s." % args.groupname)
+            sys.exit(0)
+
+        group_id = groups[0]['Id']
+
 ## Track a Job to Completion
 
 Track a job and wait for it to complete before continuing.

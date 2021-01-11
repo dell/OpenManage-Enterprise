@@ -6,6 +6,7 @@ powershell_path: '../Core/PowerShell'
 deploy:
   add_device_to_static_group:
     - add_device_to_static_group.py
+    - Add-DeviceToStaticGroup.ps1
   add_members:
     - add_members.py
     - Add-Members.ps1

@@ -212,7 +212,7 @@ You frequently not only want to resolve device IDs, but check the output and the
     $Targets = @()
 
     if ($PSBoundParameters.ContainsKey('ServiceTags')) {
-        foreach ($ServiceTag in $ServiceTags) {
+        foreach ($ServiceTag in $ServiceTags -split ',') {
             $Target = Get-DeviceId -OmeIpAddress $IpAddress -ServiceTag $ServiceTag
             if ($Target -ne -1) {
                 $Targets += $Target
@@ -225,8 +225,8 @@ You frequently not only want to resolve device IDs, but check the output and the
     }
 
     if ($PSBoundParameters.ContainsKey('IdracIps')) {
-        foreach ($IdracIp in $IdracIps) {
-            $Target = Get-DeviceId $IpAddress -DeviceIdracIp $IdracIp
+        foreach ($IdracIp in $IdracIps -split ',') {
+            $Target = Get-DeviceId -OmeIpAddress $IpAddress -DeviceIdracIp $IdracIp
             if ($Target -ne -1) {
                 $Targets += $Target
             }
@@ -238,7 +238,7 @@ You frequently not only want to resolve device IDs, but check the output and the
     }
 
     if ($PSBoundParameters.ContainsKey('DeviceNames')) {
-        foreach ($DeviceName in $DeviceNames) {
+        foreach ($DeviceName in $DeviceNames -split ',') {
             $Target = Get-DeviceId $IpAddress -DeviceName $DeviceName
             if ($Target -ne -1) {
                 $Targets += $Target
@@ -248,6 +248,20 @@ You frequently not only want to resolve device IDs, but check the output and the
                 Exit
             }
         }
+    }
+
+### Resolve Group Name to ID
+
+    if ($PSBoundParameters.ContainsKey('GroupName')) {
+
+        $GroupData = Get-Data "https://$($IpAddress)/api/GroupService/Groups" "Name eq '$($GroupName)'"
+
+        if ($null -eq $GroupData) {
+            Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
+            Exit
+        }
+
+        $GroupId = $GroupData.'Id'
     }
 
 ## Track a Job to Completion

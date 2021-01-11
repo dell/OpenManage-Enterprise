@@ -94,6 +94,8 @@ Deploy scripts include those things for discovery and generating the initial inv
 
 - [add_device_to_static_group.py](../Core/Python/add_device_to_static_group.py)
 
+- [Add-DeviceToStaticGroup.ps1](../Core/PowerShell/Add-DeviceToStaticGroup.ps1)
+
 
 #### Synopsis
 Add one or more hosts to an existing static group.
@@ -110,6 +112,14 @@ Note: The credentials entered are not stored to disk.
     python add_device_to_static_group.py --service-tags servtag1,servtag2,servtag3 --groupname 格蘭特 --password somepass --ip 192.168.1.93
     ```
 
+
+#### PowerShell Example
+```
+PS C:\>$creds = Get-Credentials
+    .\Add-DeviceToStaticGroup.ps1' -IpAddress 192.168.1.93 -Credentials $creds -GroupName 'YourGroup' -IdracIps 
+    '192.168.1.45,192.168.1.63' -UseDiscoveryJobId 14094
+
+```
 
 
 ---
