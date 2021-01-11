@@ -609,7 +609,7 @@ try {
     }
     
     if ($PSBoundParameters.ContainsKey('ServiceTags')) {
-        foreach ($ServiceTag in $ServiceTags) {
+        foreach ($ServiceTag in $ServiceTags -split ',') {
             $Target = Get-DeviceId -OmeIpAddress $IpAddress -ServiceTag $ServiceTag
             if ($Target -ne -1) {
                 $Targets += $Target
@@ -622,7 +622,7 @@ try {
     }
 
     if ($PSBoundParameters.ContainsKey('IdracIps')) {
-        foreach ($IdracIp in $IdracIps) {
+        foreach ($IdracIp in $IdracIps -split ',') {
             $Target = Get-DeviceId -OmeIpAddress $IpAddress -DeviceIdracIp $IdracIp
             if ($Target -ne -1) {
                 $Targets += $Target
@@ -635,7 +635,7 @@ try {
     }
 
     if ($PSBoundParameters.ContainsKey('DeviceNames')) {
-        foreach ($DeviceName in $DeviceNames) {
+        foreach ($DeviceName in $DeviceNames -split ',') {
             $Target = Get-DeviceId $IpAddress -DeviceName $DeviceName
             if ($Target -ne -1) {
                 $Targets += $Target
