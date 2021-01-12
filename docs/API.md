@@ -30,6 +30,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#new-network">New Network</a></li>
 
+<li><a href="#new-ome-user">New Ome User</a></li>
+
 <li><a href="#new-static-group">New Static Group</a></li>
 
 <li><a href="#set-power-state">Set Power State</a></li>
@@ -472,6 +474,37 @@ PS C:\>$cred = Get-Credential
     
 
     PS C:\>.\New-Network.ps1 -IpAddress 100.79.6.11 -InFile "New-NetworkExample.csv"
+
+```
+
+
+---
+### New Ome User
+
+#### Available Scripts
+
+- [New-OmeUser.ps1](../Core/PowerShell/New-OmeUser.ps1)
+
+
+#### Synopsis
+Script to add users to OpenManage Enterprise
+#### Description
+This script uses the OME REST API to add users to OpenManage Enterprise. 
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    $newusercred = Get-Credential
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
+    ADMINISTRATOR
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
+    ADMINISTRATOR -NewUserDescription 'This is a description of the user'
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
+    ADMINISTRATOR -NewUserLocked
 
 ```
 

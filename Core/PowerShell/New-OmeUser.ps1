@@ -45,6 +45,7 @@ limitations under the License.
    $cred = Get-Credential
    $newusercred = Get-Credential
    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMINISTRATOR
+   .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMINISTRATOR -NewUserDescription 'This is a description of the user'
    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMINISTRATOR -NewUserLocked
 #>
 
