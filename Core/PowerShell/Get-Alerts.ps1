@@ -2,7 +2,7 @@
 _author_ = Grant Curell <grant_curell@dell.com>
 _contributor_ = Raajeev Kalyanaraman wrote the method for getting alerts by group
 
-Copyright (c) 2020 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
