@@ -30,6 +30,8 @@ deploy:
   new_static_group:
     - new_static_group.py
     - New-StaticGroup.ps1
+  new_ome_user:
+    - New-OmeUser.ps1
   set_power_state:
     - set_power_state.py
     - Set-PowerState.ps1
