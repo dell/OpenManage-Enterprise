@@ -1,54 +1,51 @@
 <#
 _author_ = Chris Steinbeisser <chris.steinbeisser@Dell.com>
-_version_ = 0.1
-Copyright (c) 2018 Dell EMC Corporation
+_author_ = Grant Curell <grant_curell@dell.com>
+
+Copyright (c) 2021 Dell EMC Corporation
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
       http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
 #>
 
 <#
+
  .SYNOPSIS
    Script to add users to OpenManage Enterprise
  .DESCRIPTION
-   This script exercises the OME REST API to add users to OpenManage Enterprise. 
+   This script uses the OME REST API to add users to OpenManage Enterprise. 
    For authentication X-Auth is used over Basic Authentication
    Note that the credentials entered are not stored to disk.
  .PARAMETER IpAddress
    IP Address of the OME Appliance
  .PARAMETER Credentials
    Credentials used to talk to the OME Appliance
- .PARAMETER new_UserName
-   New OME local user to add to OME Appliance
- .PARAMETER new_UserPassword
-   New OME local user password to add to OME Appliance
- .PARAMETER new_UserRole
-   Assign new basic OME local user role [viewer(16)||adminastrator(10)] 
- .PARAMETER new_UserLocked
-   New OME local user locked [1(true) || 0(false)] 
- .PARAMETER new_UserEnabled
-   New OME local user enabled [1(true)|| 0(false)] 
+ .PARAMETER NewUserCredentials
+   Credentials for the new user
+ .PARAMETER NewUserRole
+   The role you would like to assign the user. The default roles in OME include "VIEWER", "DEVICE_MANAGER", and "ADMINISTRATOR". You may add your own.
+ .PARAMETER NewUserDescription
+   Description of the new user in the form of 'a string like this'. The default is "User created via the OME API."
+ .PARAMETER NewUserLocked
+   Add this switch to lock the user after creation. False by default.
+ .PARAMETER NewUserEnabled
+   Add this switch to enable the user after creation. True by default.
 
- .EXAMPLE
-  .\New-OMEntUser.ps1
-  In this instance the script prompts for all parameters including login credentials for the OME Appliance
  .EXAMPLE
    $cred = Get-Credential
-   .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -new_UserName "Buddy" -new_UserPassword "Test123!" -new_UserRole 10 -new_UserLocked 0 -new_UserEnabled 1
- .EXAMPLE
-   .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -new_UserName "Buddy" -new_UserPassword "Test123!" -new_UserRole 10
-  In this instance you will be prompted just for the OME Appliance credentials
-
- .LINK
-   Dell OME 3.3.1 RESTful API Accounts PUT Method: https://www.dell.com/support/manuals/us/en/04/dell-openmanage-enterprise/ome-3.3.1_omem-1.10.00_apiguide/put-method-for-accountsid?guid=guid-4edc1d5b-1119-4590-a0d9-8b497ac0553b&lang=en-us
-
-
+   $newusercred = Get-Credential
+   .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMINISTRATOR
+   .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMINISTRATOR -NewUserLocked
 #>
 
 [CmdletBinding()]
@@ -60,88 +57,175 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory)]
-    [string] $new_UserName,
+    [pscredential] $NewUserCredentials,
 
     [Parameter(Mandatory)]
-    [string] $new_UserPassword,
+    [string] $NewUserRole,
 
-    [Parameter(Mandatory)]
-    [string] $new_UserRole,
+    [Parameter(Mandatory=$false)]
+    [string] $NewUserDescription = "User created via the OME API.",
 
-    [Parameter(Mandatory)]
-    [boolean] $new_UserLocked,
+    [Parameter(Mandatory=$false)]
+    [boolean] $NewUserLocked = $false,
 
-    [Parameter(Mandatory)]
-    [boolean]  $new_UserEnabled
-
-
+    [Parameter(Mandatory=$false)]
+    [boolean]  $NewUserEnabled = $true
 )
 
-function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    Catch {
-        Write-Error "Unable to add type for cert policy"
-    }
+function Get-Data {
+    <#
+    .SYNOPSIS
+        Used to interact with API resources
 
-}
+    .DESCRIPTION
+        This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+        handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+        pages to get a complete listing. Assumes there is a variable called Credentials with OME's credentials.
 
-Try {
-    Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $AccountsUrl   = "https://$($IpAddress)/api/AccountService/Accounts"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
-    $AccountInfo = @{}
+    .PARAMETER Url
+        The API url against which you would like to make a request
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-        ## Successfully created a session - extract the auth token from the response
-        ## header and update our headers for subsequent requests
-        $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-               $AccountInfo = @{
-                "UserName"=$new_UserName;
-                "Password"=$new_UserPassword;
-                "RoleId"=$new_UserRole;
-                "Locked"=$new_UserLocked;
-                "Enabled"=$new_UserEnabled;
-                "UserTypeId"=1;
-                "DirectoryServiceId"=0      
-                
-                } | ConvertTo-Json
-        
-        $AccountsUrlResp = Invoke-WebRequest -Uri $AccountsUrl -UseBasicParsing -Method Post -Headers $Headers -ContentType $Type -Body $AccountInfo
-        if ($AccountsUrlResp.StatusCode -eq 200 -or $AccountsUrlResp.StatusCode -eq 201) {
+    .PARAMETER OdataFilter
+        An optional parameter for providing an odata filter to run against the API endpoint.
 
-            Write-Host "URLStatusCode ->  $($AccountsUrlResp.StatusCode) Success"
-            Write-Host "New User created - $($AccountInfo)"
+    .PARAMETER MaxPages
+        The maximum number of pages you would like to return
+
+    .INPUTS
+        None. You cannot pipe objects to Get-Data.
+
+    .OUTPUTS
+        dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
+
+    #>
+
+    [CmdletBinding()]
+    param (
+
+        [Parameter(Mandatory)]
+        [string]
+        $Url,
+
+        [Parameter(Mandatory = $false)]
+        [string]
+        $OdataFilter,
+
+        [Parameter(Mandatory = $false)]
+        [int]
+        $MaxPages = $null
+    )
+
+    $Data = @()
+    $NextLinkUrl = $null
+    try {
+
+        if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+        $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+
+        if ($CountData.'@odata.count' -lt 1) {
+            Write-Error "No results were found for filter $($OdataFilter)."
+            return @{}
+        } 
         }
         else {
-            Write-Host "URLStatusCode ->  $($AccountsUrlResp.StatusCode)"
-            Write-Error "Unable to create New User - $($AccountsURlResp)"
+        $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+            -SkipCertificateCheck
+        }
+
+        if ($null -ne $CountData.'value') {
+        $Data += $CountData.'value'
+        }
+        else {
+        $Data += $CountData
+        }
+        
+        if ($CountData.'@odata.nextLink') {
+        $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+        }
+
+        $i = 1
+        while ($NextLinkUrl) {
+        if ($MaxPages) {
+            if ($i -ge $MaxPages) {
+            break
+            }
+            $i = $i + 1
+        }
+        $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
+            -ContentType $Type -SkipCertificateCheck
+            
+        if ($null -ne $NextLinkData.'value') {
+            $Data += $NextLinkData.'value'
+        }
+        else {
+            $Data += $NextLinkData
+        }    
+            
+        if ($NextLinkData.'@odata.nextLink') {
+            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+        }
+        else {
+            $NextLinkUrl = $null
+        }
+        }
+    
+        return $Data
+
+    }
+    catch [System.Net.Http.HttpRequestException] {
+        Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+        return @{}
+    }
+
+}
+
+
+try {
+
+    $Roles = Get-Data "https://$($IpAddress)/api/AccountService/Roles"
+    $FoundRole = $false
+
+    Write-Host "Searching OME for the requested role..."
+    foreach ($Role in $Roles) {
+        if ($NewUserRole -eq $Role.Name) {
+            $RoleId = $Role.Id
+            $FoundRole = $True
+            Write-Host "Found role $($NewUserRole)!"
+            break
         }
     }
-    else {
-        Write-Error "Unable to create a session with appliance $($IpAddress)"
+
+    if (-not $FoundRole) {
+        Write-Error "We did not find the role $($NewUserRole). The possible roles on this OME server are:"
+        foreach($Role in $Roles) {
+            Write-Host $Role.Name
+        }
+        Exit
     }
+
+    $AccountInfo = @{
+        UserName = $NewUserCredentials.GetNetworkCredential().UserName
+        Password = $NewUserCredentials.GetNetworkCredential().Password
+        RoleId = $RoleId
+        Locked = $NewUserLocked
+        Enabled = $NewUserEnabled
+        Description = $NewUserDescription
+        UserTypeId = 1
+        DirectoryServiceId = 0      
+        } | ConvertTo-Json
+    Write-Host "Creating new user..."
+    try {
+        $AccountsUrlResp = Invoke-RestMethod -Uri "https://$($IpAddress)/api/AccountService/Accounts" -Method Post -Headers $Headers -ContentType "application/json" -Body $AccountInfo -SkipCertificateCheck -Credential $Credentials
+    }
+    catch [System.Net.Http.HttpRequestException] {
+        Write-Error "Creating the new user failed. Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
+        Write-Error "Error details are $($_.ErrorDetails)"
+        Exit
+    }
+
+    Write-Host "URLStatusCode ->  $($AccountsUrlResp.StatusCode) Success"
+    Write-Host "Successfully created user $($NewUserCredentials.GetNetworkCredential().UserName)!"
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }
