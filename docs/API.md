@@ -70,6 +70,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-identitypool-usage">Get Identitypool Usage</a></li>
 
+<li><a href="#get-ome-users">Get Ome Users</a></li>
+
 <li><a href="#get-report-list">Get Report List</a></li>
 
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
@@ -1098,6 +1100,29 @@ PS C:\>$cred = Get-Credential
 
     PS C:\>.\Get-IdentityPoolUsage.ps1 -IpAddress "10.xx.xx.xx" -Id 3 -OutFile C:\Temp\export.csv
     In this instance you will be prompted for credentials to use
+
+```
+
+
+---
+### Get Ome Users
+
+#### Available Scripts
+
+- [Get-OmeUsers.ps1](../Core/PowerShell/Get-OmeUsers.ps1)
+
+
+#### Synopsis
+Retrieve a list of users from OME.
+#### Description
+This script uses the OME REST API to retrieve a list of users from OME.
+
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Get-OmeUsers.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
 
 ```
 
