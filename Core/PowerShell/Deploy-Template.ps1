@@ -20,7 +20,7 @@ limitations under the License.
  .SYNOPSIS
    Script to deploy template
  .DESCRIPTION
-    This script uses the OME REST API to depoy template.
+    This script uses the OME REST API to deploy a template.
     Note that the credentials entered are not stored to disk.
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -36,12 +36,12 @@ limitations under the License.
       Component to clone from source device. 
  .EXAMPLE
    $cred = Get-Credential
-   .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
     In this instance you will be prompted for credentials.
     .EXAMPLE
    $cred = Get-Credential
-   .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -SourceId 25527 -GroupId 1010 -Component iDRAC
     In this instance you will be prompted for credentials.
 #>

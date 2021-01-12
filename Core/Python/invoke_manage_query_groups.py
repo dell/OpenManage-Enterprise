@@ -66,11 +66,11 @@ Deletes a group with the name "Some Group"
 
 import argparse
 import json
-from getpass import getpass
 import sys
 import warnings
-from urllib.parse import urlparse
+from getpass import getpass
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

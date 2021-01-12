@@ -18,6 +18,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#add-members">Add Members</a></li>
 
+<li><a href="#deploy-template">Deploy Template</a></li>
+
 <li><a href="#edit-discovery-job">Edit Discovery Job</a></li>
 
 <li><a href="#invoke-discover-device">Invoke Discover Device</a></li>
@@ -31,8 +33,6 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <li><a href="#new-static-group">New Static Group</a></li>
 
 <li><a href="#set-power-state">Set Power State</a></li>
-
-<li><a href="#set-system-configuration">Set System Configuration</a></li>
 
 </ul>
 <li><a href="#update-scripts">Update Scripts</a></li>
@@ -167,6 +167,61 @@ PS C:\>$cred = Get-Credential
     .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
     In this instance you will be prompted for credentials to use to
     connect to the appliance
+
+```
+
+
+---
+### Deploy Template
+
+#### Available Scripts
+
+- [deploy_template.py](../Core/Python/deploy_template.py)
+
+- [Deploy-Template.ps1](../Core/PowerShell/Deploy-Template.ps1)
+
+
+#### Synopsis
+Script to perform template deployment with or without identity pools on the target devices.
+
+#### Description:
+This script performs template deployment with or without an associated identity pool. Limitations:
+
+- Currently the script only supports servers. It does not support chassis or IO modules. If this is something you would like please let us known by leaving an issue at https://github.com/dell/OpenManage-Enterprise/issues.
+- The script does not provide an interface for changing the values in the identity pool. If you want to change the default values see the variable `identity_pool_payload`. You may update the values there
+- The script allows you to either templatize all values from a target or only one value. We did not add the ability to include arrays. If this is something you would like feel free to open an issue and let us know at https://github.com/dell/OpenManage-Enterprise/issues
+    - iDRAC
+    - BIOS
+    - System
+    - NIC
+    - Lifecycle Controller
+    - RAID
+    - EventFilters
+    - Fiber Channel
+    - All
+
+*WARNING*: To use identity pools the template must include NICs.
+
+Note: The PowerShell version of this code has not been tested in some time. We suggest using the Python version. If an
+update to the PowerShell version is a high priority to you please leave an issue at
+https://github.com/dell/OpenManage-Enterprise/issues
+
+#### Python Example
+    python deploy_template.py --ip 192.168.1.93 --password I.am.ghost.47 --source-idrac-ip 192.168.1.10 --idrac-ips 192.168.1.45 --use-identity-pool
+
+
+#### PowerShell Example
+```
+PS C:\>$cred = Get-Credential
+    .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
+     In this instance you will be prompted for credentials.
+    
+
+    PS C:\>$cred = Get-Credential
+    .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+     $cred -SourceId 25527 -GroupId 1010 -Component iDRAC
+     In this instance you will be prompted for credentials.
 
 ```
 
@@ -310,7 +365,7 @@ Get a listing of devices in the group TestGroup and their characteristics
 invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --get-group-filters TestGroup
 Get a listing of all the filters used by TestGroup
 
-invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --create y --groupname "Grant Group" --description "query created using python OME script" --fid 238 --comparison-values 151 --oid 1
+invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --create "Grant Group" --description "query created using python OME script" --fid 238 --comparison-values 151 --oid 1
 Create a group called Grant Group which looks for devices equal to (1) sub-type (238) compellent storage (151)
 
 invoke_manage_query_groups.py --ip 192.168.0.120 -u admin -p admin --fid 231,229 --oid 1,1 --comparison-fields AAAAAAA,1000 --loid 2,2 --create "Service Tag or Normal Status"
@@ -489,43 +544,6 @@ PS C:\>$cred = Get-Credential
     .\Set-PowerState.ps1 -IpAddress "10.xx.xx.xx" -Credentials
      $cred -DeviceId 25527  -State {state}
      where {state} can be on/off/warm boot/cold boot/shutdown
-
-```
-
-
----
-### Set System Configuration
-
-#### Available Scripts
-
-- [set_system_configuration.py](../Core/Python/set_system_configuration.py)
-
-- [Set-SystemConfiguration.ps1](../Core/PowerShell/Set-SystemConfiguration.ps1)
-
-
-#### Synopsis
-Script to perform template deployment on the target devices.
-
-#### Description:
-This script performs template deployment. Note that the credentials entered are not stored to disk.
-
-#### Python Example
-`python set_system_configuration.py --ip <ip addr> --user admin
-    --password <passwd> --sourceid <10089> --targetid/--groupid <10081>`
-
-
-#### PowerShell Example
-```
-PS C:\>$cred = Get-Credential
-    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
-     In this instance you will be prompted for credentials.
-    
-
-    PS C:\>$cred = Get-Credential
-    .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -SourceId 25527 -GroupId 1010 -Component iDRAC
-     In this instance you will be prompted for credentials.
 
 ```
 
