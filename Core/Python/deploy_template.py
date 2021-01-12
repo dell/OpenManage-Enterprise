@@ -25,7 +25,7 @@ This script performs template deployment with or without an associated identity 
 
 - Currently the script only supports servers. It does not support chassis or IO modules. If this is something you would like please let us known by leaving an issue at https://github.com/dell/OpenManage-Enterprise/issues.
 - The script does not provide an interface for changing the values in the identity pool. If you want to change the default values see the variable `identity_pool_payload`. You may update the values there
-- The script allows you to either templatize all values from a target or only one value. We did not add the ability to include arrays. If this is something you would like feel free to open an issue and let us know at https://github.com/dell/OpenManage-Enterprise/issues
+- The script allows you to either templatize all values from a target or only one value. Possible values are listed below. We did not add the ability to include arrays. If this is something you would like feel free to open an issue and let us know at https://github.com/dell/OpenManage-Enterprise/issues
     - iDRAC
     - BIOS
     - System
