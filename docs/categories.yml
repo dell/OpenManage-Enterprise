@@ -76,6 +76,8 @@ monitor:
   get_identitypool_usage:
     - get_identitypool_usage.py
     - Get-IdentityPoolUsage.ps1
+  get_ome_users:
+    - Get-OmeUsers.ps1
   get_report_list:
     - get_report_list.py
     - Get-ReportList.ps1
