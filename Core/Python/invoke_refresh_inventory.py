@@ -238,43 +238,49 @@ def track_job_to_completion(ome_ip_address: str,
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
-        job_resp = requests.get(job_url, headers=authenticated_headers, verify=False)
+        job_resp = get_data(authenticated_headers, job_url)
+        requests.get(job_url, headers=authenticated_headers, verify=False)
 
-        if job_resp.status_code == 200:
-            job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            job_status_str = job_status_map[job_status]
-            print("Iteration %s: Status of %s is %s" % (loop_ctr, tracked_job_id, job_status_str))
+        try:
+            if job_resp.status_code == 200:
+                job_status = str((job_resp.json())['LastRunStatus']['Id'])
+                job_status_str = job_status_map[job_status]
+                print("Iteration %s: Status of %s is %s" % (loop_ctr, tracked_job_id, job_status_str))
 
-            if int(job_status) == 2060:
-                job_incomplete = False
-                print("Job completed successfully!")
-                break
-            elif int(job_status) in failed_job_status:
-                job_incomplete = True
+                if int(job_status) == 2060:
+                    job_incomplete = False
+                    print("Job completed successfully!")
+                    break
+                elif int(job_status) in failed_job_status:
+                    job_incomplete = True
 
-                if job_status_str == "Warning":
-                    print("Completed with errors")
-                else:
-                    print("Error: Job failed.")
-
-                job_hist_url = str(job_url) + "/ExecutionHistories"
-                job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
-
-                if job_hist_resp.status_code == 200:
-                    # Get the job's execution details
-                    job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
-                    execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
-                    job_hist_det_url = str(job_hist_url) + execution_hist_detail
-                    job_hist_det_resp = requests.get(job_hist_det_url,
-                                                     headers=authenticated_headers,
-                                                     verify=False)
-                    if job_hist_det_resp.status_code == 200:
-                        pprint(job_hist_det_resp.json()['value'])
+                    if job_status_str == "Warning":
+                        print("Completed with errors")
                     else:
-                        print("Unable to parse job execution history... exiting")
-                break
-        else:
-            print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
+                        print("Error: Job failed.")
+
+                    job_hist_url = str(job_url) + "/ExecutionHistories"
+                    job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
+
+                    if job_hist_resp.status_code == 200:
+                        # Get the job's execution details
+                        job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
+                        execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
+                        job_hist_det_url = str(job_hist_url) + execution_hist_detail
+                        job_hist_det_resp = requests.get(job_hist_det_url,
+                                                         headers=authenticated_headers,
+                                                         verify=False)
+                        if job_hist_det_resp.status_code == 200:
+                            pprint(job_hist_det_resp.json()['value'])
+                        else:
+                            print("Unable to parse job execution history... exiting")
+                    break
+            else:
+                print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
+        except AttributeError:
+            print("There was a problem getting the job info during the wait. Full error details:")
+            pprint(job_resp.json())
+            return False
 
     if job_incomplete:
         print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, max_retries))

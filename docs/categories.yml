@@ -10,6 +10,9 @@ deploy:
   add_members:
     - add_members.py
     - Add-Members.ps1
+  deploy_template:
+    - deploy_template.py
+    - Deploy-Template.ps1
   edit_discovery_job:
     - edit_discovery_job.py
     - Edit-DiscoveryJob.ps1
@@ -30,9 +33,6 @@ deploy:
   set_power_state:
     - set_power_state.py
     - Set-PowerState.ps1
-  set_system_configuration:
-    - set_system_configuration.py
-    - Set-SystemConfiguration.ps1
 update:
   invoke_refresh_inventory:
     - invoke_refresh_inventory.py

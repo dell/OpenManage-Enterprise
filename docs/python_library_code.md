@@ -340,3 +340,26 @@ Track a job and wait for it to complete before continuing.
             return False
 
         return True
+
+## Pattern for Getting a Group's ID and a List of Devices in the Group
+This is typically used with the ID pattern to populate a target list.
+
+    group_url = "https://%s/api/GroupService/Groups" % args.ip
+    
+    group_data = get_data(headers, group_url, 
+                          "Name eq '%s'" % args.groupname)
+    
+    if len(group_data) < 1:
+        print("No groups were found with name " + args.groupname)
+        sys.exit(0)
+
+    print("Found group " + group_data[0]['Name'] + "!")
+
+    group_devices = get_data(headers, group_url + "(%s)/Devices" % group_data[0]['Id'])
+
+    if len(group_devices) < 1:
+        print("Error: There was a problem retrieving the devices for group " + args.groupname + ". Exiting")
+        sys.exit(0)
+
+    for device in group_devices:
+        target_ids.append(device['Id'])
