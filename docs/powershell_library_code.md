@@ -4,7 +4,7 @@
 
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
 
-        function Get-Data {
+    function Get-Data {
         <#
         .SYNOPSIS
             Used to interact with API resources
@@ -47,69 +47,69 @@ This is used to perform any sort of interaction with a REST API resource. It inc
             $MaxPages = $null
         )
 
-            $Data = @()
-            $NextLinkUrl = $null
-            try {
+        $Data = @()
+        $NextLinkUrl = $null
+        try {
 
-                if ($PSBoundParameters.ContainsKey('OdataFilter')) {
-                $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+            if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+            $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
 
-                if ($CountData.'@odata.count' -lt 1) {
-                    Write-Error "No results were found for filter $($OdataFilter)."
-                    return @{}
-                } 
-                }
-                else {
-                $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
-                    -SkipCertificateCheck
-                }
-
-                if ($null -ne $CountData.'value') {
-                $Data += $CountData.'value'
-                }
-                else {
-                $Data += $CountData
-                }
-                
-                if ($CountData.'@odata.nextLink') {
-                $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
-                }
-
-                $i = 1
-                while ($NextLinkUrl) {
-                if ($MaxPages) {
-                    if ($i -ge $MaxPages) {
-                    break
-                    }
-                    $i = $i + 1
-                }
-                $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
-                    -ContentType $Type -SkipCertificateCheck
-                    
-                if ($null -ne $NextLinkData.'value') {
-                    $Data += $NextLinkData.'value'
-                }
-                else {
-                    $Data += $NextLinkData
-                }    
-                    
-                if ($NextLinkData.'@odata.nextLink') {
-                    $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                }
-                else {
-                    $NextLinkUrl = $null
-                }
-                }
-            
-                return $Data
-
-            }
-            catch [System.Net.Http.HttpRequestException] {
-                Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+            if ($CountData.'@odata.count' -lt 1) {
+                Write-Error "No results were found for filter $($OdataFilter)."
                 return @{}
+            } 
             }
+            else {
+            $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+                -SkipCertificateCheck
+            }
+
+            if ($null -ne $CountData.'value') {
+            $Data += $CountData.'value'
+            }
+            else {
+            $Data += $CountData
+            }
+            
+            if ($CountData.'@odata.nextLink') {
+            $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+            }
+
+            $i = 1
+            while ($NextLinkUrl) {
+            if ($MaxPages) {
+                if ($i -ge $MaxPages) {
+                break
+                }
+                $i = $i + 1
+            }
+            $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
+                -ContentType $Type -SkipCertificateCheck
+                
+            if ($null -ne $NextLinkData.'value') {
+                $Data += $NextLinkData.'value'
+            }
+            else {
+                $Data += $NextLinkData
+            }    
+                
+            if ($NextLinkData.'@odata.nextLink') {
+                $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+            }
+            else {
+                $NextLinkUrl = $null
+            }
+            }
+        
+            return $Data
 
         }
+        catch [System.Net.Http.HttpRequestException] {
+            Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+            return @{}
+        }
+
+    }
 
 ## Resolve a device to its ID
 
