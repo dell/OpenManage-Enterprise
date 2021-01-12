@@ -211,7 +211,7 @@ update to the PowerShell version is a high priority to you please leave an issue
 https://github.com/dell/OpenManage-Enterprise/issues
 
 #### Python Example
-    python deploy_template.py --ip 192.168.1.93 --password I.am.ghost.47 --source-idrac-ip 192.168.1.10 --idrac-ips 192.168.1.45 --use-identity-pool
+    python deploy_template.py --ip 192.168.1.93 --password PASSWORD --source-idrac-ip 192.168.1.10 --idrac-ips 192.168.1.45 --use-identity-pool
 
 
 #### PowerShell Example
