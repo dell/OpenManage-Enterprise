@@ -10,6 +10,9 @@ deploy:
   add_members:
     - add_members.py
     - Add-Members.ps1
+  copy_vlans:
+    - copy_vlans.py
+    - Copy-Vlans.ps1
   deploy_template:
     - deploy_template.py
     - Deploy-Template.ps1
