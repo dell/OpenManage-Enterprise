@@ -18,6 +18,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#add-members">Add Members</a></li>
 
+<li><a href="#copy-vlans">Copy Vlans</a></li>
+
 <li><a href="#deploy-template">Deploy Template</a></li>
 
 <li><a href="#edit-discovery-job">Edit Discovery Job</a></li>
@@ -171,6 +173,58 @@ PS C:\>$cred = Get-Credential
     .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
     In this instance you will be prompted for credentials to use to
     connect to the appliance
+
+```
+
+
+---
+### Copy Vlans
+
+#### Available Scripts
+
+- [copy_vlans.py](../Core/Python/copy_vlans.py)
+
+- [Copy-Vlans.ps1](../Core/PowerShell/Copy-Vlans.ps1)
+
+
+#### Synopsis
+Copies all VLANs from one OME instance to another
+
+#### Description:
+This script expects input in JSON format with two entries. The first should be a json array of dictionaries called
+targets identifying the OME instances to which you want to push VLANs and the second is a single dictionary defining
+the source instance. Example:
+
+{
+    "target": [
+        {
+            "ip": "100.97.173.67",
+            "port": "443",
+            "user_name": "admin",
+            "password": "your_password"
+        },
+        {
+            "ip": "100.97.173.61",
+            "port": "443",
+            "user_name": "admin",
+            "password": "your_password"
+        }
+    ],
+    "source": {
+        "ip": "100.97.173.76",
+        "port": "443",
+        "user_name": "admin",
+        "password": "your_password"
+    }
+}
+
+#### Python Example
+    python copy_vlans.py --inputs <JSON_FILE_NAME>
+
+
+#### PowerShell Example
+```
+PS C:\>.\Copy-Vlans.ps1' -inputs test.json
 
 ```
 
