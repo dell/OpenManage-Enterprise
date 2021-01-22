@@ -117,94 +117,94 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
 
 **WARNING** Relies on Get-Data
 
-        function Get-DeviceId {
-            <#
-            .SYNOPSIS
-            Resolves a service tag, idrac IP or device name to a device ID
+    function Get-DeviceId {
+        <#
+        .SYNOPSIS
+        Resolves a service tag, idrac IP or device name to a device ID
 
-            .PARAMETER OmeIpAddress
-            IP address of the OME server
+        .PARAMETER OmeIpAddress
+        IP address of the OME server
 
-            .PARAMETER ServiceTag
-            (Optional) The service tag of a host
+        .PARAMETER ServiceTag
+        (Optional) The service tag of a host
 
-            .PARAMETER DeviceIdracIp
-            (Optional) The idrac IP of a host
+        .PARAMETER DeviceIdracIp
+        (Optional) The idrac IP of a host
 
-            .PARAMETER DeviceName
-            (Optional) The name of a host
+        .PARAMETER DeviceName
+        (Optional) The name of a host
 
-            .OUTPUTS
-            int. The output is the ID of the device fed into the function or -1 if it couldn't be found.
+        .OUTPUTS
+        int. The output is the ID of the device fed into the function or -1 if it couldn't be found.
 
-            #>
+        #>
+    
+        [CmdletBinding()]
+        param (
+
+            [Parameter(Mandatory)]
+            [System.Net.IPAddress]
+            $OmeIpAddress,
+
+            [Parameter(Mandatory = $false)]
+            [parameter(ParameterSetName = "ServiceTag")]
+            [string]
+            $ServiceTag,
+
+            [Parameter(Mandatory = $false)]
+            [parameter(ParameterSetName = "DeviceIdracIp")]
+
+            [System.Net.IPAddress]
+            $DeviceIdracIp,
+
+            [Parameter(Mandatory = $false)]
+            [parameter(ParameterSetName = "DeviceName")]
+            [System.Net.IPAddress]
+            $DeviceName
+        )
+
+        $DeviceId = -1
         
-            [CmdletBinding()]
-            param (
+        if ($PSBoundParameters.ContainsKey('DeviceName')) {
+            $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceName eq `'$($DeviceName)`'"
 
-                [Parameter(Mandatory)]
-                [System.Net.IPAddress]
-                $OmeIpAddress,
-
-                [Parameter(Mandatory = $false)]
-                [parameter(ParameterSetName = "ServiceTag")]
-                [string]
-                $ServiceTag,
-
-                [Parameter(Mandatory = $false)]
-                [parameter(ParameterSetName = "DeviceIdracIp")]
-
-                [System.Net.IPAddress]
-                $DeviceIdracIp,
-
-                [Parameter(Mandatory = $false)]
-                [parameter(ParameterSetName = "DeviceName")]
-                [System.Net.IPAddress]
-                $DeviceName
-            )
-
-            $DeviceId = -1
-            
-            if ($PSBoundParameters.ContainsKey('DeviceName')) {
-                $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceName eq `'$($DeviceName)`'"
-
-                if ($null -eq $DeviceId) {
-                    Write-Output "Error: We were unable to find device name $($DeviceName) on this OME server. Exiting."
-                    Exit
-                }
-                else {
-                    $DeviceId = $DeviceId.'Id'
-                }
+            if ($null -eq $DeviceId) {
+                Write-Output "Error: We were unable to find device name $($DeviceName) on this OME server. Exiting."
+                Exit
             }
-
-            if ($PSBoundParameters.ContainsKey('ServiceTag')) {
-                $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceServiceTag eq `'$($ServiceTag)`'"
-
-                if ($null -eq $DeviceId) {
-                    Write-Output "Error: We were unable to find service tag $($ServiceTag) on this OME server. Exiting."
-                    Exit
-                }
-                else {
-                    $DeviceId = $DeviceId.'Id'
-                }
+            else {
+                $DeviceId = $DeviceId.'Id'
             }
-
-            if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
-                $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
-                foreach ($Device in $DeviceList) {
-                    if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $DeviceIdracIp) {
-                        $DeviceId = $Device."Id"
-                        break
-                    }
-                }
-
-                if ($DeviceId -eq 0) {
-                    throw "Error: We were unable to find idrac IP $($IdracIp) on this OME server. Exiting."
-                }
-            }
-
-            return $DeviceId
         }
+
+        if ($PSBoundParameters.ContainsKey('ServiceTag')) {
+            $DeviceId = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices" "DeviceServiceTag eq `'$($ServiceTag)`'"
+
+            if ($null -eq $DeviceId) {
+                Write-Output "Error: We were unable to find service tag $($ServiceTag) on this OME server. Exiting."
+                Exit
+            }
+            else {
+                $DeviceId = $DeviceId.'Id'
+            }
+        }
+
+        if ($PSBoundParameters.ContainsKey('DeviceIdracIp')) {
+            $DeviceList = Get-Data "https://$($OmeIpAddress)/api/DeviceService/Devices"
+            foreach ($Device in $DeviceList) {
+                if ($Device.'DeviceManagement'[0].'NetworkAddress' -eq $DeviceIdracIp) {
+                    $DeviceId = $Device."Id"
+                    break
+                }
+            }
+
+            if ($DeviceId -eq 0) {
+                throw "Error: We were unable to find idrac IP $($IdracIp) on this OME server. Exiting."
+            }
+        }
+
+        return $DeviceId
+    }
 
 ### Helpful device ID pattern 
 You frequently not only want to resolve device IDs, but check the output and then add the device IDs to a list of IDs. Below is a common pattern for this behavior.
@@ -271,88 +271,111 @@ Track a job and wait for it to complete before continuing.
 **WARNING** Relies on Get-Data
 
 
-        function Invoke-TrackJobToCompletion {
-            <#
-            .SYNOPSIS
-            Tracks a job to either completion or a failure within the job.
+    function Invoke-TrackJobToCompletion {
+        <#
+        .SYNOPSIS
+        Tracks a job to either completion or a failure within the job.
 
-            .PARAMETER OmeIpAddress
-            The IP address of the OME server
+        .PARAMETER OmeIpAddress
+        The IP address of the OME server
 
-            .PARAMETER JobId
-            The ID of the job which you would like to track
+        .PARAMETER JobId
+        The ID of the job which you would like to track
 
-            .PARAMETER MaxRetries
-            (Optional) The maximum number of times the function should contact the server to see if the job has completed
+        .PARAMETER MaxRetries
+        (Optional) The maximum number of times the function should contact the server to see if the job has completed
 
-            .PARAMETER SleepInterval
-            (Optional) The frequency with which the function should check the server for job completion
+        .PARAMETER SleepInterval
+        (Optional) The frequency with which the function should check the server for job completion
 
-            .OUTPUTS
-            True if the job completed successfully or completed with errors. Returns false if the job failed.
+        .OUTPUTS
+        True if the job completed successfully or completed with errors. Returns false if the job failed.
 
-            #>
+        #>
 
-            [CmdletBinding()]
-            param (
+        [CmdletBinding()]
+        param (
 
-                [Parameter(Mandatory)]
-                [System.Net.IPAddress]
-                $OmeIpAddress,
+            [Parameter(Mandatory)]
+            [System.Net.IPAddress]
+            $OmeIpAddress,
 
-                [Parameter(Mandatory)]
-                [int]
-                $JobId,
+            [Parameter(Mandatory)]
+            [int]
+            $JobId,
 
-                [Parameter(Mandatory = $false)]
-                [int]
-                $MaxRetries = 20,
+            [Parameter(Mandatory = $false)]
+            [int]
+            $MaxRetries = 20,
 
-                [Parameter(Mandatory = $false)]
-                [int]
-                $SleepInterval = 60
-            )
+            [Parameter(Mandatory = $false)]
+            [int]
+            $SleepInterval = 60
+        )
 
-            $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
-            $Ctr = 0
-            do {
-                $Ctr++
-                Start-Sleep -Seconds $SleepInterval
-                $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
-                $JobData = Get-Data $JOBSVCURL
+        $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+        $Ctr = 0
+        do {
+            $Ctr++
+            Start-Sleep -Seconds $SleepInterval
+            $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
+            $JobData = Get-Data $JOBSVCURL
 
-                if ($null -eq $JobData) {
-                    Write-Error "Something went wrong tracking the job data. 
-                    Try checking jobs in OME to see if the job is running."
-                    return $false
-                }
-
-                $JobStatus = $JobData.LastRunStatus.Name
-                Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JobStatus)"
-                if ($JobStatus -eq 'Completed') {
-                    ## Completed successfully
-                    Write-Host "Job completed successfully!"
-                    break
-                }
-                elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
-                    Write-Warning "Job failed"
-                    $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
-                    $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
-                    $HistoryId = $ExecRespInfo.value[0].Id
-                    $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
-                                                    -ContentType $Type -Credential $Credentials -SkipCertificateCheck
-                    Write-Host "------------------- ERROR -------------------"
-            Write-Host $HistoryResp.value
-            Write-Host "------------------- ERROR -------------------"
-                    return $false
-                }
-                else { continue }
-            } until ($Ctr -ge $MaxRetries)
-
-            if ($Ctr -ge $MaxRetries) {
-              Write-Warning "Job exceeded max retries! Check OME for details on what has hung."
-              return $false
+            if ($null -eq $JobData) {
+                Write-Error "Something went wrong tracking the job data. 
+                Try checking jobs in OME to see if the job is running."
+                return $false
             }
 
-            return $true
+            $JobStatus = $JobData.LastRunStatus.Name
+            Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JobStatus)"
+            if ($JobStatus -eq 'Completed') {
+                ## Completed successfully
+                Write-Host "Job completed successfully!"
+                break
+            }
+            elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
+                Write-Warning "Job failed"
+                $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
+                $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
+                $HistoryId = $ExecRespInfo.value[0].Id
+                $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
+                                                -ContentType $Type -Credential $Credentials -SkipCertificateCheck
+                Write-Host "------------------- ERROR -------------------"
+        Write-Host $HistoryResp.value
+        Write-Host "------------------- ERROR -------------------"
+                return $false
+            }
+            else { continue }
+        } until ($Ctr -ge $MaxRetries)
+
+        if ($Ctr -ge $MaxRetries) {
+            Write-Warning "Job exceeded max retries! Check OME for details on what has hung."
+            return $false
         }
+
+        return $true
+    }
+
+## Working with CSVs
+
+### Writing a CSV to a File Share
+
+  if ($PSBoundParameters.ContainsKey('Share')) {
+    $Share = $Share.TrimEnd('\')
+    New-SmbMapping -RemotePath $Share -Username $Credentials.UserName -Password $Credentials.Password
+    $AuditLogs | Export-Csv -LiteralPath "$($Share)\$(get-date -f yyyy-MM-dd).csv"
+  }
+  else {
+    Write-Output $AuditLogs
+  }
+
+### Writing an Array of Hashtables to a CSV File
+
+    $DevicePowerStates | Export-Csv -Path $CsvFile -NoTypeInformation
+    # Using $( foreach ($x in $a) {} ) | Export-Csv
+    $(Foreach($Device in $DevicePowerStates){
+        New-object psobject -Property $Device
+    }) | Export-Csv test.csv
+
+See [this StackOverflow link](https://stackoverflow.com/questions/11173795/powershell-convert-array-of-hastables-into-csv)

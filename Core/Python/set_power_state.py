@@ -423,7 +423,7 @@ if __name__ == '__main__':
                                                   " change.")
     parser.add_argument("--device-names", "-n", help="A comma separated list of device names whose power state you want"
                                                      " to change.")
-    parser.add_argument("--csv-file", required=False, help="Optional. If you want to write the output to an CSV you"
+    parser.add_argument("--csv-file", required=False, help="Optional. If you want to write the output to a CSV you"
                                                            " can use this.")
     parser.add_argument("--state", required=True,
                         choices=("POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL",
@@ -432,7 +432,7 @@ if __name__ == '__main__':
     if not args.password:
         args.password = getpass()
 
-    POWER_STATE_MAPPING = {
+    POWER_CONTROL_STATE_MAP = {
         "Power On": "2",
         "Power Cycle": "5",
         "Power Off Non-Graceful": "8",
@@ -508,19 +508,19 @@ if __name__ == '__main__':
             sys.exit(0)
 
         if args.state == 'POWER_ON':
-            power_state = POWER_STATE_MAPPING["Power On"]
+            power_state = POWER_CONTROL_STATE_MAP["Power On"]
             print("Powering on servers...")
         elif args.state == 'POWER_CYCLE':
-            power_state = POWER_STATE_MAPPING["Power Cycle"]
+            power_state = POWER_CONTROL_STATE_MAP["Power Cycle"]
             print("Power cycling servers...")
         elif args.state == 'POWER_OFF_NON_GRACEFUL':
-            power_state = POWER_STATE_MAPPING["Power Off Non-Graceful"]
+            power_state = POWER_CONTROL_STATE_MAP["Power Off Non-Graceful"]
             print("Non-gracefully shutting down servers...")
         elif args.state == 'MASTER_BUS_RESET':
-            power_state = POWER_STATE_MAPPING["Master Bus Reset"]
+            power_state = POWER_CONTROL_STATE_MAP["Master Bus Reset"]
             print("Performing a master bus reset on the servers...")
         elif args.state == 'POWER_OFF_GRACEFUL':
-            power_state = POWER_STATE_MAPPING["Power Off Graceful"]
+            power_state = POWER_CONTROL_STATE_MAP["Power Off Graceful"]
             print("Performing a graceful shutdown on the servers...")
         else:
             power_state = -1
