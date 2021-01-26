@@ -831,6 +831,7 @@ Try {
             }
 
             $Targets = @()
+            $Failures = 0
             if ($JobInfo.count -gt 0) {
                 foreach ($HostDevice in $JobInfo) {
                     try {
@@ -839,6 +840,7 @@ Try {
                             $Targets += [uint32]$Target
                         }
                         else {
+                            $Failures += 1
                             Write-Warning "Device $($HostDevice.'Key') was part of your discovery job, but was not successfully discovered. We are not adding it to the group."
                         }
                     }
@@ -847,6 +849,8 @@ Try {
                     }
                 }
             }
+
+            Write-Host "Successfully discovered $($Targets.count) devices successfully! There were $($Failures) failures."
 
             $GroupPayload = @{
                 GroupId         = [uint32]$GroupId
@@ -857,7 +861,7 @@ Try {
                 Invoke-RestMethod -Uri "https://$($IpAddress)/api/GroupService/Actions/GroupService.AddMemberDevices" `
                     -Method POST -ContentType $Type -Body $GroupPayload -Credential $Credentials `
                     -SkipCertificateCheck
-                Write-Host "Devices added sucessfully!"
+                Write-Host "Added $($Targets.count) devices successfully!"
             }
             catch [System.Net.Http.HttpRequestException] {
                 Write-Error "Adding the devices to the group failed. This usually means that some of those devices were already in the group. Devices that were not already in the group will have populated. You can check OME for confirmation."
