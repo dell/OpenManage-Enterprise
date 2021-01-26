@@ -630,9 +630,8 @@ where {state} can be "POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF
 #### PowerShell Example
 ```
 PS C:\>$cred = Get-Credential
-    .\Set-PowerState.ps1 -IpAddress "10.xx.xx.xx" -Credentials
-     $cred -DeviceId 25527  -State {state}
-     where {state} can be on/off/warm boot/cold boot/shutdown
+    .\Set-PowerState.ps1 -IpAddress 192.168.1.93 -Credentials $creds -IdracIps 192.168.1.63 -State POWER_ON -CsvFile 
+    test.csv
 
 ```
 
