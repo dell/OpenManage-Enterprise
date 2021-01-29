@@ -1,11 +1,10 @@
 #
-#  Python script using OpenManage Enterprise API to get Power Manager specific Device and Group Reports (Pre-Canned & Custom) in OpenManage Enterprise.
+# Python script using OpenManage Enterprise API to get Power Manager specific Device and Group Reports (Pre-Canned & Custom) in OpenManage Enterprise.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,7 +77,7 @@ def get_power_manager_reports(ip_address, user_name, password):
     try:
         
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
 
         # Define Payload for posting session API
@@ -87,8 +86,8 @@ def get_power_manager_reports(ip_address, user_name, password):
                         'SessionType': 'API'}
         
         # Define the report URL for Device & Group separately
-        device_reports_url = "https://%s/api/ReportService/ReportDefs?$filter=contains(Category,'Power Manager Devices')" % (ip_address)
-        group_reports_url = "https://%s/api/ReportService/ReportDefs?$filter=contains(Category,'Power Manager Groups')" % (ip_address)
+        device_reports_url = "https://%s/api/ReportService/ReportDefs?$filter=contains(Category,'Power Manager Devices')" % ip_address
+        group_reports_url = "https://%s/api/ReportService/ReportDefs?$filter=contains(Category,'Power Manager Groups')" % ip_address
         
         # Defining OUTPUT format
         output_column_headers = ['Report_ID', 'Report_Name', 'Is_Pre-Canned_or_Custom?', 'Last_Edited_By', 'Last_Run_By', 'Last_Run_Duration', 'Last_Run_Date']
@@ -107,13 +106,13 @@ def get_power_manager_reports(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
         
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -127,19 +126,19 @@ def get_power_manager_reports(ip_address, user_name, password):
                 if 'error' in device_reports_json_data:
                     error_content = device_reports_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager Device Reports from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager Device Reports from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager Device Reports from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager Device Reports from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager Device Reports from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager Device Reports from %s" % ip_address)
             else:
                 device_reports_count = device_reports_json_data['@odata.count']
                 
                 #If the Device Reports count is 0, then error out immediately
                 if device_reports_count <= 0:
-                    print("No Power Manager Device Reports found in %s" % (ip_address))
+                    print("No Power Manager Device Reports found in %s" % ip_address)
                 else:
                     device_reports_content = json.loads(device_reports_response.content)
                     
@@ -156,7 +155,7 @@ def get_power_manager_reports(ip_address, user_name, password):
                         print("   =====================================")
                         print(table)
                     else:
-                        print("No Power Manager Device Reports found in %s" % (ip_address))
+                        print("No Power Manager Device Reports found in %s" % ip_address)
             
             #Get Group Report API call with OpenManage Enterprise
             group_reports_response = requests.get(group_reports_url, headers=headers, verify=False)
@@ -167,19 +166,19 @@ def get_power_manager_reports(ip_address, user_name, password):
                 if 'error' in group_reports_json_data:
                     error_content = group_reports_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager Group Reports from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager Group Reports from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager Group Reports from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager Group Reports from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager Group Reports from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager Group Reports from %s" % ip_address)
             else:
                 group_reports_count = group_reports_json_data['@odata.count']
                 
                 #If the group reports count is 0, then error out immediately
                 if group_reports_count <= 0:
-                    print("No Power Manager Group Reports found in %s" % (ip_address))
+                    print("No Power Manager Group Reports found in %s" % ip_address)
                 else:
                     group_reports_content = json.loads(group_reports_response.content)
                     
@@ -196,17 +195,16 @@ def get_power_manager_reports(ip_address, user_name, password):
                         print("   =====================================")
                         print(table)
                     else:
-                        print("No Power Manager Group Reports found in %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+                        print("No Power Manager Group Reports found in %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
+    args = parser.parse_args()
     
-    get_power_manager_reports(ARGS.ip, ARGS.username, ARGS.password)
+    get_power_manager_reports(args.ip, args.username, args.password)

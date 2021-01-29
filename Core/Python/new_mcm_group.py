@@ -1,9 +1,5 @@
 #
-#  Python script using OME-M APIs to create an MCM group,
-#  assign a backup lead and add all possible members to the
-#  created group
-#
-# Copyright (c) 2019 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,55 +12,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
 """
-SYNOPSIS
----------------------------------------------------------------------
- Script to create MCM group, add all members to the created group,
- and assign a backup lead
+#### Synopsis
+Script to create MCM group, add all members to the created group,
+and assign a backup lead
 
-DESCRIPTION
----------------------------------------------------------------------
- This script creates a MCM group, adds all standalone domains to the
- created group and assigns a member as backup lead.
+#### Description:
+This script creates a MCM group, adds all standalone domains to the
+created group and assigns a member as backup lead.
 
- Note:
- 1. Credentials entered are not stored to disk.
- 2. The value passed in by the user for the argument 'ip'
-    is set as the lead in the created MCM group
+Note:
+1. Credentials entered are not stored to disk.
+2. The value passed in by the user for the argument 'ip'
+is set as the lead in the created MCM group
 
-EXAMPLE
----------------------------------------------------------------------
-python create_mcm_group.py --ip <ip addr> --user root
-    --password <passwd> --groupname testgroup
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+    for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+    user name and password entered by user
+4. Create MCM group with given group name
+    with PUT on /ManagementDomainService
+5. Parse returned job id and monitor it to completion
+6. Add all standalone members to the created group
+    with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
+7. Parse returned job id and monitor it to completion
+8. Assign a random member as backup lead
+    with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
+9. Parse returned job id and monitor it to completion
 
-Creates MCM group, adds all standalone members and assign a member as
-backup lead
-
-API workflow is below:
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
-   for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
-   user name and password entered by user
-4: Create MCM group with given group name
-   with PUT on /ManagementDomainService
-5: Parse returned job id and monitor it to completion
-6: Add all standalone members to the created group
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
-7: Parse returned job id and monitor it to completion
-8: Assign a random member as backup lead
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
-9: Parse returned job id and monitor it to completion
+#### Python Example
+`python new_mcm_group.py --ip <ip addr> --user root --password <passwd> --groupname testgroup`
 """
 
 import argparse
-import requests
-import urllib3
-from argparse import RawTextHelpFormatter
 import random
 import time
-import sys
+from argparse import RawTextHelpFormatter
+from getpass import getpass
+
+import requests
+import urllib3
 
 
 class SessionManager:
@@ -163,7 +153,7 @@ def get_domains(session_manager):
         member_devices = list(filter(lambda x: x.get(
             'DomainRoleTypeValue') == 'MEMBER', member_devices))
     else:
-        print ('Failed to get domains and status code returned is %s', response.status_code)
+        print('Failed to get domains and status code returned is %s', response.status_code)
     return members
 
 
@@ -177,7 +167,7 @@ def get_discovered_domains(session_manager, role=None):
         if domains.get('@odata.count') > 0:
             discovered_domains = domains.get('value')
         else:
-            print ("No domains discovered ... Error")
+            print("No domains discovered ... Error")
     else:
         print('Failed to discover domains - Status Code %s')
     if role:
@@ -197,7 +187,8 @@ def add_all_members_via_lead(session_manager):
         for domain in standalone_domains:
             body.append({'GroupId': domain.get('GroupId')})
 
-        url = '{0}/ManagementDomainService/Actions/ManagementDomainService.Domains'.format(session_manager.get_base_url())
+        url = '{0}/ManagementDomainService/Actions/ManagementDomainService.Domains'.format(
+            session_manager.get_base_url())
         response = session.post(url, json=body, verify=False)
         if response.status_code == 200:
             response_data = response.json()
@@ -211,7 +202,8 @@ def add_all_members_via_lead(session_manager):
 
 
 def assign_backup_lead(session_manager):
-    url = '{0}/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead'.format(session_manager.get_base_url())
+    url = '{0}/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead'.format(
+        session_manager.get_base_url())
     session = session_manager.get_session()
     members = get_domains(session_manager)
     job_id = None
@@ -255,21 +247,21 @@ def get_job_status(session_manager, job_id):
     job_url = '{0}/JobService/Jobs({1})'.format(session_manager.get_base_url(), job_id)
     loop_ctr = 0
     job_incomplete = True
-    print ("Polling %s to completion ..." % job_id)
+    print("Polling %s to completion ..." % job_id)
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
         job_resp = session.get(job_url, verify=False)
         if job_resp.status_code == 200:
             job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            print ("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
+            print("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
             if int(job_status) == 2060:
                 job_incomplete = False
-                print ("Completed job successfully ... Exiting")
+                print("Completed job successfully ... Exiting")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
-                print ("Job failed ... ")
+                print("Job failed ... ")
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = session.get(job_hist_url, verify=False)
                 if job_hist_resp.status_code == 200:
@@ -277,32 +269,34 @@ def get_job_status(session_manager, job_id):
                     job_hist_det_url = str(job_hist_url) + "(" + job_history_id + ")/ExecutionHistoryDetails"
                     job_hist_det_resp = session.get(job_hist_det_url, verify=False)
                     if job_hist_det_resp.status_code == 200:
-                        print (job_hist_det_resp.text)
+                        print(job_hist_det_resp.text)
                     else:
-                        print ("Unable to parse job execution history .. Exiting")
+                        print("Unable to parse job execution history .. Exiting")
                 break
         else:
-            print ("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
+            print("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
     if job_incomplete:
-        print ("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
+        print("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="MSM IP")
-    PARSER.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for MSM")
-    PARSER.add_argument("--groupname", "-g", required=True, help="A valid name for the group")
-    ARGS = PARSER.parse_args()
-    base_url = 'https://{0}/api'.format(ARGS.ip)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="MSM IP")
+    parser.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
+    parser.add_argument("--password", "-p", required=False, help="Password for MSM")
+    parser.add_argument("--groupname", "-g", required=True, help="A valid name for the group")
+    args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
+
+    base_url = 'https://{0}/api'.format(args.ip)
 
     session_manager = SessionManager()
     session_manager.set_base_url(base_url)
     try:
-        if authenticate(session_manager, ARGS.user, ARGS.password):
-            job_id = create_mcm_group(session_manager, ARGS.groupname)
+        if authenticate(session_manager, args.user, args.password):
+            job_id = create_mcm_group(session_manager, args.groupname)
             if job_id:
                 print('Polling group creation ...')
                 get_job_status(session_manager, job_id)
@@ -322,5 +316,5 @@ if __name__ == '__main__':
                 print("Unable to track group creation .. Exiting")
         else:
             print('Unable to authenticate. Check IP/username/password')
-    except:
-        print ("Unexpected error:", sys.exc_info())
+    except Exception as error:
+        print("Unexpected error:", str(error))

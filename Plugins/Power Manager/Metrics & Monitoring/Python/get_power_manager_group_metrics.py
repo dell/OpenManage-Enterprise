@@ -1,11 +1,10 @@
 #
-#  Python script using OpenManage Enterprise API to get Power Manager Metrics for groups being monitored.
+# Python script using OpenManage Enterprise API to get Power Manager Metrics for groups being monitored.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,7 +95,7 @@ def get_power_manager_group_metrics(ip_address, user_name, password, groupID, me
     """ Authenticate with OpenManage Enterprise, get power manager Group metrics"""
     try:
         # Defining Session URL & headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -105,7 +104,7 @@ def get_power_manager_group_metrics(ip_address, user_name, password, groupID, me
                         'SessionType': 'API'}
         
         # Define metric URL
-        metric_url = "https://%s/api/MetricService/Metrics" % (ip_address)
+        metric_url = "https://%s/api/MetricService/Metrics" % ip_address
         
         # Payload for posting metric API
         metrics_payload = {"PluginId": "2F6D05BE-EE4B-4B0E-B873-C8D2F64A4625",
@@ -130,13 +129,13 @@ def get_power_manager_group_metrics(ip_address, user_name, password, groupID, me
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
             
@@ -150,13 +149,13 @@ def get_power_manager_group_metrics(ip_address, user_name, password, groupID, me
                 if 'error' in group_metric_json_data:
                     error_content = group_metric_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager metric from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager metric from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager metric from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager metric from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager metric from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager metric from %s" % ip_address)
             else:
                 group_metric_content = json.loads(group_metric_response.content)
                 
@@ -173,18 +172,17 @@ def get_power_manager_group_metrics(ip_address, user_name, password, groupID, me
                     print(table)
                 else:
                     print("No Power Manager Metrics for group ID -> %s collected in %s time window" % (groupID,duration_dictionary[int(duration)]))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
-    PARSER.add_argument("--groupID", "-id", required=True, help="ID of a Group <- Power Manager Metrics need to be fetched <- Mandatory")
-    PARSER.add_argument("--metricType", "-mt", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
+    parser.add_argument("--groupID", "-id", required=True, help="ID of a Group <- Power Manager Metrics need to be fetched <- Mandatory")
+    parser.add_argument("--metricType", "-mt", required=True,
                         help='''Metric Type to be fetched. Provide single metric type or multiple with comma separated <- Mandatory; See below supported Metric Types:
                         
     1	Maximum system power consumption
@@ -206,7 +204,7 @@ if __name__ == '__main__':
     17	Average IO utilization
     18	System Air Flow
                         ''')
-    PARSER.add_argument("--duration", "-d", required=False,
+    parser.add_argument("--duration", "-d", required=False,
                         help='''Duration of the period that the metrics being collected. <- Optional; default = 0; See below supported duration:
                         
     0	Recent
@@ -220,19 +218,19 @@ if __name__ == '__main__':
     8	Six Months
     9	One Year
                         ''', default=0)
-    PARSER.add_argument("--sort", "-s", required=False,
+    parser.add_argument("--sort", "-s", required=False,
                         help='''Duration of the period that the metrics being collected. <- Optional; default = 0; See below supported duration:
                         
     0	Descending
     1	Ascending
                         ''', default=0)
 
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
     
     mt_list=[]
-    if ARGS.metricType:
-        if "," in ARGS.metricType:
-            for i in ARGS.metricType.split(","):
+    if args.metricType:
+        if "," in args.metricType:
+            for i in args.metricType.split(","):
                 if not i.isdigit():
                     print("\n   !!! ERROR :: Wrong Metric Value Entered !!! \n  Please use --help/-h for proper metric value & try again")
                     exit()
@@ -243,22 +241,22 @@ if __name__ == '__main__':
                     else:
                         mt_list.append(int(i))
         else:
-            if not ARGS.metricType.isdigit():
+            if not args.metricType.isdigit():
                 print("\n   !!! ERROR :: Wrong Metric Value Entered !!! \n  Please use --help/-h for proper metric value & try again")
                 exit()
             else:
-                if int(ARGS.metricType) not in range(1,19):
+                if int(args.metricType) not in range(1,19):
                     print("\n   !!! ERROR :: Wrong Metric Value Entered !!! \n  Please use --help/-h for proper metric value & try again")
                     exit()
                 else:
-                    mt_list.append(int(ARGS.metricType))
+                    mt_list.append(int(args.metricType))
     
-    if ARGS.duration and int(ARGS.duration) not in range(0,10):
+    if args.duration and int(args.duration) not in range(0,10):
         print("\n   !!! ERROR :: Wrong Duration Value Entered !!! \n  Please use --help/-h for proper duration value & try again")
         exit()
     
-    if ARGS.sort and int(ARGS.sort) not in range(0,2):
+    if args.sort and int(args.sort) not in range(0,2):
         print("\n   !!! ERROR :: Wrong Sort Value Entered !!! \n  Please use --help/-h for proper sort value & try again")
         exit()
     
-    get_power_manager_group_metrics(ARGS.ip, ARGS.username, ARGS.password, ARGS.groupID, mt_list, ARGS.duration, ARGS.sort)
+    get_power_manager_group_metrics(args.ip, args.username, args.password, args.groupID, mt_list, args.duration, args.sort)

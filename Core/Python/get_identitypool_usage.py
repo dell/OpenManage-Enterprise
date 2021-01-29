@@ -1,11 +1,8 @@
 #
-#  Python script to get the list of virtual addresses in an Identity Pool
-#
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,34 +18,38 @@
 #
 
 """
-SYNOPSIS:
-   Script to get the list of virtual addresses in an Identity Pool
+#### Synopsis
+Script to get the list of virtual addresses in an Identity Pool
 
-DESCRIPTION:
-   This script exercises the OME REST API to get a list of virtual addresses in an Identity Pool.
-   Will export to a CSV file called IdentityPoolUsage.csv in the current directory. 
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
+Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
-   python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
+#### Python Example
+```bash
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
+python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
+```
 """
 
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
+import csv
 import json
+import os
+from argparse import RawTextHelpFormatter
+from getpass import getpass
+
 import requests
 import urllib3
-import os
-import csv
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 session_auth_token = {}
+
 
 def get_session(ip_address, user_name, password):
     session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
@@ -57,8 +58,8 @@ def get_session(ip_address, user_name, password):
                     'Password': password,
                     'SessionType': 'API'}
     session_info = requests.post(session_url, verify=False,
-                                    data=json.dumps(user_details),
-                                    headers=headers)
+                                 data=json.dumps(user_details),
+                                 headers=headers)
     if session_info.status_code == 201:
         session_info_token = session_info.headers['X-Auth-Token']
         session_info_data = session_info.json()
@@ -67,6 +68,7 @@ def get_session(ip_address, user_name, password):
             "id": session_info_data['Id']
         }
     return session_auth_token
+
 
 def delete_session(ip_address, headers, id):
     session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
@@ -168,14 +170,13 @@ def get_identitypool_usage(base_uri, headers, user_name, password, identitypool_
         print("Unable to retrieve list from %s" % (ip_address))
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--id", required=False,
+    parser.add_argument("--id", required=False,
                         help="Identity Pool Id")
     PARSER.add_argument("--out-file", "-o", required=False,
                         help="Full path to CSV file")

@@ -1,8 +1,7 @@
 <#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
-_version_ = 0.1
 
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +31,7 @@ limitations under the License.
 
  .EXAMPLE
    $cred = Get-Credential
-   .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+   .\Invoke-RetireLead.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
 
    In this instance you will be prompted for credentials to use to
    connect to the appliance
@@ -63,13 +62,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
-
-
-
 
 
 function Retire-Lead($IpAddress, $Headers) {
@@ -78,7 +74,7 @@ function Retire-Lead($IpAddress, $Headers) {
     $BackupLead = Get-BackupLead $IpAddress $Headers
     $JobId = 0
     $AssignBackupLeadRequired = 0
-    if ($null -eq $BackupLead){
+    if ($null -eq $BackupLead) {
         $AssignBackupLeadRequired = 1
         Write-Host "No backup lead found. Assigning backup lead"
         $JobId = Assign-BackupLead $IpAddress $Headers
@@ -91,14 +87,14 @@ function Retire-Lead($IpAddress, $Headers) {
         }
     }
 
-    if($AssignBackupLeadRequired){
+    if ($AssignBackupLeadRequired) {
         Write-Host "Waiting for sync operation to complete for assign backup lead"
         Start-Sleep -Seconds 900
     }
     $BackupLead = Get-BackupLead $IpAddress $Headers
     Write-Host "Checking Backup lead health"
     $BackupLeadHealth = $BackupLead.'BackupLeadHealth'
-    if($BackupLeadHealth -ne 1000){
+    if ($BackupLeadHealth -ne 1000) {
         Write-Host "Backup lead health is CRITICAL or WARNING."
         Write-Host "Please ensure backup lead is healty before retiring the lead"
         return $null
@@ -110,7 +106,7 @@ function Retire-Lead($IpAddress, $Headers) {
     }' | ConvertFrom-Json
 
     $Body = $Payload | ConvertTo-Json -Depth 6
-    $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
     if ($Response.StatusCode -eq 200) {
         $RetireLeadResp = $Response | ConvertFrom-Json
         $JobId = $RetireLeadResp.'JobId'
@@ -139,7 +135,7 @@ function Assign-BackupLead($IpAddress, $Headers) {
         $TargetTempHash."Id" = $MemberId
         $TargetArray += $TargetTempHash
         $Body = ConvertTo-Json $TargetArray
-        $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
         if ($Response.StatusCode -eq 200) {
             $BackupLeadData = $Response | ConvertFrom-Json
             $JobId = $BackupLeadData.'JobId'
@@ -159,7 +155,7 @@ function Get-Domains($IpAddress, $Headers) {
     $Lead = $null
     $BackupLead = $null
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Domains"
-    $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
         if ($DomainResp."value".Length -gt 0) {
@@ -168,7 +164,7 @@ function Get-Domains($IpAddress, $Headers) {
                 $Role = $Member.'DomainRoleTypeValue'
                 $BackupLeadFlag = $Member.'BackupLead'
                 if ($Role -eq "LEAD") {
-                    if ($null -eq $Lead){
+                    if ($null -eq $Lead) {
                         $Lead = $Member
                     }
                 }
@@ -228,7 +224,7 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -241,12 +237,12 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -261,11 +257,9 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
-
-
 
 
 ## Script that does the work
@@ -275,7 +269,7 @@ Try {
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
 
 
@@ -298,6 +292,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

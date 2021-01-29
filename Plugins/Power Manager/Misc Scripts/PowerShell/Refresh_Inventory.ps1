@@ -1,8 +1,7 @@
   
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
-_version_ = 0.1
-Copyright (c) 2020 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -54,34 +53,34 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
 function Get-JobId($Headers) {
-    $Jobname= 'Default Inventory Task'
+    $Jobname = 'Default Inventory Task'
     $JobId = -1
     $JobUrl = "https://$($IpAddress)/api/JobService/Jobs"
-    $JobResponse = Invoke-WebRequest -UseBasicParsing -Uri $JobUrl -Headers $Headers -Method Get
+    $JobResponse = Invoke-WebRequest -Uri $JobUrl -Headers $Headers -Method Get
     if ($JobResponse.StatusCode -eq 200) {
         Write-Host "Job fetched"
         $JobInfo = $JobResponse.Content | ConvertFrom-Json
-       <# Write-Host "$($JobInfo)"#>
+        <# Write-Host "$($JobInfo)"#>
         $JobList = $JobInfo.value
         $totalJobs = $JobInfo.'@odata.count'
         if ($totalJobs -gt 0) {
-            if ($JobInfo.'@odata.nextLink'){
+            if ($JobInfo.'@odata.nextLink') {
                 $NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
             }
-            while ($NextLinkUrl){
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+            while ($NextLinkUrl) {
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $JobList += $NextLinkData.'value'
-                    if ($NextLinkData.'@odata.nextLink'){
+                    if ($NextLinkData.'@odata.nextLink') {
                         $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
                     }
-                    else{
+                    else {
                         $NextLinkUrl = $null
                     }
                 }
@@ -90,23 +89,23 @@ function Get-JobId($Headers) {
                 }
             }
         }
-        else{
+        else {
             Write-Warning "Job results are empty"
         }
         
-        foreach ($jobinfo in $JobList){
-            if ($jobinfo.'JobName' -match $JobName){
-                $Jobid=$jobinfo.Id
+        foreach ($jobinfo in $JobList) {
+            if ($jobinfo.'JobName' -match $JobName) {
+                $Jobid = $jobinfo.Id
                 <#Write-Host "$($jobinfo.Id)"#>
-                $job_match_found=1
-                }
+                $job_match_found = 1
             }
         }
-        if (!$job_match_found){
-            Write-Host "Unable to track running discovery config job"
-        }
-    return $JobId
     }
+    if (!$job_match_found) {
+        Write-Host "Unable to track running discovery config job"
+    }
+    return $JobId
+}
 function Get-JobStatus($JobId) {
     $FailedJobStatuses = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
     $SLEEP_INTERVAL = 30
@@ -117,30 +116,29 @@ function Get-JobStatus($JobId) {
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) 
-    {
+    if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         do {
-        $Ctr++
+            $Ctr++
         
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
-        $jobresp.Content
-        if ($JobResp.StatusCode -eq 200) {
-            $JobData = $JobResp.Content | ConvertFrom-Json
-            $JobStatus = $JobData.LastRunStatus.Name
-            Write-Host "Iteration $($Ctr): Status of Default Inventory Task $($JobId) is $($JobStatus)"
-        }
-        Start-Sleep -Seconds $SLEEP_INTERVAL
-    } until ($JobStatus -ne 'Running')
-    return $JobStatus
-}
+            $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+            $jobresp.Content
+            if ($JobResp.StatusCode -eq 200) {
+                $JobData = $JobResp.Content | ConvertFrom-Json
+                $JobStatus = $JobData.LastRunStatus.Name
+                Write-Host "Iteration $($Ctr): Status of Default Inventory Task $($JobId) is $($JobStatus)"
+            }
+            Start-Sleep -Seconds $SLEEP_INTERVAL
+        } until ($JobStatus -ne 'Running')
+        return $JobStatus
+    }
 }
 
 
 Try {
     Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
-    $RunJobUrl= "https://$($IpAddress)/api/JobService/Actions/JobService.RunJobs"
+    $RunJobUrl = "https://$($IpAddress)/api/JobService/Actions/JobService.RunJobs"
     $Type = "application/json"
     $Headers = @{ }
     $UserName = $Credentials.username
@@ -149,27 +147,27 @@ Try {
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $InventoryJobId=Get-JobId($Headers)
-        $jpl= '[' + $InventoryJobId +']'
-       $JobCreationpayload= @{ "JobIds" =  $($jpl)} |ConvertTo-Json
-       $JobCreationpayload=$JobCreationpayload.Replace("`"[","[").Replace("]`"","]")
-       $RunInventoryResponse = Invoke-WebRequest -Uri $RunJobUrl -UseBasicParsing -Method Post  -Body $JobCreationpayload -Headers $Headers -ContentType $Type
-        if ( $RunInventoryResponse.StatusCode -eq 204){
+        $InventoryJobId = Get-JobId($Headers)
+        $jpl = '[' + $InventoryJobId + ']'
+        $JobCreationpayload = @{ "JobIds" = $($jpl) } | ConvertTo-Json
+        $JobCreationpayload = $JobCreationpayload.Replace("`"[", "[").Replace("]`"", "]")
+        $RunInventoryResponse = Invoke-WebRequest -Uri $RunJobUrl -Method Post  -Body $JobCreationpayload -Headers $Headers -ContentType $Type
+        if ( $RunInventoryResponse.StatusCode -eq 204) {
             Write-Host "Performing Inventory ..."
             <#Start-Sleep Seconds 10#>
-            $JobStatus= Get-JobStatus($InventoryJobId)
+            $JobStatus = Get-JobStatus($InventoryJobId)
         }
-        else{
+        else {
             Write-Host "Inventory Job creation Failed..."
 
         }
     }
-    else{
-            Write-Host "Session creation Failed...."
+    else {
+        Write-Host "Session creation Failed...."
     }
 }
 
-Catch{
+catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
 }    
         

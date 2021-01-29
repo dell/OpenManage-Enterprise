@@ -1,11 +1,10 @@
 #
-#  Python script using Power Manager API to get Power Manager - Emergency Power Reduction Policy.
+# Python script using Power Manager API to get Power Manager - Emergency Power Reduction Policy.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,7 +82,7 @@ def get_power_manager_EPR(ip_address, user_name, password, filterBY, filterValue
     """ Authenticate with OpenManage Enterprise, get power manager emergency power reduction policies"""
     try:
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -98,7 +97,7 @@ def get_power_manager_EPR(ip_address, user_name, password, filterBY, filterValue
             else:
                 EPR_url = "https://%s/api/PowerService/EPR?$filter=contains(%s,'%s')" % (ip_address,filterBY,filterValue)
         else:
-            EPR_url = "https://%s/api/PowerService/EPR" % (ip_address)
+            EPR_url = "https://%s/api/PowerService/EPR" % ip_address
         
         # Defining OUTPUT format
         output_column_headers = ['EPR_Policy_ID', 'EPR_Type', 'Is_EPR_PowerDown/Throttle?', 'EPR_Enabled?', "EPR_Execution_State", "Is_EPR_on_Group/Device?", "Group/Device_Assigned_To", "Created_Time"]
@@ -116,13 +115,13 @@ def get_power_manager_EPR(ip_address, user_name, password, filterBY, filterValue
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
             
@@ -135,19 +134,19 @@ def get_power_manager_EPR(ip_address, user_name, password, filterBY, filterValue
                 if 'error' in EPR_json_data:
                     error_content = EPR_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager Emergency Power Reduction Policies from %s" % ip_address)
             else:
                 EPR_count = EPR_json_data['@odata.count']
                 
                 #If the EPR count is 0, then error out immediately
                 if EPR_count <= 0:
-                    print("No Power Manager Emergency Power Reduction Policies created in %s" % (ip_address))
+                    print("No Power Manager Emergency Power Reduction Policies created in %s" % ip_address)
                 else:
                     EPR_content = json.loads(EPR_response.content)
                     
@@ -164,28 +163,27 @@ def get_power_manager_EPR(ip_address, user_name, password, filterBY, filterValue
                         print("   ================================================")
                         print(table)
                     else:
-                        print("No Power Manager Emergency Power Reduction Policies created in %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+                        print("No Power Manager Emergency Power Reduction Policies created in %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
-    PARSER.add_argument("--filterBy", "-b", required=False, help=''' Applicable Filters are:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
+    parser.add_argument("--filterBy", "-b", required=False, help=''' Applicable Filters are:
         Enabled - EPR Enabled state
         AssignedTo - Device service tag or Group Name
         Type - EPR Type
     ''', default=None)
-    PARSER.add_argument("--filterValue", "-v", required=False, help='''  Input value for filtersBy:
+    parser.add_argument("--filterValue", "-v", required=False, help='''  Input value for filtersBy:
         Enabled - true or false
         AssignedTo - String Value
         Type - 1-Manual; 2-Temperature-Triggered
     ''', default=None)
 
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
     
-    get_power_manager_EPR(ARGS.ip, ARGS.username, ARGS.password, ARGS.filterBy, ARGS.filterValue)
+    get_power_manager_EPR(args.ip, args.username, args.password, args.filterBy, args.filterValue)

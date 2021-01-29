@@ -1,8 +1,7 @@
 <#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
-_version_ = 0.1
 
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,7 +62,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -74,7 +73,7 @@ function Get-DiscoveredDomains($IpAddress, $Headers, $Role) {
     $FilteredDiscoveredDomains = @()
     $TargetArray = @()
     $URL = "https://$($IpAddress)/api/ManagementDomainService/DiscoveredDomains"
-    $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
         if ($DomainResp."value".Length -gt 0) {
@@ -95,8 +94,8 @@ function Get-DiscoveredDomains($IpAddress, $Headers, $Role) {
         }
     }
 
-    if ($FilteredDiscoveredDomains.Length -gt 0){
-        foreach ($Domain in $FilteredDiscoveredDomains){
+    if ($FilteredDiscoveredDomains.Length -gt 0) {
+        foreach ($Domain in $FilteredDiscoveredDomains) {
             $TargetTempHash = @{}
             $TargetTempHash."GroupId" = $Domain."GroupId"
             $TargetArray += $TargetTempHash
@@ -115,11 +114,11 @@ function Add-AllMembersViaLead($IpAddress, $Headers) {
     $StandaloneDomains = Get-DiscoveredDomains $IpAddress $Headers $Role
     $JobId = 0
     $Payload = @()
-    if ($StandaloneDomains.Length -gt 0){
+    if ($StandaloneDomains.Length -gt 0) {
         $Payload = $StandaloneDomains
         $ManagementDomainURL = "https://$($IpAddress)/api/ManagementDomainService/Actions/ManagementDomainService.Domains"
         $Body = $Payload 
-        $Response = Invoke-WebRequest -Uri $ManagementDomainURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+        $Response = Invoke-WebRequest -Uri $ManagementDomainURL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
         if ($Response.StatusCode -eq 200) {
             $ManagementData = $Response | ConvertFrom-Json
             $JobId = $ManagementData.'JobId'
@@ -128,7 +127,8 @@ function Add-AllMembersViaLead($IpAddress, $Headers) {
         else {
             Write-Warning "Failed to add members to the group"
         }
-    } else {
+    }
+    else {
         Write-Warning "No standalone chassis found to add as member to the created group"
     }
     return $JobId
@@ -148,7 +148,7 @@ function Assign-BackupLead($IpAddress, $Headers) {
         $TargetTempHash."Id" = $MemberId
         $TargetArray += $TargetTempHash
         $Body = ConvertTo-Json $TargetArray
-        $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
         if ($Response.StatusCode -eq 200) {
             $BackupLeadData = $Response | ConvertFrom-Json
             $JobId = $BackupLeadData.'JobId'
@@ -169,7 +169,7 @@ function Get-Domains($IpAddress, $Headers) {
     $Lead = $null
     $BackupLead = $null
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Domains"
-    $Response = Invoke-WebRequest -Uri $URL -UseBasicParsing -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
         if ($DomainResp."value".Length -gt 0) {
@@ -178,7 +178,7 @@ function Get-Domains($IpAddress, $Headers) {
                 $Role = $Member.'DomainRoleTypeValue'
                 $BackupLeadFlag = $Member.'BackupLead'
                 if ($Role -eq "LEAD") {
-                    if ($null -eq $Lead){
+                    if ($null -eq $Lead) {
                         $Lead = $Member
                     }
                 }
@@ -238,7 +238,7 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -251,12 +251,12 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -271,7 +271,7 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
 }
 
@@ -285,7 +285,7 @@ Try {
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
 
 
@@ -298,15 +298,15 @@ Try {
         ## This is a Powershell quirk on Invoke-WebRequest failing with an error
         # Create mcm group
         $JobId = 0
-        $BakupLeadFound = $null
+        $BackupLeadFound = $null
         Write-Host "Adding members to group ..."
         $JobId = Add-AllMembersViaLead $IpAddress $Headers
         if ($JobId) {
             Write-Host "Polling addition of members to group ..."
             Wait-OnJobStatus $IpAddress $Headers $Type $JobId
         }
-        $BakupLeadFound = Get-BackupLead $IpAddress $Headers
-        if ($null -eq $BakupLeadFound){
+        $BackupLeadFound = Get-BackupLead $IpAddress $Headers
+        if ($null -eq $BackupLeadFound) {
             Write-Host "Assigning backup lead ..."
             $JobId = Assign-BackupLead $IpAddress $Headers
             if ($JobId) {
@@ -317,14 +317,14 @@ Try {
                 Write-Warning "Unable to track backup lead assignment ..."
             }
         }
-        else{
-            Write-Host "Bakup lead found,skipping backup lead operation ..."
+        else {
+            Write-Host "Backup lead found,skipping backup lead operation ..."
         }
     }
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

@@ -1,8 +1,26 @@
 ﻿<#
+_author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
+
+Copyright (c) 2021 Dell EMC Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#>
+
+<#
  .SYNOPSIS
    Script to deploy template
  .DESCRIPTION
-    This script exercises the OME REST API to depoy template.
+    This script uses the OME REST API to deploy a template.
     Note that the credentials entered are not stored to disk.
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -18,12 +36,12 @@
       Component to clone from source device. 
  .EXAMPLE
    $cred = Get-Credential
-   .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -SourceId 25527 -TargetId 10782 -Component iDRAC
     In this instance you will be prompted for credentials.
     .EXAMPLE
    $cred = Get-Credential
-   .\Get-Templates.ps1 -IpAddress "10.xx.xx.xx" -Credentials
+   .\Deploy-Template.ps1 -IpAddress "10.xx.xx.xx" -Credentials
     $cred -SourceId 25527 -GroupId 1010 -Component iDRAC
     In this instance you will be prompted for credentials.
 #>
@@ -89,7 +107,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -104,7 +122,7 @@ function Get-TemplatePayload($SourceId, $Component) {
         "SourceDeviceId" : 25014,
         "Fqdds" : "EventFilters"
     }'
-    $template_payload = $template_payload|ConvertFrom-Json
+    $template_payload = $template_payload | ConvertFrom-Json
     $template_payload.SourceDeviceId = $SourceId
     if ($Component) {
         $template_payload.Fqdds = $Component  
@@ -163,7 +181,7 @@ function Get-TemplateStatus($IpAddress, $Headers, $Type, $TemplateId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $TemplateResponse = Invoke-WebRequest -Uri $TemplateUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $TemplateResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Get -Headers $Headers -ContentType $Type
         if ($TemplateResponse.StatusCode -eq 200) {
             $TemplateInfo = $TemplateResponse.Content | ConvertFrom-Json
             $Status = [string]$TemplateInfo.value[0].Status
@@ -179,7 +197,7 @@ function Get-TemplateStatus($IpAddress, $Headers, $Type, $TemplateId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($TemplateId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($TemplateId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
     if ($TemplateIncomplete) {
         Write-Warning "Template creation $($JOB_STATUS_MAP.$Status) after polling $($MAX_RETRIES) times...Check status"
@@ -191,11 +209,11 @@ function Get-TemplateStatus($IpAddress, $Headers, $Type, $TemplateId) {
 function New-IdentityPool($IpAddress, $Headers, $Type) {
     $IdentityUrl = "https://$($IpAddress)/api/IdentityPoolService/IdentityPools"
     $IdentityPoolId = $null
-    $IdentityPoolPayload = Get-IdentityPoolPayload |ConvertFrom-Json
-    $IdentityPoolPayload = $IdentityPoolPayload |ConvertTo-Json -Depth 6
+    $IdentityPoolPayload = Get-IdentityPoolPayload | ConvertFrom-Json
+    $IdentityPoolPayload = $IdentityPoolPayload | ConvertTo-Json -Depth 6
     $IdentityResponse = Invoke-WebRequest -Uri $IdentityUrl -Method Post -Body $IdentityPoolPayload  -ContentType $Type -Headers $Headers
     if ( $IdentityResponse.StatusCode -eq 201) {
-        $IdentityInfo = $IdentityResponse.Content |ConvertFrom-Json
+        $IdentityInfo = $IdentityResponse.Content | ConvertFrom-Json
         $IsSuccessful = $IdentityInfo.IsSuccessful
         if ($IsSuccessful) {
             Write-Host "Identity pool created successfully"
@@ -217,10 +235,10 @@ function Set-IdentitiesToTarget ($IpAddress, $Type, $Headers, $IdentityId, $Temp
         "IdentityPoolId":14
     }'
     $TemplateUrl = "https://$($IpAddress)/api/TemplateService/Actions/TemplateService.UpdateNetworkConfig"
-    $payload = $payload |ConvertFrom-Json
+    $payload = $payload | ConvertFrom-Json
     $payload.TemplateId = $TemplateId
     $payload.IdentityPoolId = $IdentityId
-    $AssignIdentityPayload = $payload |ConvertTo-Json -Depth 6
+    $AssignIdentityPayload = $payload | ConvertTo-Json -Depth 6
     $AssignIdentityResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $AssignIdentityPayload -ContentType $Type -Headers $Headers
     return $AssignIdentityResponse
 }
@@ -233,11 +251,11 @@ function Set-Configuration($IpAddress, $Type, $Headers, $TemplateId, $IdList) {
         ]
      }'
     $TemplateDeployUrl = "https://$($IpAddress)/api/TemplateService/Actions/TemplateService.Deploy"
-    $payload = $payload |ConvertFrom-Json
+    $payload = $payload | ConvertFrom-Json
     $payload.Id = $TemplateId
     $payload.TargetIds = $null
     $payload.TargetIds = @($IdList)
-    $DeployTemplatePayload = $payload |ConvertTo-Json -Depth 6
+    $DeployTemplatePayload = $payload | ConvertTo-Json -Depth 6
     $DeployResponse = Invoke-WebRequest -Uri $TemplateDeployUrl -Method Post -Body $DeployTemplatePayload -ContentType $Type -Headers $Headers
     return $DeployResponse
 }
@@ -250,7 +268,7 @@ function Get-DeployTemplateStatus($IpAddress, $Type, $Headers, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -269,12 +287,12 @@ function Get-DeployTemplateStatus($IpAddress, $Type, $Headers, $JobId) {
                     Write-Warning " Failed to deploy template.... "
                 }
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -UseBasicParsing -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -UseBasicParsing -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -289,7 +307,7 @@ function Get-DeployTemplateStatus($IpAddress, $Type, $Headers, $JobId) {
             }
             else { continue }
         }
-        else {Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)"}
+        else { Write-Warning "Unable to get status for $($JobId) .. Iteration $($Ctr)" }
     } until ($Ctr -ge $MAX_RETRIES)
     return $Completed
 }
@@ -301,14 +319,14 @@ function Get-AssignedIdentities($IpAddress, $Type, $Headers, $TemplateId, $Targe
         "BaseEntityId" : 25014
       }'
     $TemplateUrl = "https://$($IpAddress)/api/TemplateService/Actions/TemplateService.GetAssignedIdentities"
-    $payload = $payload|ConvertFrom-Json
+    $payload = $payload | ConvertFrom-Json
     $payload.TemplateId = $TemplateId
     $payload.BaseEntityId = $TargetId
-    $AssignedIdentitiesPayload = $payload|ConvertTo-Json -Depth 6
+    $AssignedIdentitiesPayload = $payload | ConvertTo-Json -Depth 6
     $AssignedIdentitiesResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $AssignedIdentitiesPayload -ContentType $Type -Headers $Headers
     if ( $AssignedIdentitiesResponse.StatusCode -eq 200) {
         $AssignIdentitiesInfo = $AssignedIdentitiesResponse.Content | ConvertFrom-Json
-        $AssignIdentitiesInfo = $AssignIdentitiesInfo |ConvertTo-Json -Depth 6
+        $AssignIdentitiesInfo = $AssignIdentitiesInfo | ConvertTo-Json -Depth 6
         write-Host $AssignIdentitiesInfo
     }
     else {
@@ -321,35 +339,31 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type, $Url) {
     $DeviceIdList = @()
     $NextLinkUrl = $null
     $BaseUri = "https://$($IpAddress)"
-    $DevResp = Invoke-WebRequest -Uri $Url -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -Uri $Url -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         if ($DevInfo.'@odata.count' -gt 0 ) {
-            $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id}
-            if($DevInfo.'@odata.nextLink'){
-                 $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
+            $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id }
+            if ($DevInfo.'@odata.nextLink') {
+                $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
             }
-            while($NextLinkUrl){
-                    $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($NextLinkResponse.StatusCode -eq 200)
-                    {
-                        $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-                        $NextLinkData.'value' | Sort-Object Id | ForEach-Object {$DeviceIdList += , $_.Id}
-                        if($NextLinkData.'@odata.nextLink')
-                        {
-                            $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-                        }
-                        else
-                        {
-                            $NextLinkUrl = $null
-                        }
+            while ($NextLinkUrl) {
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                if ($NextLinkResponse.StatusCode -eq 200) {
+                    $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
+                    $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id }
+                    if ($NextLinkData.'@odata.nextLink') {
+                        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
                     }
-                    else
-                    {
-                        Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    else {
                         $NextLinkUrl = $null
                     }
-           }
+                }
+                else {
+                    Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
+                    $NextLinkUrl = $null
+                }
+            }
         }
     }
     return $DeviceIdList
@@ -359,7 +373,7 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type, $Url) {
 function New-Template($IpAddress, $Headers, $Type, $SourceId, $Component ) {
     $TemplateUrl = "https://$($IpAddress)/api/TemplateService/Templates"
     $TemplatePayload = Get-TemplatePayload $SourceId $Component
-    $TemplatePayload = $TemplatePayload |ConvertTo-Json -Depth 6
+    $TemplatePayload = $TemplatePayload | ConvertTo-Json -Depth 6
     $TemplateId = $null
     $TemplateResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $TemplatePayload -ContentType $Type -Headers $Headers
     Write-Host "Creating Template..."
@@ -380,11 +394,11 @@ function New-Template($IpAddress, $Headers, $Type, $SourceId, $Component ) {
 function Get-GroupIdList ($IpAddress, $Headers, $Type) {
     $GroupIdList = @()
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GroupResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+    $GroupResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
     if ($GroupResp.StatusCode -eq 200) {
         $GroupInfo = $GroupResp.Content | ConvertFrom-Json
         if ($GroupInfo.'@odata.count' -gt 0 ) {
-            $GroupInfo.'value' |  Sort-Object Id | ForEach-Object { $GroupIdList += , $_.Id}
+            $GroupInfo.'value' |  Sort-Object Id | ForEach-Object { $GroupIdList += , $_.Id }
         }
     }
     return $GroupIdList
@@ -398,7 +412,7 @@ Try {
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API"} | ConvertTo-Json
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
     $IdList = @()
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
@@ -443,7 +457,7 @@ Try {
                         Write-Host "Deploying template............."
                         $DeployTemplateResponse = Set-Configuration $IpAddress $Type $Headers  $TemplateId $IdList
                         if ( $DeployTemplateResponse.StatusCode -eq 200) {
-                            $DeployTemplateContent = $DeployTemplateResponse.Content|ConvertFrom-Json
+                            $DeployTemplateContent = $DeployTemplateResponse.Content | ConvertFrom-Json
                             $JobId = $DeployTemplateContent
                             $Status = Get-DeployTemplateStatus $IpAddress $Type $Headers $JobId
                             if ($Status) {
@@ -476,6 +490,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

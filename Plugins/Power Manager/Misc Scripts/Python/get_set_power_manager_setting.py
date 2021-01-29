@@ -1,11 +1,10 @@
 #
-#  Python script using Power Manager API to get or set Power Manager - Settings.
+# Python script using Power Manager API to get or set Power Manager - Settings.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -112,7 +111,7 @@ def get_power_manager_settings(ip_address, user_name, password):
     """ Authenticate with OpenManage Enterprise, get power manager settings"""
     try:
         # Defining Session URL & headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -125,7 +124,7 @@ def get_power_manager_settings(ip_address, user_name, password):
         output_column_data = []
         
         # Defining Power Manager settings URL
-        settings_url = "https://%s/api/PowerService/Settings" % (ip_address)
+        settings_url = "https://%s/api/PowerService/Settings" % ip_address
             
         # Create the session with OpenManage Enterprise
         session_info = requests.post(session_url, verify=False,
@@ -139,13 +138,13 @@ def get_power_manager_settings(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
             return 0
         
         else:
@@ -161,13 +160,13 @@ def get_power_manager_settings(ip_address, user_name, password):
                 if 'error' in settings_json_data:
                     error_content = settings_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager settings from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager settings from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager settings from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager settings from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager settings from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager settings from %s" % ip_address)
                 return 0
             else:
                 settings_content = json.loads(settings_response.content)
@@ -188,10 +187,10 @@ def get_power_manager_settings(ip_address, user_name, password):
                     print(table)
                     return 1
                 else:
-                    print("No Power Manager settings from %s" % (ip_address))
+                    print("No Power Manager settings from %s" % ip_address)
                     return 0
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
         return 0
 
 def set_power_manager_settings(ip_address, user_name, password, settings_id, settings_value):
@@ -199,7 +198,7 @@ def set_power_manager_settings(ip_address, user_name, password, settings_id, set
     try:
         
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -208,7 +207,7 @@ def set_power_manager_settings(ip_address, user_name, password, settings_id, set
                         'SessionType': 'API'}
         
         # Defining Power Manager settings URL
-        settings_url = "https://%s/api/PowerService/Actions/PowerService.UpdateSettings" % (ip_address)
+        settings_url = "https://%s/api/PowerService/Actions/PowerService.UpdateSettings" % ip_address
         
         # Payload for posting settings API
         settings_payload = {"Settings":[{ "Id": int(settings_id), "Value": int(settings_value)}]}
@@ -225,13 +224,13 @@ def set_power_manager_settings(ip_address, user_name, password, settings_id, set
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         
         else:
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -245,29 +244,28 @@ def set_power_manager_settings(ip_address, user_name, password, settings_id, set
                 if 'error' in settings_json_data:
                     error_content = settings_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to set Power Manager Setting on %s" % (ip_address))
+                        print("Unable to set Power Manager Setting on %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to set Power Manager Setting on %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to set Power Manager Setting on %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to set Power Manager Setting on %s" % (ip_address))
+                    print("Unable to set Power Manager Setting on %s" % ip_address)
             else:
-                print("Successfully applied Power Manger Setting on %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+                print("Successfully applied Power Manger Setting on %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
         return 0
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
 
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args()
     
-    return_value = get_power_manager_settings(ARGS.ip, ARGS.username, ARGS.password)
+    return_value = get_power_manager_settings(args.ip, args.username, args.password)
     
     # Only if get_power_manager_settings returns success, the proceed to do set.
     if return_value == 1:
@@ -316,6 +314,6 @@ if __name__ == '__main__':
                     print("\n   !!! ERROR :: Wrong Setting's Value Entered !!! \n  Please provide proper setting's value & try again\n")
                     continue
             
-            set_power_manager_settings(ARGS.ip, ARGS.username, ARGS.password, setting_id_input, settings_value_inputs)
+            set_power_manager_settings(args.ip, args.username, args.password, setting_id_input, settings_value_inputs)
             
             get_inputs = input("\nDo you want to change any other Power Manager settings (Y/N) : ")

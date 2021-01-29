@@ -1,10 +1,7 @@
 #
-#  Python script using OME API to create a Network
-#
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,46 +16,48 @@
 # limitations under the License.
 #
 """
-SYNOPSIS:
-   Script to create a new network with VLAN
+#### Synopsis
+Script to create a new network with VLAN
 
-DESCRIPTION:
-   This script exercises the OME REST API to create a new network
-   A network consists of a Minimum and Maximum VLAN ID to create a range
-   Set Minimum and Maximum to the same value to a single VLAN
-   
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script uses the OME REST API to create a new network
+A network consists of a Minimum and Maximum VLAN ID to create a range
+Set Minimum and Maximum to the same value to a single VLAN
 
-EXAMPLE:
-   python create_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Python Example
+`python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
 import sys
 import traceback
 import argparse
-from argparse import RawTextHelpFormatter
+import csv
 import json
+import sys
+from argparse import RawTextHelpFormatter
+from os import path
+from getpass import getpass
+
 import requests
 import urllib3
-import os
-from os import path
-import csv
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 session_auth_token = {}
 
+
 def get_session(ip_address, user_name, password):
-    session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-    base_uri = 'https://%s' %(ip_address)
+    session_url = 'https://%s/api/SessionService/Sessions' % ip_address
     headers = {'content-type': 'application/json'}
     user_details = {'UserName': user_name,
                     'Password': password,
                     'SessionType': 'API'}
     session_info = requests.post(session_url, verify=False,
-                                    data=json.dumps(user_details),
-                                    headers=headers)
+                                 data=json.dumps(user_details),
+                                 headers=headers)
     if session_info.status_code == 201:
         session_info_token = session_info.headers['X-Auth-Token']
         session_info_data = session_info.json()
@@ -66,7 +65,10 @@ def get_session(ip_address, user_name, password):
             "token": session_info_token,
             "id": session_info_data['Id']
         }
-    return session_auth_token
+        return session_auth_token
+    else:
+        return None
+
 
 def delete_session(ip_address, headers, id):
     session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
@@ -92,7 +94,7 @@ def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maxi
                                     verify=False,
                                     data=json.dumps(network_payload))
         if create_resp.status_code == 201:
-            print ("New network created %s" %(name))
+            print("New network created %s" % name)
         elif create_resp.status_code == 400:
             print ("Failed creation... ")
             print (json.dumps(create_resp.json(), indent=4,
@@ -100,15 +102,15 @@ def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maxi
     except Exception as e:
         print(traceback.format_exc())
 
+
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
     PARSER.add_argument("--name", "-n", required=False,
                         help="Name of VLAN")
@@ -125,7 +127,7 @@ if __name__ == '__main__':
 *Must include header row with at least the rows in the example below
 *NetworkType must be an integer value. Use get_network.py --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
-Example:
+#### Python Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
     ARGS = PARSER.parse_args()
@@ -154,4 +156,5 @@ VLAN 800,Description for VLAN 800,800,800,1""")
     except Exception as e:
         print(traceback.format_exc())
     finally:
-        delete_session(ARGS.ip, headers, auth_token['id'])
+        # TODO - auth_token['id] could be undefined in the event of a failure. This should be updated
+        delete_session(args.ip, headers, auth_token['id'])

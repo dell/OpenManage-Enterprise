@@ -1,11 +1,10 @@
 #
-#  Python script using OpenManage Enterprise API to get Power Manager top power & temperature offenders in OpenManage Enterprise.
+# Python script using OpenManage Enterprise API to get Power Manager top power & temperature offenders in OpenManage Enterprise.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,7 +67,7 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
     try:
         
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -77,7 +76,7 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
                         'SessionType': 'API'}
         
         # Define the top offenders URL
-        top_offenders_url = "https://%s/api/MetricService/TopOffenders" % (ip_address)
+        top_offenders_url = "https://%s/api/MetricService/TopOffenders" % ip_address
         
         # Defining OUTPUT format    
         output_column_headers = ['Entity_Id', 'Entity_Name', 'Entity_Type', 'Threshold_Type', 'Total_Violations', 'Violation_State']
@@ -95,13 +94,13 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
         
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -115,20 +114,20 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
                 if 'error' in top_offenders_json_data:
                     error_content = top_offenders_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % (ip_address))
+                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % (ip_address))
+                    print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
             else:
                 
                 top_offenders_count = top_offenders_json_data['@odata.count']
                 
                 #If the Metrics Alerts count is 0, then error out immediately
                 if top_offenders_count <= 0:
-                    print("No Power Manager Top Power & Termperature threshold offenders found in %s" % (ip_address))
+                    print("No Power Manager Top Power & Termperature threshold offenders found in %s" % ip_address)
                 else:
                     top_offenders_content = json.loads(top_offenders_response.content)
                     
@@ -145,17 +144,16 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
                         print("   ======================================================================")
                         print(table)
                     else:
-                        print("No Power Manager Top Power & Termperature threshold offenders found in %s" % (ip_address))
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+                        print("No Power Manager Top Power & Termperature threshold offenders found in %s" % ip_address)
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
+    args = parser.parse_args()
     
-    get_power_manager_top_offenders(ARGS.ip, ARGS.username, ARGS.password)
+    get_power_manager_top_offenders(args.ip, args.username, args.password)

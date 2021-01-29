@@ -1,11 +1,10 @@
 #
-#  Python script using OpenManage Enterprise API to get top 5 energy consuming Server/Chassis/Group being monitored by Power Manager.
+# Python script using OpenManage Enterprise API to get top 5 energy consuming Server/Chassis/Group being monitored by Power Manager.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.1
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,14 +74,14 @@ def get_power_manager_top_energy_consumers(ip_address, user_name, password, enti
     try:
         
         # Defining Session URL & its headers
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
                         'SessionType': 'API'}
         
         # Define the power manager top energy consumer URL
-        top_energy_consumer_url = "https://%s/api/MetricService/TopEnergyConsumption" % (ip_address)
+        top_energy_consumer_url = "https://%s/api/MetricService/TopEnergyConsumption" % ip_address
         
         #Get entity & device type basis user input
         entity_type, device_type = entity_type_definition(entity)
@@ -111,13 +110,13 @@ def get_power_manager_top_energy_consumers(ip_address, user_name, password, enti
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s" % (ip_address))
+                    print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
         
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -156,17 +155,16 @@ def get_power_manager_top_energy_consumers(ip_address, user_name, password, enti
                     print("      Power Manager - Top energy consuming %s " % (entity))
                     print("   =====================================================")
                     print(table)
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
+    args = parser.parse_args()
     
     get_inputs = 'Y'
     
@@ -201,6 +199,6 @@ if __name__ == '__main__':
                 print("\n *** ERROR: Wrong Value Entered!!! Please enter proper value for Top Energy Consumer\n")
                 continue
         
-        get_power_manager_top_energy_consumers(ARGS.ip, ARGS.username, ARGS.password, entity_inputs, int(duration_inputs))
+        get_power_manager_top_energy_consumers(args.ip, args.username, args.password, entity_inputs, int(duration_inputs))
         
         get_inputs = input("\nDo you want to continue getting other top energy consumer (Y/N) : ")

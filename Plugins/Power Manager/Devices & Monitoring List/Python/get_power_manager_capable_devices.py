@@ -1,11 +1,10 @@
 #
-#  Python script using OpenManage Enterprise API to get device list which are capable to be monitored/managed by Power Manager.
+# Python script using OpenManage Enterprise API to get device list which are capable to be monitored/managed by Power Manager.
 #
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
-# _version_ = 0.2
 #
 #
-# Copyright (c) 2020 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,8 +99,8 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
     try:
         
         #Define the Base URL, Session URL & headers
-        base_uri = 'https://%s' %(ip_address)
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
+        base_uri = 'https://%s' % ip_address
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
         
         # Define Payload for posting session API
@@ -110,7 +109,7 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
                         'SessionType': 'API'}
         
         # Define the device URL to get top 500 devices (considering scaled OpenManage Enterprise) & then get nextLink in the business logic below to further process the devices
-        device_url = "https://%s/api/DeviceService/Devices?$top=500" % (ip_address)
+        device_url = "https://%s/api/DeviceService/Devices?$top=500" % ip_address
         
         # Define OUTPUT header & data format
         output_column_headers = ['Device_ID', 'Service_Tag', 'Model', 'Device_Name', 'Power_Manager_Capability']
@@ -128,13 +127,13 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
                 if '@Message.ExtendedInfo' not in error_content:
-                    print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                    print("Unable to create a session with  %s. Please try again later" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % (ip_address))
+                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
-                print("Unable to create a session with  %s. Please try again later" % (ip_address))
+                print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
             
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
@@ -149,13 +148,13 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
                 if 'error' in device_json_data:
                     error_content = device_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve device list from %s" % (ip_address))
+                        print("Unable to retrieve device list from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve device list from  %s. See below ExtendedInfo for more information" % (ip_address))
+                        print("Unable to retrieve device list from  %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve device list from %s" % (ip_address))
+                    print("Unable to retrieve device list from %s" % ip_address)
             else:
                 
                 # Get the device count from the JSON response data
@@ -163,7 +162,7 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
                 
                 #If the device count is 0, then error out immediately
                 if device_count <= 0:
-                    print("No devices managed by %s" % (ip_address))
+                    print("No devices managed by %s" % ip_address)
                 
                 #If the device count is not 0, then get the content & further process it to get device capabilities.
                 else:
@@ -176,7 +175,7 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
                     #Else if the next link exist, process to get, parse & store the capable Power Manager devices until the nextLink exhaust.
                     else:
                         
-                        print("\n   !!! INFO :: There are more than 500 devices being managed in %s !!! \n  It may take several minutes to get the result. Please wait..." %(ip_address))
+                        print("\n   !!! INFO :: There are more than 500 devices being managed in %s !!! \n  It may take several minutes to get the result. Please wait..." % ip_address)
                         #Process the first set of Devices content to parse & store the capable Power Manager devices
                         output_column_data = store_device_elem(device_content)
                                                 
@@ -207,15 +206,14 @@ def get_power_manager_capable_devices(ip_address, user_name, password):
                     print("      Devices List with Power Manager capablilities")
                     print("   =====================================================")
                     print(table)
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
-    PARSER.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
-    ARGS = PARSER.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP")
+    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
+    parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
+    args = parser.parse_args()
     
-    get_power_manager_capable_devices(ARGS.ip, ARGS.username, ARGS.password)
+    get_power_manager_capable_devices(args.ip, args.username, args.password)

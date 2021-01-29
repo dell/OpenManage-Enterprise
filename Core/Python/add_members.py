@@ -1,77 +1,84 @@
+#
+# Copyright (c) 2021 Dell EMC Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-SYNOPSIS
----------------------------------------------------------------------
- Script to add all standalone domains to the existing MCM group,
- and assign a backup lead
+#### Synopsis
+Script to add all standalone domains to the existing MCM group,
+and assign a backup lead
 
-DESCRIPTION
----------------------------------------------------------------------
- This script adds all standalone domains to the
- existing group and assigns a member as backup lead.
+#### Description
+This script adds all standalone domains to the
+existing group and assigns a member as backup lead.
 
- Note:
- 1. Credentials entered are not stored to disk.
- 2. Random member will be assigned as a backup lead
- 
-EXAMPLE
----------------------------------------------------------------------
-python add_members.py --ip <ip addr> --user root
-    --password <passwd>
+#### Python Example
+`python add_members.py --ip <ip addr> --user root --password <passwd>`
 
-Adds all standalone members and assign a member as
-backup lead
+Note:
+1. Credentials entered are not stored to disk.
+2. Random member will be assigned as a backup lead
 
-API workflow is below:
-1: POST on SessionService/Sessions
-2: If new session is created (201) parse headers
-   for x-auth token and update headers with token
-3: All subsequent requests use X-auth token and not
-   user name and password entered by user
-4: Add all standalone members to the created group
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
-5: Parse returned job id and monitor it to completion
-6: Assign a random member as backup lead
-   with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
-7: Parse returned job id and monitor it to completion
+#### API Workflow
+1. POST on SessionService/Sessions
+2. If new session is created (201) parse headers
+for x-auth token and update headers with token
+3. All subsequent requests use X-auth token and not
+user name and password entered by user
+4. Add all standalone members to the created group
+with POST on /ManagementDomainService/Actions/ManagementDomainService.Domains
+5. Parse returned job id and monitor it to completion
+6. Assign a random member as backup lead
+with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead
+7. Parse returned job id and monitor it to completion
 """
 
 import argparse
-import requests
 import json
-import urllib3
-from argparse import RawTextHelpFormatter
 import random
 import time
-import sys
+from argparse import RawTextHelpFormatter
+from getpass import getpass
 
+import requests
+import urllib3
 
 
 def authenticate_with_ome(ip_address, user_name, password):
-	""" X-auth session creation """
-	auth_success = False
-	session_url = "https://%s/api/SessionService/Sessions" % (ip_address)
-	user_details = {'UserName': user_name,
-				 'Password': password,
-				 'SessionType': 'API'}
-	headers = {'content-type': 'application/json'}
-	session_info = requests.post(session_url, verify=False,
-							  data=json.dumps(user_details),
-							  headers=headers)
-	if session_info.status_code == 201:
-		headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-		auth_success = True
-	else:
-		error_msg = "Failed create of session with {0} - Status code = {1}"
-		print(error_msg.format(ip_address, session_info.status_code))
-	return (auth_success, headers)
+    """ X-auth session creation """
+    auth_success = False
+    session_url = "https://%s/api/SessionService/Sessions" % ip_address
+    user_details = {'UserName': user_name,
+                    'Password': password,
+                    'SessionType': 'API'}
+    headers = {'content-type': 'application/json'}
+    session_info = requests.post(session_url, verify=False,
+                                 data=json.dumps(user_details),
+                                 headers=headers)
+    if session_info.status_code == 201:
+        headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        auth_success = True
+    else:
+        error_msg = "Failed create of session with {0} - Status code = {1}"
+        print(error_msg.format(ip_address, session_info.status_code))
+    return auth_success, headers
 
 
 def get_domain_info(ip_address, headers):
     members = []
-    member_devices = []
     backup_lead = None
     lead = None
-    url = 'https://%s/api/ManagementDomainService/Domains' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/Domains' % ip_address
     domains_info = requests.get(url, headers=headers, verify=False)
     if domains_info.status_code == 200:
         domains = domains_info.json()
@@ -89,7 +96,7 @@ def get_domain_info(ip_address, headers):
                 elif role == 'MEMBER':
                     members.append(member_device)
         else:
-            print ("No domains discovered ... Error")
+            print("No domains discovered ... Error")
     else:
         print('Failed to discover domains - Status Code %s')
 
@@ -106,7 +113,7 @@ def get_backup_lead(ip_address, headers):
 
 def get_domains(ip_address, headers):
     members = []
-    url = 'https://%s/api/ManagementDomainService/Domains' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/Domains' % ip_address
     response = requests.get(url, headers=headers, verify=False)
     if response.status_code == 200:
         response = response.json()
@@ -115,22 +122,22 @@ def get_domains(ip_address, headers):
             'DomainRoleTypeValue') == 'MEMBER', member_devices))
 
         if not members:
-            print ('No member device found')
+            print('No member device found')
     else:
-        print ('Failed to get domains and status code returned is %s', response.status_code)
+        print('Failed to get domains and status code returned is %s', response.status_code)
     return members
 
 
 def get_discovered_domains(ip_address, headers, role=None):
     discovered_domains = []
-    url = 'https://%s/api/ManagementDomainService/DiscoveredDomains' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/DiscoveredDomains' % ip_address
     domains_info = requests.get(url, headers=headers, verify=False)
     if domains_info.status_code == 200:
         domains = domains_info.json()
         if domains.get('@odata.count') > 0:
             discovered_domains = domains.get('value')
         else:
-            print ("No domains discovered ... Error")
+            print("No domains discovered ... Error")
     else:
         print('Failed to discover domains - Status Code %s')
 
@@ -138,6 +145,7 @@ def get_discovered_domains(ip_address, headers, role=None):
         discovered_domains = list(filter(lambda x: x.get(
             'DomainRoleTypeValue') == role, discovered_domains))
     return discovered_domains
+
 
 def add_all_members_via_lead(ip_address, headers):
     """ Add standalone domains to the group"""
@@ -148,9 +156,9 @@ def add_all_members_via_lead(ip_address, headers):
         for domain in standalone_domains:
             body.append({'GroupId': domain.get('GroupId')})
 
-        url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.Domains' % (ip_address)
+        url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.Domains' % ip_address
         response = requests.post(url, headers=headers,
-                             data=json.dumps(body), verify=False)
+                                 data=json.dumps(body), verify=False)
         if response.status_code == 200:
             response_data = response.json()
             job_id = response_data.get('JobId')
@@ -161,8 +169,9 @@ def add_all_members_via_lead(ip_address, headers):
         print('No standalone chassis found to add as member to the created group')
     return job_id
 
+
 def assign_backup_lead(ip_address, headers):
-    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead' % (ip_address)
+    url = 'https://%s/api/ManagementDomainService/Actions/ManagementDomainService.AssignBackupLead' % ip_address
     members = get_domains(ip_address, headers)
     job_id = None
     if members:
@@ -172,7 +181,7 @@ def assign_backup_lead(ip_address, headers):
             'Id': member_id
         }]
         response = requests.post(url, headers=headers,
-                             data=json.dumps(body), verify=False)
+                                 data=json.dumps(body), verify=False)
         if response.status_code == 200:
             response = response.json()
             job_id = response.get('JobId')
@@ -182,6 +191,7 @@ def assign_backup_lead(ip_address, headers):
     else:
         print('Created group has no members. Failed to assign a backup lead')
     return job_id
+
 
 def get_job_status(ip_address, headers, job_id):
     """ Tracks the update job to completion / error """
@@ -205,21 +215,21 @@ def get_job_status(ip_address, headers, job_id):
     job_url = 'https://%s/api/JobService/Jobs(%s)' % (ip_address, job_id)
     loop_ctr = 0
     job_incomplete = True
-    print ("Polling %s to completion ..." % job_id)
+    print("Polling %s to completion ..." % job_id)
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
         job_resp = requests.get(job_url, headers=headers, verify=False)
         if job_resp.status_code == 200:
             job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            print ("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
+            print("Iteration %s: Status of %s is %s" % (loop_ctr, job_id, job_status_map[job_status]))
             if int(job_status) == 2060:
                 job_incomplete = False
-                print ("Completed job successfully ... Exiting")
+                print("Completed job successfully ... Exiting")
                 break
             elif int(job_status) in failed_job_status:
                 job_incomplete = False
-                print ("Job failed ... ")
+                print("Job failed ... ")
                 job_hist_url = str(job_url) + "/ExecutionHistories"
                 job_hist_resp = requests.get(job_hist_url, headers=headers, verify=False)
                 if job_hist_resp.status_code == 200:
@@ -227,48 +237,50 @@ def get_job_status(ip_address, headers, job_id):
                     job_hist_det_url = str(job_hist_url) + "(" + job_history_id + ")/ExecutionHistoryDetails"
                     job_hist_det_resp = requests.get(job_hist_det_url, headers=headers, verify=False)
                     if job_hist_det_resp.status_code == 200:
-                        print (job_hist_det_resp.text)
+                        print(job_hist_det_resp.text)
                     else:
-                        print ("Unable to parse job execution history .. Exiting")
+                        print("Unable to parse job execution history .. Exiting")
                 break
         else:
-            print ("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
+            print("Unable to poll status of %s - Iteration %s " % (job_id, loop_ctr))
     if job_incomplete:
-        print ("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
-
+        print("Job %s incomplete after polling %s times...Check status" % (job_id, max_retries))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    PARSER = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="MSM IP")
-    PARSER.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
-    PARSER.add_argument("--password", "-p", required=True, help="Password for MSM")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="MSM IP")
+    parser.add_argument("--user", "-u", required=True, help="Username for MSM", default="root")
+    parser.add_argument("--password", "-p", required=False, help="Password for MSM")
 
-    ARGS = PARSER.parse_args()
-    IP_ADDRESS = ARGS.ip
-    USER_NAME = ARGS.user
-    PASSWORD = ARGS.password
+    args = parser.parse_args()
+    ip_address = args.ip
+    user_name = args.user
+    if args.password:
+        password = args.password
+    else:
+        password = getpass()
 
     try:
-        AUTH_SUCCESS, HEADERS = authenticate_with_ome(IP_ADDRESS, USER_NAME,
-                                                      PASSWORD)
-        if AUTH_SUCCESS:
+        auth_success, headers = authenticate_with_ome(ip_address, user_name,
+                                                      password)
+        if auth_success:
             print('Adding members to the group')
-            JOB_ID = add_all_members_via_lead(IP_ADDRESS, HEADERS)
-            if JOB_ID:
+            job_id = add_all_members_via_lead(ip_address, headers)
+            if job_id:
                 print('Polling addition of members to group')
-                get_job_status(IP_ADDRESS, HEADERS, JOB_ID)
-            backup_lead_found = get_backup_lead(IP_ADDRESS, HEADERS)
+                get_job_status(ip_address, headers, job_id)
+            backup_lead_found = get_backup_lead(ip_address, headers)
             if not backup_lead_found:
                 print('Assigning backup lead ...')
-                JOB_ID = assign_backup_lead(IP_ADDRESS, HEADERS)
-                if JOB_ID:
+                job_id = assign_backup_lead(ip_address, headers)
+                if job_id:
                     print('Polling for assign backup lead job status')
-                    get_job_status(IP_ADDRESS, HEADERS, JOB_ID)
+                    get_job_status(ip_address, headers, job_id)
             else:
-                print('Bakup lead found,skipping backup lead operation ...')
+                print('Backup lead found,skipping backup lead operation ...')
         else:
             print('Unable to authenticate. Check IP/username/password')
-    except:
-        print ("Unexpected error:", sys.exc_info())
+    except Exception as error:
+        print("Unexpected error:", str(error))

@@ -1,9 +1,9 @@
 #
-#  Python script using OME-M APIs to create an MCM group,
+# Python script using OME-M APIs to create an MCM group,
 #  assign a backup lead and add all possible members to the
 #  created group
 #
-# Copyright (c) 2019 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,21 +18,18 @@
 # limitations under the License.
 #
 """
-SYNOPSIS
----------------------------------------------------------------------
+SYNOPSIS:
  Script to perform refresh inventory for all devices to detect power 
  monitoring capability after Power manager Installation.
 
-DESCRIPTION
----------------------------------------------------------------------
+Description: 
  This script fetches the jobID for default inventory refresh and runs
  th job until completion, checking every 10 seconds.
 
  Note:
  1. Credentials entered are not stored to disk.
 
-EXAMPLE
----------------------------------------------------------------------
+Example:
 python Perform_refresh_inventory.py --ip <ip addr> --user root
     --password <passwd> --groupname testgroup
 
@@ -71,9 +68,9 @@ def refresh_inventory(ip_address, user_name, password):
     """ Authenticate with OME and enumerate groups """
     try:
         jobId=0
-        session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-        jobsAPI = "https://%s/api/JobService/Jobs" % (ip_address)
-        runJob="https://%s/api/JobService/Actions/JobService.RunJobs" % (ip_address)
+        session_url = 'https://%s/api/SessionService/Sessions' % ip_address
+        jobsAPI = "https://%s/api/JobService/Jobs" % ip_address
+        runJob="https://%s/api/JobService/Actions/JobService.RunJobs" % ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
                         'Password': password,
@@ -116,19 +113,18 @@ def refresh_inventory(ip_address, user_name, password):
         else:
         	print("Create session failed, cannot continue")
 
-    except:
-        print ("Unexpected error:", sys.exc_info()[0])
+    except Exception as error:
+        print("Unexpected error:", str(error))
 
 
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    PARSER = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=True,
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=True,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    ARGS = PARSER.parse_args()
-    refresh_inventory(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    refresh_inventory(args.ip, args.user, args.password)

@@ -1,8 +1,7 @@
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
-_version_ = 0.1
 
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +22,7 @@ limitations under the License.
    all devices contained by that group
  .DESCRIPTION
 
-   This script exercises the OME REST API to get the details
+   This script uses the OME REST API to get the details
    for a group and for devices in that group. The group can
    be filtered using the Group ID or Name or Description.
    This example does not use ODATA queries with filter
@@ -61,9 +60,9 @@ param(
 )
 
 function Set-CertPolicy() {
-## Trust all certs - for sample usage only
-Try {
-add-type @"
+    ## Trust all certs - for sample usage only
+    Try {
+        add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -77,7 +76,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -88,19 +87,19 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
 Try {
     Set-CertPolicy
-    $SessionUrl  = "https://$($IpAddress)/api/SessionService/Sessions"
-    $GroupUrl    = "https://$($IpAddress)/api/GroupService/Groups"
-    $Type        = "application/json"
-    $UserName    = $Credentials.username
-    $Password    = $Credentials.GetNetworkCredential().password
-    $UserDetails = @{"UserName"=$UserName;"Password"=$Password;"SessionType"="API"} | ConvertTo-Json
-    $Headers     = @{}
+    $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
+    $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
+    $Type = "application/json"
+    $UserName = $Credentials.username
+    $Password = $Credentials.GetNetworkCredential().password
+    $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
+    $Headers = @{}
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+        $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
         if ($GrpResp.StatusCode -eq 200) {
             ## Iterate over groups and see if a match is found for given criteria
             $GrpInfo = $GrpResp.Content | ConvertFrom-Json
@@ -109,12 +108,12 @@ Try {
             if ($groupCount -gt 0) {
                 $FoundGroup = $FALSE
                 $currGroupCount = ($groupList.value).Length
-                if($groupCount -gt $currGroupCount){
-                    $delta = $groupCount-$currGroupCount
-                    $RemainingGroupUrl = $GroupUrl+"?`$skip=$($currGroupCount)&`$top=$($delta)"
-                    $remainingGroupResp = Invoke-WebRequest -Uri $RemainingGroupUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                    if($remainingGroupResp.StatusCode -eq 200){
-                        $remGroupInfo = $remainingGroupResp.Content|ConvertFrom-Json
+                if ($groupCount -gt $currGroupCount) {
+                    $delta = $groupCount - $currGroupCount
+                    $RemainingGroupUrl = $GroupUrl + "?`$skip=$($currGroupCount)&`$top=$($delta)"
+                    $remainingGroupResp = Invoke-WebRequest -Uri $RemainingGroupUrl -Method Get -Headers $Headers -ContentType $Type
+                    if ($remainingGroupResp.StatusCode -eq 200) {
+                        $remGroupInfo = $remainingGroupResp.Content | ConvertFrom-Json
                         $groupList += $remGroupInfo.value
                     }
                 }
@@ -126,24 +125,24 @@ Try {
                         Write-Output "*** Group Details ***"
                         $Group | Format-List
                         $DevUrl = $GroupUrl + "(" + [String]($Group.Id) + ")/Devices"
-                        $DevResp = Invoke-WebRequest -Uri $DevUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+                        $DevResp = Invoke-WebRequest -Uri $DevUrl -Method Get -Headers $Headers -ContentType $Type
                         if ($DevResp.StatusCode -eq 200) {
                             $DevInfo = $DevResp.Content | ConvertFrom-Json
                             $DevList = $DevInfo.value
                             $deviceCount = $DevInfo.'@odata.count'
                             if ($deviceCount -gt 0) {
                                 $currDeviceCount = ($DevInfo.value).Length
-                                if($deviceCount -gt $currDeviceCount){
-                                    $delta = $deviceCount-$currDeviceCount 
-                                    $RemainingDeviceurl = $DevUrl+"?`$skip=$($currDeviceCount)&`$top=$($delta)"
-                                    $RemainingDeviceResp = Invoke-WebRequest -Uri $RemainingDeviceurl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
-                                    if($RemainingDeviceResp.StatusCode -eq 200){
-                                        $RemainingDeviceInfo = $RemainingDeviceResp.Content|ConvertFrom-Json
-                                        $DevList+=$RemainingDeviceInfo.value
+                                if ($deviceCount -gt $currDeviceCount) {
+                                    $delta = $deviceCount - $currDeviceCount 
+                                    $RemainingDeviceurl = $DevUrl + "?`$skip=$($currDeviceCount)&`$top=$($delta)"
+                                    $RemainingDeviceResp = Invoke-WebRequest -Uri $RemainingDeviceurl -Method Get -Headers $Headers -ContentType $Type
+                                    if ($RemainingDeviceResp.StatusCode -eq 200) {
+                                        $RemainingDeviceInfo = $RemainingDeviceResp.Content | ConvertFrom-Json
+                                        $DevList += $RemainingDeviceInfo.value
                                     }
                                     else {
                                         Write-Error "Unable to get full set of devices ... "
-                                      }
+                                    }
                                 }
 
                                 Write-Output "*** Group Device Details ***"
@@ -176,6 +175,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }

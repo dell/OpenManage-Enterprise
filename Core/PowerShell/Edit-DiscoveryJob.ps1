@@ -1,10 +1,28 @@
 <#
+_author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
+
+Copyright (c) 2021 Dell EMC Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#>
+
+<#
  .SYNOPSIS
    Script to update an existing discovery job in OME
 
  .DESCRIPTION
 
-   This script exercises the OME REST API to update an existing discovery job(if found) with the credentials and networkaddress if user passses the iparray.
+   This script uses the OME REST API to update an existing discovery job(if found) with the credentials and networkaddress if user passses the iparray.
 
  .PARAMETER IpAddress
    This is the IP address of the OME Appliance
@@ -19,11 +37,9 @@
   .PARAMETER IpArray
   Array of Ip addresses
   
-   .EXAMPLE
-  $cred = Get-Credential
-  .\Modify-DiscoveryConfig.ps1.ps1 --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
-   
-   In this instance you will be prompted for credentials
+ .EXAMPLE
+   $cred = Get-Credential
+   .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
 #>
 [CmdletBinding()]
 param(
@@ -62,7 +78,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     }
-    Catch {
+    catch {
         Write-Error "Unable to add type for cert policy"
     }
 }
@@ -103,13 +119,13 @@ function Get-DiscoverConfigPayload() {
         "CreateGroup": true,
         "TrapDestination": false,
         "CommunityString": false
-    }' |ConvertFrom-Json
+    }' | ConvertFrom-Json
     return $DiscoveryConfigDetails
 }
 
 
 function Test-IpAddress($ipAddrs) {
-    $ipAddrs = $ipAddrs | Where-Object {$_}
+    $ipAddrs = $ipAddrs | Where-Object { $_ }
     $ipAddressList = [System.Collections.ArrayList][String[]]$ipAddrs
     foreach ($ip in $ipAddrs) {
         if ($ip -Match '-') {
@@ -138,24 +154,24 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     Write-Host "Polling job status"
     $SLEEP_INTERVAL = 3
     Start-Sleep -Seconds $SLEEP_INTERVAL
-    $JobResp = Invoke-WebRequest -UseBasicParsing -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
+    $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
     if ($JobResp.StatusCode -eq 200) {
         $JobInfo = $JobResp.Content | ConvertFrom-Json
         $JobList = $JobInfo.value
         $totalJobs = $JobInfo.'@odata.count'
         if ($totalJobs -gt 0) {
-            if ($JobInfo.'@odata.nextLink'){
+            if ($JobInfo.'@odata.nextLink') {
                 $NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
             }
-            while ($NextLinkUrl){
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -UseBasicParsing -Method Get -Headers $Headers -ContentType $Type
+            while ($NextLinkUrl) {
+                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $JobList += $NextLinkData.'value'
-                    if ($NextLinkData.'@odata.nextLink'){
+                    if ($NextLinkData.'@odata.nextLink') {
                         $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
                     }
-                    else{
+                    else {
                         $NextLinkUrl = $null
                     }
                 }
@@ -164,35 +180,35 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
                 }
             }
         }
-        else{
+        else {
             Write-Warning "Job results are empty"
         }
         
-        foreach ($jobinfo in $JobList){
-            if ($jobinfo.'JobName' -match $JobName){
-                if ($jobinfo.'LastRunStatus'.'Name' -eq "Running"){
+        foreach ($jobinfo in $JobList) {
+            if ($jobinfo.'JobName' -match $JobName) {
+                if ($jobinfo.'LastRunStatus'.'Name' -eq "Running") {
                     Write-Host "Discovery config job status is $($jobinfo.'LastRunStatus'.'Name')"
                     $job_match_found = 1
                 }
             }
         }
 
-        if (!$job_match_found){
+        if (!$job_match_found) {
             Write-Host "Unable to track running discovery config job"
         }
     }
-    else{
+    else {
         Write-Warning "Unable to fetch jobs"
     }
 }
 
 
 
-function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNamePattern,$ipAddressList) {
+function Update-Config-Payload($IpAddress, $DeviceUserName, $DevicePassword, $JobNamePattern, $ipAddressList) {
     $DiscoveryConfigModels = @()
     $CredentialsList = @()
     $DiscoveryConfigUrl = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups"
-    $DiscoveryResp = Invoke-WebRequest -UseBasicParsing -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
+    $DiscoveryResp = Invoke-WebRequest -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
     $Payload = Get-DiscoverConfigPayload
     $ConfigGrpId = $null
     $DiscoveryConfigTargets = @()
@@ -206,8 +222,8 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
                     $ConfigGrpId = $value.DiscoveryConfigGroupId
                     $DiscoveryConfigTargets = $value.DiscoveryConfigModels[0].DiscoveryConfigTargets
                     $value.DiscoveryConfigModels[0].PSObject.Properties.Remove("DiscoveryConfigTargets")
-                    $value.DiscoveryConfigModels[0]| Add-Member -MemberType NoteProperty -Name 'DiscoveryConfigTargets' -Value @()
-                    if ($ipAddressList.Length -gt 0){
+                    $value.DiscoveryConfigModels[0] | Add-Member -MemberType NoteProperty -Name 'DiscoveryConfigTargets' -Value @()
+                    if ($ipAddressList.Length -gt 0) {
                         foreach ($ip in $ipAddressList) {
                             $jsonContent = [PSCustomObject]@{
                                 'NetworkAddressDetail' = $ip
@@ -215,7 +231,7 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
                             $value.DiscoveryConfigModels[0].DiscoveryConfigTargets += $jsonContent
                         }
                     }
-                    else{
+                    else {
                         $value.DiscoveryConfigModels[0].DiscoveryConfigTargets = $DiscoveryConfigTargets
                     }
                     $connectionProfile = $value.'DiscoveryConfigModels'.'ConnectionProfile' | ConvertFrom-Json
@@ -231,16 +247,16 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
                 }
             }
         }
-        else{
+        else {
             Write-Warning "Unable to get device config data"
         }
 		
-        if ($ConfigGrpId){
+        if ($ConfigGrpId) {
             # Modify an existing discovery job
             $ModifyConfigGrpURL = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups($($ConfigGrpId))"
             Write-Host "URL = $($ModifyConfigGrpURL)"
             $Body = $Payload | ConvertTo-Json -Depth 6
-            $Response = Invoke-WebRequest -Uri $ModifyConfigGrpURL -UseBasicParsing -Headers $Headers -ContentType $Type -Method PUT -Body $Body
+            $Response = Invoke-WebRequest -Uri $ModifyConfigGrpURL -Headers $Headers -ContentType $Type -Method PUT -Body $Body
             if ($Response.StatusCode -eq 200) {
                 Write-Host "Successfully modified the discovery config group"
                 Get-JobStatus $IpAddress $Headers $Type $JobNamePattern
@@ -249,7 +265,7 @@ function Update-Config-Payload($IpAddress,$DeviceUserName,$DevicePassword,$JobNa
                 Write-Warning "Failed to modify discovery config group"
             }
         }
-        else{
+        else {
             Write-Warning "Unable to find discovery config groupname corresponding to the discovery job name pattern passed"
         }
     }
@@ -278,6 +294,6 @@ Try {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
 }
-Catch {
-    Write-Error "Exception occured - $($_.Exception.Message)"
+catch {
+    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }
