@@ -27,7 +27,14 @@ Set Minimum and Maximum to the same value to a single VLAN
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
+*Must include header row with at least the rows in the example below
+*NetworkType must be an integer value. Use get_network.py --list-networktypes
+*For a single VLAN set VlanMinimum=VlanMaximum
+Example:
+Name,Description,VlanMaximum,VlanMinimum,NetworkType
+VLAN 800,Description for VLAN 800,800,800,1
+
+#### Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
 import sys
@@ -112,17 +119,17 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--name", "-n", required=False,
+    parser.add_argument("--name", "-n", required=False,
                         help="Name of VLAN")
-    PARSER.add_argument("--description", "-d", required=False,
+    parser.add_argument("--description", "-d", required=False,
                         help="Description of VLAN")
-    PARSER.add_argument("--vlan-minimum", "-vmin", required=False,
+    parser.add_argument("--vlan-minimum", "-vmin", required=False,
                         help="Minimum VLAN (Integer)")    
-    PARSER.add_argument("--vlan-maximum", "-vmax", required=False,
+    parser.add_argument("--vlan-maximum", "-vmax", required=False,
                         help="Maximum VLAN (Integer)")                    
-    PARSER.add_argument("--vlan-type", "-vt", required=False,
+    parser.add_argument("--vlan-type", "-vt", required=False,
                         help="Type of VLAN (Integer) Use get_network.py --list-networktypes")
-    PARSER.add_argument("--in-file", "-f", required=False,
+    parser.add_argument("--in-file", "-f", required=False,
                         help="""Path to CSV file
 *Must include header row with at least the rows in the example below
 *NetworkType must be an integer value. Use get_network.py --list-networktypes
@@ -130,7 +137,7 @@ if __name__ == '__main__':
 #### Python Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
-    ARGS = PARSER.parse_args()
+    ARGS = parser.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
     headers = {'content-type': 'application/json'}
@@ -157,4 +164,4 @@ VLAN 800,Description for VLAN 800,800,800,1""")
         print(traceback.format_exc())
     finally:
         # TODO - auth_token['id] could be undefined in the event of a failure. This should be updated
-        delete_session(args.ip, headers, auth_token['id'])
+        delete_session(ARGS.ip, headers, auth_token['id'])

@@ -21,17 +21,17 @@
 #
 
 """
-SYNOPSIS:
-   Script to manage templates in OpenManage Enterprise
+#### Synopsis
+Script to associate an identity pool to a template in OpenManage Enterprise
 
-DESCRIPTION:
-   This script uses the OME REST API to export, import, assign vlans or identity pool to templates
-   Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script uses the OME REST API to associate an identity pool to a template
 
-EXAMPLE:
-    python .\set_template_identitypool.py --ip <xx> --user <username> --password <pwd> --name "MX840c Test" --identitypool-id 4
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python .\set_template_identitypool.py --ip <xx> --user <username> --password <pwd> --name "MX840c Test" --identitypool-id 4`
 """
 
 import sys

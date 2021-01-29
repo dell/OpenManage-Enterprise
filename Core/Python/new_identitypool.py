@@ -20,6 +20,25 @@
 # limitations under the License.
 #
 
+"""
+#### Synopsis
+Script to create identity pool in OpenManage Enterprise
+
+#### Description
+This script uses the OME REST API to create identity pools
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+*Must include header row with at least the rows in the example below
+*Use get_identitypool.py to export CSV file
+Example:
+Name,EthernetSettings IdentityCount,EthernetSettings StartingMacAddress,IscsiSettings IdentityCount,IscsiSettings StartingMacAddress,IscsiSettings InitiatorConfig IqnPrefix,IscsiSettings InitiatorIpPoolSettings IpRange,IscsiSettings InitiatorIpPoolSettings SubnetMask,IscsiSettings InitiatorIpPoolSettings Gateway,IscsiSettings InitiatorIpPoolSettings PrimaryDnsServer,IscsiSettings InitiatorIpPoolSettings SecondaryDnsServer,FcoeSettings IdentityCount,FcoeSettings StartingMacAddress,FcSettings Wwnn IdentityCount,FcSettings Wwnn StartingAddress,FcSettings Wwpn IdentityCount,FcSettings Wwpn StartingAddress
+TestPool01,30,04:00:00:00:01:00,30,04:00:00:00:02:00,iqn01,192.168.1.100/24,,,,,30,04:00:00:00:03:00,30,20:00:04:00:00:00:04:00,30,20:01:04:00:00:00:04:00
+
+#### Example
+`python .\new_identitypool.py --ip "mx7000-chassis.example.com" --user admin --password 'password' --in-file "C:\Temp\IdentityPools_New.csv"`
+"""
+
 import sys
 import time
 import argparse

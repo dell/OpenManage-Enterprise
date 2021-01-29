@@ -21,17 +21,18 @@
 #
 
 """
-SYNOPSIS:
-   Script to manage templates in OpenManage Enterprise
+#### Synopsis
+Script to manage templates in OpenManage Enterprise
 
-DESCRIPTION:
-   This script uses the OME REST API to export templates to a file
-   Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script uses the OME REST API to export templates to a file
+Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
 
-EXAMPLE:
-    python .\get_template.py --ip <xx> --user <username> --password <pwd> --name "TestTemplate" --out-directory "C:\Backup"
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python .\get_template.py --ip <xx> --user <username> --password <pwd> --name "TestTemplate" --out-directory "C:\Backup"`
 """
 
 import sys

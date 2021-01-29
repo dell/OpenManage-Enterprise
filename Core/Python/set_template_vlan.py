@@ -21,18 +21,20 @@
 #
 
 """
-SYNOPSIS:
-   Script to manage templates in OpenManage Enterprise
+#### Synopsis
+Script to manage templates in OpenManage Enterprise
 
-DESCRIPTION:
-   This script uses the OME REST API to export, import, assign vlans or identity pool to templates
-   Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
+#### Description
+This script uses the OME REST API to export, import, assign vlans or identity pool to templates
 
-EXAMPLE:
-    python .\set_template_vlan.py --ip <xx> --user <username> --password <pwd> --name "MX840 Test" --network-card "NIC in Mezzanine 1A" --untagged-vlans "{1:0,2:'VLAN 1002'}" --tagged-vlans "{1:['VLAN 1003','VLAN 1004'],2:['VLAN 1004','VLAN 1005']}"
-    python .\set_template_vlan.py --ip <xx> --user <username> --password <pwd> --name "MX840 Test" --network-card "NIC in Mezzanine 1A" --untagged-vlans '{1:0,2:0}' --tagged-vlans '{1:[],2:[]}'
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+```
+python .\set_template_vlan.py --ip <xx> --user <username> --password <pwd> --name "MX840 Test" --network-card "NIC in Mezzanine 1A" --untagged-vlans "{1:0,2:'VLAN 1002'}" --tagged-vlans "{1:['VLAN 1003','VLAN 1004'],2:['VLAN 1004','VLAN 1005']}"
+python .\set_template_vlan.py --ip <xx> --user <username> --password <pwd> --name "MX840 Test" --network-card "NIC in Mezzanine 1A" --untagged-vlans '{1:0,2:0}' --tagged-vlans '{1:[],2:[]}'
+```
 """
 
 import sys

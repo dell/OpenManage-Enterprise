@@ -19,16 +19,17 @@
 # limitations under the License.
 #
 """
-SYNOPSIS:
-   Script to save all networks to a csv file
-DESCRIPTION:
-   This script exercises the OME REST API to save a copy of the 
-   defined VLANS to a csv file.
-   
-   For authentication X-Auth is used over Basic Authentication
-   Note that the credentials entered are not stored to disk.
-EXAMPLE:
-   python get_network.py --ip <xx> --user <username> --password <pwd> --out_file <exported csv file>
+#### Synopsis
+Script to save all networks to a csv file
+
+#### Description
+This script exercises the OME REST API to save a copy of the defined VLANS to a csv file.
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python get_network.py --ip <xx> --user <username> --password <pwd> --out_file <exported csv file>`
 """
 import sys
 import argparse

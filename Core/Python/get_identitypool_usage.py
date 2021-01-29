@@ -24,11 +24,12 @@ Script to get the list of virtual addresses in an Identity Pool
 #### Description
 This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
 Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
+
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
-```bash
+#### Example
+```
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
 python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
@@ -178,10 +179,10 @@ if __name__ == '__main__':
                         help="Password for OME Appliance")
     parser.add_argument("--id", required=False,
                         help="Identity Pool Id")
-    PARSER.add_argument("--out-file", "-o", required=False,
+    parser.add_argument("--out-file", "-o", required=False,
                         help="Full path to CSV file")
 
-    ARGS = PARSER.parse_args()
+    ARGS = parser.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
     headers = {'content-type': 'application/json'}

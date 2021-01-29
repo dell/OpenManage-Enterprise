@@ -20,6 +20,21 @@
 # limitations under the License.
 #
 
+"""
+#### Synopsis
+Script to export identity pools to CSV file
+
+#### Description
+This script uses the OME REST API to export all identity pools to a CSV file
+Will export to a CSV file called IdentityPools.csv in the current directory by default.
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python get_identitypool.py --ip <xx> --user <username> --password <pwd> --outfile "/tmp/temp.csv"`
+"""
+
 import sys
 import time
 import argparse
@@ -67,19 +82,6 @@ def delete_session(ip_address, headers, id):
     else: 
         print ("Unable to delete session %s" % id)
         return False
-
-def mac_to_base64_conversion(mac_address):
-    try:
-        if mac_address:
-            allowed_mac_separators = [':', '-', '.']
-            for sep in allowed_mac_separators:
-                if sep in mac_address:
-                    b64_mac_address = codecs.encode(codecs.decode(
-                        mac_address.replace(sep, ''), 'hex'), 'base64')
-                    address = codecs.decode(b64_mac_address, 'utf-8').rstrip()
-                    return address
-    except binascii.Error:
-        print ('Encoding of MAC address {0} to base64 failed'.format(mac_address))
 
 def base64_to_mac_conversion(base64):
     try:
