@@ -62,7 +62,7 @@ def _get_powershell_example(script_to_process: str):
 
 logging.info("Reading in YML...")
 with open('categories.yml') as category_file:
-    categories_dictionary = yaml.load(category_file, Loader=yaml.FullLoader)
+    categories_dictionary = yaml.load(category_file, Loader=yaml.SafeLoader)
 
 python_file_list = []
 module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'other': {}}
