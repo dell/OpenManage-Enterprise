@@ -27,18 +27,9 @@ Set Minimum and Maximum to the same value to a single VLAN
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-*Must include header row with at least the rows in the example below
-*NetworkType must be an integer value. Use get_network.py --list-networktypes
-*For a single VLAN set VlanMinimum=VlanMaximum
-Example:
-Name,Description,VlanMaximum,VlanMinimum,NetworkType
-VLAN 800,Description for VLAN 800,800,800,1
-
-#### Example
+#### Python Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
-import sys
-import traceback
 import argparse
 import csv
 import json
@@ -80,11 +71,38 @@ def get_session(ip_address, user_name, password):
 def delete_session(ip_address, headers, id):
     session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
     session_info = requests.delete(session_url, verify=False, headers=headers)
-    if session_info.status_code == 204:
+    if session_info.status_code == 201:
         return True
-    else: 
-        print ("Unable to delete session %s" % id)
+    else:
         return False
+
+
+def get_networktypes(base_uri, headers):
+    # Display Network Types
+    networktype_url = base_uri + '/api/NetworkConfigurationService/NetworkTypes'
+    networktype_response = requests.get(networktype_url, headers=headers, verify=False)
+    if networktype_response.status_code == 200 or networktype_response.status_code == 201:
+        networktype_data = networktype_response.json()
+        networktype_data = networktype_data['value']
+        for i in networktype_data:
+            print("Id: %s, Name: %s, Description: %s" % (i["Id"], i["Name"], i["Description"]))
+    else:
+        print("Unable to retrieve list from %s" % networktype_url)
+
+
+def get_networks(base_uri, headers):
+    # Display Network Types
+    network_url = base_uri + '/api/NetworkConfigurationService/Networks'
+    network_response = requests.get(network_url, headers=headers, verify=False)
+    if network_response.status_code == 200 or network_response.status_code == 201:
+        network_data = network_response.json()
+        network_data = network_data['value']
+        for i in network_data:
+            print("Id: %s, Name: %s, Description: %s, VLAN Min: %s, VLAN Max: %s, Created By: %s" % (
+                i["Id"], i["Name"], i["Description"], i["VlanMinimum"], i["VlanMaximum"], i["CreatedBy"]))
+    else:
+        print("Unable to retrieve list from %s" % network_url)
+
 
 def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maximum, network_type):
     try:
@@ -103,11 +121,13 @@ def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maxi
         if create_resp.status_code == 201:
             print("New network created %s" % name)
         elif create_resp.status_code == 400:
-            print ("Failed creation... ")
-            print (json.dumps(create_resp.json(), indent=4,
-                                sort_keys=False))
-    except Exception as e:
-        print(traceback.format_exc())
+            print("Failed creation... ")
+            print(json.dumps(create_resp.json(), indent=4,
+                             sort_keys=False))
+    except ValueError:
+        print("Failed creation... ")
+        print("Value error:", sys.exc_info())
+        pass
 
 
 if __name__ == '__main__':
@@ -119,49 +139,52 @@ if __name__ == '__main__':
                         help="Username for OME Appliance", default="admin")
     parser.add_argument("--password", "-p", required=False,
                         help="Password for OME Appliance")
-    parser.add_argument("--name", "-n", required=False,
-                        help="Name of VLAN")
-    parser.add_argument("--description", "-d", required=False,
-                        help="Description of VLAN")
-    parser.add_argument("--vlan-minimum", "-vmin", required=False,
-                        help="Minimum VLAN (Integer)")    
-    parser.add_argument("--vlan-maximum", "-vmax", required=False,
-                        help="Maximum VLAN (Integer)")                    
-    parser.add_argument("--vlan-type", "-vt", required=False,
-                        help="Type of VLAN (Integer) Use get_network.py --list-networktypes")
+    parser.add_argument("--list-networks", "-ln", required=False, action='store_true',
+                        help="List existing Networks")
+    parser.add_argument("--list-networktypes", "-lt", required=False, action='store_true',
+                        help="List available Network Types")
     parser.add_argument("--in-file", "-f", required=False,
                         help="""Path to CSV file
 *Must include header row with at least the rows in the example below
-*NetworkType must be an integer value. Use get_network.py --list-networktypes
+*NetworkType must be an integer value. Use --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
 #### Python Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
-    ARGS = parser.parse_args()
-    base_uri = 'https://%s' %(ARGS.ip)
-    auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    if not args.password:
+        args.password = getpass()
+
     headers = {'content-type': 'application/json'}
-    if auth_token.get('token') != None:
-        headers['X-Auth-Token'] = auth_token['token']
-    else:
-        print("Unable to create a session with appliance %s" % (base_uri))
-        quit()
 
     try:
-        if ARGS.name != None and ARGS.vlan_minimum != None and ARGS.vlan_maximum != None and ARGS.vlan_type != None:
-            create_network(base_uri, headers, ARGS.name, ARGS.description, ARGS.vlan_minimum, ARGS.vlan_maximum, ARGS.vlan_type)
-        elif ARGS.in_file != None and path.exists(ARGS.in_file):
-            with open(ARGS.in_file) as f:
-                records = csv.DictReader(f)
-                for row in records:
-                    print ("Creating network from data: %s" %(row))
-                    try:
-                        create_network(base_uri, headers, row["Name"], row["Description"], row["VlanMinimum"], row["VlanMaximum"], row["NetworkType"])
-                    except(KeyError):
-                        print ("Unexpected error:", sys.exc_info())
-                        print ("KeyError: Missing or improperly named columns. File must contain the following headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
-    except Exception as e:
-        print(traceback.format_exc())
+        base_uri = 'https://%s' % args.ip
+
+        # Get auth token for session
+        auth_token = get_session(args.ip, args.user, args.password)
+        if auth_token is not None:
+            headers['X-Auth-Token'] = auth_token['token']
+
+            if args.list_networks:
+                get_networks(base_uri, headers)
+
+            if args.list_networktypes:
+                get_networktypes(base_uri, headers)
+
+            if args.in_file is not None and path.exists(args.in_file):
+                with open(args.in_file) as f:
+                    records = csv.DictReader(f)
+                    for row in records:
+                        print("Creating network from data: %s" % row)
+                        try:
+                            create_network(base_uri, headers, row["Name"], row["Description"], row["VlanMinimum"],
+                                           row["VlanMaximum"], row["NetworkType"])
+                        except KeyError:
+                            print("Unexpected error:", sys.exc_info())
+                            print("KeyError: Missing or improperly named columns. File must contain the following "
+                                  "headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
+    except Exception as error:
+        print("Unexpected error:", str(error))
     finally:
         # TODO - auth_token['id] could be undefined in the event of a failure. This should be updated
-        delete_session(ARGS.ip, headers, auth_token['id'])
+        delete_session(args.ip, headers, auth_token['id'])
