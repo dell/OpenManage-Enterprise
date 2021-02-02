@@ -1,11 +1,9 @@
-﻿#!/usr/bin/python
-# -*- coding: utf-8 -*-
+﻿# 
 #  Python script using OME API to create a Network
 #
-# _author_ = Martin Flint <Martin.Flint@Dell.com>
-# _version_ = 0.1
+# _author_ = Martin Flint <Martin.Flint@Dell.com> and Trevor Squillario <Trevor.Squillario@Dell.com>
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +17,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+#### Synopsis
+Script to import chassis profile from network share
+
+#### Description
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python set_chassis_profile.py --ip <xx> --user <username> --password <pwd> --share-type "NFS" --share-ipaddress "<ip address>" --share-path "/mnt/data" --in-file "file.json"`
+"""
 
 import sys
 import time
@@ -78,7 +88,11 @@ def load_profile(
     password,
     import_file,
     ):
+    """
+    Import chassis profile from file
 
+    Returns: None
+    """
     network_payload = {
         'Id': 0,
         'JobName': 'Import Profile',

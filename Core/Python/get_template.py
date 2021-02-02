@@ -2,10 +2,8 @@
 #  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
-#
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +20,7 @@
 
 """
 #### Synopsis
-Script to manage templates in OpenManage Enterprise
+Script to export templates in OpenManage Enterprise
 
 #### Description
 This script uses the OME REST API to export templates to a file
@@ -78,6 +76,9 @@ def delete_session(ip_address, headers, id):
         return False
 
 def get_template(base_uri, headers, name):
+    """
+    Get template object
+    """
     if name:
         url = base_uri + "/api/TemplateService/Templates?$filter=Name eq '" + name + "'"
     else:
@@ -93,6 +94,9 @@ def get_template(base_uri, headers, name):
                             sort_keys=False))
 
 def export_template(base_uri, headers, template_id, name, directory):
+    """
+    Export template to file. 
+    """
     try:
         payload = {
             "TemplateId": 1
@@ -112,32 +116,6 @@ def export_template(base_uri, headers, template_id, name, directory):
         elif create_resp.status_code == 400:
             print ("Failed to export template... ")
             print (json.dumps(create_resp.json(), indent=4, sort_keys=False))
-    except Exception as e:
-        print(traceback.format_exc())
-
-def import_template(base_uri, headers, name, filename):
-    try:
-        payload = {
-            "Name": "Template Import",
-            "Type": 2,
-            "ViewTypeId": 2,
-            "Content" : ""
-        }
-        url = base_uri + '/api/TemplateService/Actions/TemplateService.Import'
-        payload["Name"] = name
-        f = open(filename, "r")
-        content = f.read()
-        payload["Content"] = content
-        print(json.dumps(payload, indent=4))
-        create_resp = requests.post(url, headers=headers,
-                                    verify=False,
-                                    data=json.dumps(payload))
-        if create_resp.status_code == 201:
-            print ("New template created %s" %(name))
-        elif create_resp.status_code == 400:
-            print ("Failed creation... ")
-            print (json.dumps(create_resp.json(), indent=4,
-                                sort_keys=False))
     except Exception as e:
         print(traceback.format_exc())
 
