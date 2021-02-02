@@ -2,10 +2,8 @@
 #  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
-#
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +20,10 @@
 
 """
 #### Synopsis
-Script to manage templates in OpenManage Enterprise
+Script to assign networks (VLAN) to a template in OpenManage Enterprise
 
 #### Description
-This script uses the OME REST API to export, import, assign vlans or identity pool to templates
+This script uses the OME REST API to assign networks (VLAN) to a template
 
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -52,12 +50,6 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 session_auth_token = {}
-
-KEY_ATTR_NAME = 'DisplayName'
-SUB_GRP_ATTR_NAME = 'SubAttributeGroups'
-GRP_ATTR_NAME = 'Attributes'
-GRP_NAME_ID_ATTR_NAME = 'GroupNameId'
-CUSTOM_ID_ATTR_NAME = 'CustomId'
 
 def get_session(ip_address, username, password):
     session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
@@ -87,6 +79,25 @@ def delete_session(ip_address, headers, id):
         return False
 
 def get_template_vlan_info(base_uri, headers, nic_identifier, template_id):
+    """
+    Get attribute id and vlans from template
+
+    Args:
+        base_uri: API URL
+        headers: Authentication headers
+        nic_identifier: Network adapter name
+        template_id: Id of template
+        
+    Return: 
+        port_id_map: Network Port Partition Id
+        port_untagged_map: Untaggeed VLAN
+        port_tagged_map: Tagged VLANs
+    """
+    KEY_ATTR_NAME = 'DisplayName'
+    SUB_GRP_ATTR_NAME = 'SubAttributeGroups'
+    GRP_ATTR_NAME = 'Attributes'
+    GRP_NAME_ID_ATTR_NAME = 'GroupNameId'
+    CUSTOM_ID_ATTR_NAME = 'CustomId'
     url = base_uri + "/api/TemplateService/Templates({0})/Views({1})/AttributeViewDetails".format(template_id, 4)
     port_id_map = {}
     port_untagged_map = {}
@@ -120,6 +131,9 @@ def get_template_vlan_info(base_uri, headers, nic_identifier, template_id):
 
 
 def get_networks(base_uri, headers):
+    """
+    Get networks
+    """
     network_url = base_uri + '/api/NetworkConfigurationService/Networks'
     network_response = requests.get(network_url, headers=headers, verify=False)
     if network_response.status_code == 200 or network_response.status_code == 201:
@@ -130,11 +144,27 @@ def get_networks(base_uri, headers):
         print("Unable to retrieve list from %s" % (network_url))
 
 def get_network_id(networks, name):
+    """
+    Get network id based on name provided
+    """
     for network in networks:
         if network["Name"] == name:
             return network["Id"]
 
 def get_vlan_payload(base_uri, headers, template_id, nic_identifier, untag_dict, tagged_dict):
+    """
+    Generate payload
+
+    Args:
+        base_uri: API URL
+        headers: Authentication headers
+        template_id: Id of template
+        nic_identifier: Network adapter name
+        untag_dict: Untagged VLAN
+        tagged_dict: Tagged VLANs
+        
+    Return: JSON payload
+    """
     payload = {}
     payload["TemplateId"] = template_id
     # VlanAttributes
@@ -179,6 +209,19 @@ def get_vlan_payload(base_uri, headers, template_id, nic_identifier, untag_dict,
     return payload
 
 def template_assign_vlan(base_uri, headers, template_id, network_card, untag_dict, tagged_dict):
+    """
+    Assign networks to template
+
+    Args:
+        base_uri: API URL
+        headers: Authentication headers
+        template_id: Id of template
+        network_card: Network adapter name
+        untag_dict: Untagged VLAN
+        tagged_dict: Tagged VLANs
+
+    Return: None
+    """
     try:
         url = base_uri + "/api/TemplateService/Actions/TemplateService.UpdateNetworkConfig"
         payload = get_vlan_payload(base_uri, headers, template_id, network_card, ast.literal_eval(untag_dict), ast.literal_eval(tagged_dict))
@@ -193,6 +236,9 @@ def template_assign_vlan(base_uri, headers, template_id, network_card, untag_dic
         print(traceback.format_exc())
 
 def get_template(base_uri, headers, name):
+    """
+    Get template by name
+    """
     if name:
         url = base_uri + "/api/TemplateService/Templates?$filter=Name eq '" + name + "'"
         get_resp = requests.get(url, headers=headers, verify=False)
@@ -216,11 +262,11 @@ if __name__ == '__main__':
     PARSER.add_argument("--name", "-n", required=True,
                         help="Name of Template")
     PARSER.add_argument("--network-card", "-nc", required=False,
-                        help="Name of NIC")
+                        help="Name of NIC. Ex: 'NIC in Mezzanine 1A'")
     PARSER.add_argument("--untagged-vlans", "-vu", required=False,
-                        help="Untagged VLANS")
+                        help="Untagged VLANS. Ex: '{1:0,2:'VLAN 1002'}'")
     PARSER.add_argument("--tagged-vlans", "-vt", required=False,
-                        help="Tagged VLANS")
+                        help="Tagged VLANS. Ex: '{1:['VLAN 1003','VLAN 1004'],2:['VLAN 1004','VLAN 1005']}'")
     ARGS = PARSER.parse_args()
     base_uri = 'https://%s' %(ARGS.ip)
     auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)

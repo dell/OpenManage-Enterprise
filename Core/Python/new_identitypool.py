@@ -1,11 +1,9 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# 
 #  Python script using OME API to create a Network
 #
-# _author_ = Martin Flint <Martin.Flint@Dell.com>
-# _version_ = 0.1
+# _author_ = Martin Flint <Martin.Flint@Dell.com> and Trevor Squillario <Trevor.Squillario@Dell.com>
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

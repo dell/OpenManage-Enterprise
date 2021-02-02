@@ -2,9 +2,8 @@
 #  Python script using OME API to create a Network
 #
 # _author_ = Greg Bowersock <Greg.Bowersock@Dell.com> and Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +17,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 #### Synopsis
 Script to save all networks to a csv file
 
 #### Description
-This script exercises the OME REST API to save a copy of the defined VLANS to a csv file.
+Will export to a CSV file called Networks.csv in the current directory by default.
 
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -31,6 +31,7 @@ Note that the credentials entered are not stored to disk.
 #### Example
 `python get_network.py --ip <xx> --user <username> --password <pwd> --out_file <exported csv file>`
 """
+
 import sys
 import argparse
 from argparse import RawTextHelpFormatter
@@ -76,7 +77,9 @@ def delete_session(ip_address, headers, id):
         return False
 
 def get_networktypes(base_uri, headers):
-    # Display Network Types
+    """
+    Display Network Types
+    """
     networktype_url = base_uri + '/api/NetworkConfigurationService/NetworkTypes'
     networktype_response = requests.get(networktype_url, headers=headers, verify=False)
     if networktype_response.status_code == 200 or networktype_response.status_code == 201:
@@ -88,7 +91,9 @@ def get_networktypes(base_uri, headers):
         print("Unable to retrieve list from %s" % (networktype_url))
 
 def get_networks(base_uri, headers, out_file):
-    # Display Network Types
+    """
+    Display Networks
+    """
     network_url = base_uri + '/api/NetworkConfigurationService/Networks'
     network_response = requests.get(network_url, headers=headers, verify=False)
     if network_response.status_code == 200 or network_response.status_code == 201:

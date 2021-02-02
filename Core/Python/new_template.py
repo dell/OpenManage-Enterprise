@@ -2,10 +2,8 @@
 #  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
-# _version_ = 0.1
 #
-#
-# Copyright (c) 2018 Dell EMC Corporation
+# Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +75,9 @@ def delete_session(ip_address, headers, id):
         return False
 
 def import_template(base_uri, auth_token, name, filename):
+    """
+    Import template from file
+    """
     try:
         payload = {
             "Name": "Template Import",

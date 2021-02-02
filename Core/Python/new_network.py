@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 """
 #### Synopsis
 Script to create a new network with VLAN
@@ -37,6 +38,7 @@ VLAN 800,Description for VLAN 800,800,800,1
 #### Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 """
+
 import sys
 import traceback
 import argparse
@@ -87,6 +89,20 @@ def delete_session(ip_address, headers, id):
         return False
 
 def create_network(base_uri, headers, name, description, vlan_minimum, vlan_maximum, network_type):
+    """
+    Create network (VLAN)
+    
+    Args:
+        base_uri: API URL
+        headers: Authentication headers
+        name: Name of network
+        description: Description of network
+        vlan_minimum: Min VLAN #
+        vlan_maximum: Max VLAN #
+        network_type: QOS Type
+    
+    Returns: None
+    """
     try:
         # Create Network
         network_payload = {
