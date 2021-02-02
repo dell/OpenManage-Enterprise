@@ -2,8 +2,10 @@
 #  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
+# _version_ = 0.1
 #
-# Copyright (c) 2021 Dell EMC Corporation
+#
+# Copyright (c) 2018 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,9 +77,6 @@ def delete_session(ip_address, headers, id):
         return False
 
 def get_indentity_pools(base_uri, headers):
-    """
-    Get identity pools
-    """
     url = base_uri + '/api/IdentityPoolService/IdentityPools'
     response = requests.get(url, headers=headers, verify=False)
     if response.status_code == 200 or response.status_code == 201:
@@ -88,17 +87,11 @@ def get_indentity_pools(base_uri, headers):
         print ('Unable to retrieve list from %s' % url)
 
 def get_identitypool_id(identitypools, name):
-    """
-    Get identity pool id based on the name provided.
-    """
     for identitypool in identitypools:
         if identitypool["Name"] == name:
             return identitypool["Id"]
 
 def template_assign_identitypool(base_uri, headers, template_id, name):
-    """
-    Associate identity pool to template
-    """
     try:
         payload = {
             "TemplateId": 0, 
@@ -125,9 +118,6 @@ def template_assign_identitypool(base_uri, headers, template_id, name):
         print(traceback.format_exc())
 
 def get_template(base_uri, headers, name):
-    """
-    Get template object
-    """
     if name:
         url = base_uri + "/api/TemplateService/Templates?$filter=Name eq '" + name + "'"
         get_resp = requests.get(url, headers=headers, verify=False)
