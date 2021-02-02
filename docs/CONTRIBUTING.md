@@ -26,7 +26,6 @@ We are working to standardize the repository. Any help would be welcomed with [u
   - Getting a group ID from its name: `https://<ome_ip>/api/GroupService/Groups?$filter=Name eq '<group_name>'`
   - Get a device ID from its name `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceName eq '<device_name>'`
   - Get a device ID from its service tag `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceServiceTag eq '<service_tag>'`
-- Use descriptive variable names. As a general rule you should not use names like "data". Instead use something that describes what type of data is expected.
 
 #### Bad
 
@@ -45,8 +44,8 @@ We are working to standardize the repository. Any help would be welcomed with [u
 
     # Python
     get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address, "DeviceName eq \'%s\'" % device_name)
-- When checking if a user provided an argument or not use `$PSBoundParameters.ContainsKey('<PARAM_NAME')`
 
+- Use descriptive variable names. As a general rule you should not use names like "data". Instead use something that describes what type of data is expected.
 ## PowerShell
 
 - Must be tested and run against PowerShell 7
@@ -76,6 +75,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
 
 - When handling credentials use the `pscredential` type. Wherever possible take advantage of passing credentials directly. Unless absolutely necessary you should not need to do things like `$Variable = $Credentials.Password`. Many functions (like `Invoke-RestMethod`) support the `-Credential` argument which allows you to pass the `pscredential` argument directly.
 - When looping for time in PowerShell use the below pattern. Replace with a `while` loop if that is more suitable for your needs.
+- When checking if a user provided an argument or not use `$PSBoundParameters.ContainsKey('<PARAM_NAME')`
 
 #### Bad
 
