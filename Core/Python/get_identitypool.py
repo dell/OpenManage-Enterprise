@@ -1,9 +1,11 @@
-# 
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 #  Python script using OME API to create a Network
 #
-# _author_ = Martin Flint <Martin.Flint@Dell.com> and Trevor Squillario <Trevor.Squillario@Dell.com>
+# _author_ = Martin Flint <Martin.Flint@Dell.com>
+# _version_ = 0.1
 #
-# Copyright (c) 2021 Dell EMC Corporation
+# Copyright (c) 2018 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +25,7 @@
 Script to export identity pools to CSV file
 
 #### Description
+This script uses the OME REST API to export all identity pools to a CSV file
 Will export to a CSV file called IdentityPools.csv in the current directory by default.
 
 For authentication X-Auth is used over Basic Authentication
@@ -81,14 +84,6 @@ def delete_session(ip_address, headers, id):
         return False
 
 def base64_to_mac_conversion(base64):
-    """
-    Convert base64 string to ascii. OME stores mac as base64.
-    
-    Args:
-        base64: base64 encoded string
-
-    Returns: ASCII MAC Address string
-    """
     try:
         if base64:
             b64_mac_address = codecs.encode(codecs.decode(bytes(base64, 'utf-8'), 'base64'), 'hex')
@@ -98,16 +93,7 @@ def base64_to_mac_conversion(base64):
         print ('Decoding of MAC address {0} from base64 failed'.format(mac_address))
 
 def get_indentity_pools(base_uri, headers, out_file):
-    """
-    Get identity pools and export them to CSV
-    
-    Args:
-        base_uri: API URL
-        headers: Authentication headers
-        out_file: Output file
 
-    Returns: None
-    """
     network_url = base_uri + '/api/IdentityPoolService/IdentityPools'
     network_response = requests.get(network_url, headers=headers,
                                     verify=False)

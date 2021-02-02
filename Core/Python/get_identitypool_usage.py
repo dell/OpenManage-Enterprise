@@ -1,6 +1,7 @@
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 #
+#
 # Copyright (c) 2021 Dell EMC Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +22,7 @@
 Script to get the list of virtual addresses in an Identity Pool
 
 #### Description
+This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
 Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
 
 For authentication X-Auth is used over Basic Authentication
