@@ -37,6 +37,8 @@ deploy:
   new_static_group:
     - new_static_group.py
     - New-StaticGroup.ps1
+  set_chassis_profile:
+    - set_chassis_profile.py
   set_power_state:
     - set_power_state.py
     - Set-PowerState.ps1
