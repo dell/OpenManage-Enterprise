@@ -82,6 +82,7 @@ monitor:
     - Get-GroupList.ps1
   get_identitypool_usage:
     - Get-IdentityPoolUsage.ps1
+    - get_identitypool_usage.py
   get_network:
     - get_network.py
   get_template:
