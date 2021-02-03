@@ -53,14 +53,12 @@ the source instance. Example:
     python copy_vlans.py --inputs <JSON_FILE_NAME>
 """
 
-from requests.auth import HTTPBasicAuth
 import argparse
 import json
 import sys
 from argparse import RawTextHelpFormatter
-
-from urllib.parse import urlparse
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

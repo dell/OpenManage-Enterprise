@@ -454,7 +454,8 @@ defined by FieldIdTypeId.
 
         print("Found group " + group_data[0]['Name'] + "!")
 
-        device_data = get_data(headers, 'https://%s/api/GroupService/Groups(%s)/Devices' % (ome_ip, group_data[0]['Id']))
+        device_data = get_data(headers,
+                               'https://%s/api/GroupService/Groups(%s)/Devices' % (ome_ip, group_data[0]['Id']))
 
         if len(device_data) < 1:
             print("WARNING: No devices detected in group %s" % group_data[0]['Name'])
@@ -489,7 +490,7 @@ defined by FieldIdTypeId.
 
             group_data = get_data(headers, "https://%s/api/GroupService/Groups" % ome_ip,
                                   "Name eq '%s'" % args.create)
-            
+
             if len(group_data) > 0:
                 print("Existing group found with name %s! If you want to change it use the --update argument instead."
                       % args.create)
@@ -546,7 +547,8 @@ defined by FieldIdTypeId.
                 operator_id_split = args.oid.split(",")
                 value_split = args.comparison_fields.split(",")
                 logical_operator_id_split = args.loid.split(",")
-                for fid, oid, comparison_value, loid in zip(field_id_split, operator_id_split, value_split, logical_operator_id_split):
+                for fid, oid, comparison_value, loid in zip(field_id_split, operator_id_split, value_split,
+                                                            logical_operator_id_split):
                     if comparison_value in field_id_list:
                         comparison_value = int(comparison_value)
                     create_dict = {"LogicalOperatorId": int(loid), "LeftParen": True, "FieldId": int(fid),
@@ -556,23 +558,25 @@ defined by FieldIdTypeId.
             else:
                 if args.comparison_fields in field_id_list:
                     create_dict = {"LogicalOperatorId": int(args.loid), "LeftParen": True, "FieldId": int(args.fid),
-                                   "OperatorId": int(args.oid), "Value": int(args.comparison_fields), "RightParen": True}
+                                   "OperatorId": int(args.oid), "Value": int(args.comparison_fields),
+                                   "RightParen": True}
                 else:
                     create_dict = {"LogicalOperatorId": 0, "LeftParen": True, "FieldId": int(args.fid),
-                                   "OperatorId": int(args.oid), "Value": int(args.comparison_fields), "RightParen": True}
+                                   "OperatorId": int(args.oid), "Value": int(args.comparison_fields),
+                                   "RightParen": True}
                 group_payload["GroupModelExtension"]["Conditions"].append(create_dict)
 
         else:
 
             group_payload = {"GroupModel": {
-                    "Id": group_id,
-                    "Name": group_name,
-                    "Description": args.description,
-                    "GlobalStatus": 0,
-                    "DefinitionId": 0,
-                    "MembershipTypeId": 24,
-                    "ParentId": query_groups_id
-                }
+                "Id": group_id,
+                "Name": group_name,
+                "Description": args.description,
+                "GlobalStatus": 0,
+                "DefinitionId": 0,
+                "MembershipTypeId": 24,
+                "ParentId": query_groups_id
+            }
             }
 
         if group_id == 0:

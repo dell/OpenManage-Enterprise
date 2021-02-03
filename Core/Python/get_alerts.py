@@ -58,9 +58,9 @@ import argparse
 import json
 import sys
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 from pprint import pprint
 from urllib.parse import urlparse
-from getpass import getpass
 
 try:
     import urllib3

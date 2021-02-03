@@ -36,9 +36,9 @@ import argparse
 import json
 import sys
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 from pprint import pprint
 from urllib.parse import urlparse
-from getpass import getpass
 
 try:
     import urllib3
@@ -249,11 +249,12 @@ if __name__ == '__main__':
                                                   "group.")
     parser.add_argument("--device-names", "-n", help="A comma separated list of device names which you want to add "
                                                      "to a group.")
-    parser.add_argument("--use-discovery-job-id", required=False, help="This option allows you to provide the job ID"
-                        " from a discovery job and will pull the servers from that job ID and assign them to the "
-                        "specified group. You can either retrieve the job ID programatically or you can get it "
-                        "manually from the UI by clicking on the job and pulling it from the URL. Ex: "
-                        "https://192.168.1.93/core/console/console.html#/core/monitor/monitor_portal/jobsDetails?jobsId=14026")
+    parser.add_argument("--use-discovery-job-id", required=False,
+                        help="This option allows you to provide the job ID"
+                             " from a discovery job and will pull the servers from that job ID and assign them to the "
+                             "specified group. You can either retrieve the job ID programatically or you can get it "
+                             "manually from the UI by clicking on the job and pulling it from the URL. Ex: "
+                             "https://192.168.1.93/core/console/console.html#/core/monitor/monitor_portal/jobsDetails?jobsId=14026")
     args = parser.parse_args()
 
     if not args.password:
