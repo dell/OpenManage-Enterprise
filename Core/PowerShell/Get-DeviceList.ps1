@@ -115,32 +115,32 @@ function Get-UniqueFileName {
 
 
 function Get-Data {
-  <#
-  .SYNOPSIS
-    Used to interact with API resources
-
-  .DESCRIPTION
-    This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
-    handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
-    pages to get a complete listing.
-
-  .PARAMETER Url
-    The API url against which you would like to make a request
-
-  .PARAMETER OdataFilter
-    An optional parameter for providing an odata filter to run against the API endpoint.
-
-  .PARAMETER MaxPages
-    The maximum number of pages you would like to return
-
-  .INPUTS
-    None. You cannot pipe objects to Get-Data.
-
-  .OUTPUTS
-    dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
-
-#>
-
+    <#
+    .SYNOPSIS
+      Used to interact with API resources
+  
+    .DESCRIPTION
+      This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+      handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+      pages to get a complete listing.
+  
+    .PARAMETER Url
+      The API url against which you would like to make a request
+  
+    .PARAMETER OdataFilter
+      An optional parameter for providing an odata filter to run against the API endpoint.
+  
+    .PARAMETER MaxPages
+      The maximum number of pages you would like to return
+  
+    .INPUTS
+      None. You cannot pipe objects to Get-Data.
+  
+    .OUTPUTS
+      dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
+  
+  #>
+  
   [CmdletBinding()]
   param (
 
@@ -180,9 +180,15 @@ function Get-Data {
     else {
       $Data += $CountData
     }
-      
+    
     if ($CountData.'@odata.nextLink') {
-      $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+      # Check to see if $NextLinkUrl is an absolute URI or a relative URI
+      if ($null -ne ($CountData.'@odata.nextLink' -as [System.URI]).AbsoluteURI) {
+        $NextLinkUrl = $CountData.'@odata.nextLink'
+      }
+      else {
+        $NextLinkUrl = "https://$($IpAddress)$($CountData.'@odata.nextLink')"
+      }
     }
 
     $i = 1
@@ -193,8 +199,9 @@ function Get-Data {
         }
         $i = $i + 1
       }
-      $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
-        -ContentType $Type -SkipCertificateCheck
+      
+      $NextLinkData = Invoke-RestMethod -Uri "$($NextLinkUrl)" -Method Get -Credential $Credentials `
+      -ContentType $Type -SkipCertificateCheck
           
       if ($null -ne $NextLinkData.'value') {
         $Data += $NextLinkData.'value'
@@ -202,9 +209,15 @@ function Get-Data {
       else {
         $Data += $NextLinkData
       }    
-          
+      
+      # Check to see if $NextLinkUrl is an absolute URI or a relative URI
       if ($NextLinkData.'@odata.nextLink') {
-        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+        if ($null -ne ($NextLinkData.'@odata.nextLink' -as [System.URI]).AbsoluteURI) {
+          $NextLinkUrl = $NextLinkData.'@odata.nextLink'
+        }
+        else {
+          $NextLinkUrl = "https://$($IpAddress)$($NextLinkData.'@odata.nextLink')"
+        }
       }
       else {
         $NextLinkUrl = $null
