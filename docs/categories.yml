@@ -46,6 +46,8 @@ update:
   invoke_refresh_inventory:
     - invoke_refresh_inventory.py
     - Invoke-RefreshInventory.ps1
+  set_template_vlan:
+    - set_template_vlan.py
   update_firmware_using_catalog:
     - update_firmware_using_catalog.py
     - Update-FirmwareUsingCatalog.ps1
