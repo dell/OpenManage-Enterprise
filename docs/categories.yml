@@ -59,6 +59,8 @@ monitor:
   get_audit_logs:
     - get_audit_logs.py
     - Get-AuditLogs.ps1
+  get_chassis_profile:
+    - get_chassis_profile.py
   get_chassis_inventory:
     - get_chassis_inventory.py
     - Get-ChassisInventory.ps1
