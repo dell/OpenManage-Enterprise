@@ -79,7 +79,7 @@ function Get-Data {
   .OUTPUTS
     dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
 
-#>
+  #>
 
   [CmdletBinding()]
   param (
@@ -120,9 +120,9 @@ function Get-Data {
     else {
       $Data += $CountData
     }
-      
+    
     if ($CountData.'@odata.nextLink') {
-      $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+      $NextLinkUrl = "https://$($IpAddress)$($CountData.'@odata.nextLink')"
     }
 
     $i = 1
@@ -133,8 +133,9 @@ function Get-Data {
         }
         $i = $i + 1
       }
-      $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
-        -ContentType $Type -SkipCertificateCheck
+      
+      $NextLinkData = Invoke-RestMethod -Uri "$($NextLinkUrl)" -Method Get -Credential $Credentials `
+      -ContentType $Type -SkipCertificateCheck
           
       if ($null -ne $NextLinkData.'value') {
         $Data += $NextLinkData.'value'
@@ -142,15 +143,15 @@ function Get-Data {
       else {
         $Data += $NextLinkData
       }    
-          
+      
       if ($NextLinkData.'@odata.nextLink') {
-        $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+        $NextLinkUrl = "https://$($IpAddress)$($NextLinkData.'@odata.nextLink')"
       }
       else {
         $NextLinkUrl = $null
       }
     }
-  
+
     return $Data
 
   }
