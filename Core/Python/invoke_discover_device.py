@@ -51,7 +51,6 @@ import json
 import os
 import sys
 import time
-import re
 from urllib.parse import urlparse
 from argparse import RawTextHelpFormatter
 from getpass import getpass
@@ -142,21 +141,9 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
     else:
         data = count_data
 
-    # Regex to match valid URLs
-    regex = re.compile(
-        r'^(?:http|ftp)s?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-
-    # Check to see if $NextLinkUrl is an absolute URI or a relative URI and adjust appropriately
     if '@odata.nextLink' in count_data:
-        if re.match(regex, count_data['@odata.nextLink']):
-            next_link_url = count_data['@odata.nextLink']
-        else:
-            next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
+        # Grab the base URI
+        next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
 
     i = 1
     while next_link_url is not None:
@@ -177,11 +164,8 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
             # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
             # is present we get a link to the page with the next set of results.
             if '@odata.nextLink' in requested_data:
-                if re.match(regex, requested_data['@odata.nextLink']):
-                    next_link_url = requested_data['@odata.nextLink']
-                else:
-                    next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
-                                    requested_data['@odata.nextLink']
+                next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
+                                requested_data['@odata.nextLink']
 
             if 'value' in requested_data:
                 data += requested_data['value']

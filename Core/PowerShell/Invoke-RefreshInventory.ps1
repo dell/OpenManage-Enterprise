@@ -125,98 +125,85 @@ function Get-Data {
   
   #>
   
-  [CmdletBinding()]
-  param (
-
-    [Parameter(Mandatory)]
-    [string]
-    $Url,
-
-    [Parameter(Mandatory = $false)]
-    [string]
-    $OdataFilter,
-
-    [Parameter(Mandatory = $false)]
-    [int]
-    $MaxPages = $null
-  )
-
-  $Data = @()
-  $NextLinkUrl = $null
-  try {
-
-    if ($PSBoundParameters.ContainsKey('OdataFilter')) {
-      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
-
-      if ($CountData.'@odata.count' -lt 1) {
-        Write-Error "No results were found for filter $($OdataFilter)."
-        return @{}
-      } 
-    }
-    else {
-      $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
-        -SkipCertificateCheck
-    }
-
-    if ($null -ne $CountData.'value') {
-      $Data += $CountData.'value'
-    }
-    else {
-      $Data += $CountData
-    }
-    
-    if ($CountData.'@odata.nextLink') {
-      # Check to see if $NextLinkUrl is an absolute URI or a relative URI
-      if ($null -ne ($CountData.'@odata.nextLink' -as [System.URI]).AbsoluteURI) {
-        $NextLinkUrl = $CountData.'@odata.nextLink'
+    [CmdletBinding()]
+    param (
+  
+      [Parameter(Mandatory)]
+      [string]
+      $Url,
+  
+      [Parameter(Mandatory = $false)]
+      [string]
+      $OdataFilter,
+  
+      [Parameter(Mandatory = $false)]
+      [int]
+      $MaxPages = $null
+    )
+  
+    $Data = @()
+    $NextLinkUrl = $null
+    try {
+  
+      if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+        $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+  
+        if ($CountData.'@odata.count' -lt 1) {
+          Write-Error "No results were found for filter $($OdataFilter)."
+          return @{}
+        } 
       }
       else {
-        $NextLinkUrl = "https://$($IpAddress)$($CountData.'@odata.nextLink')"
+        $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+          -SkipCertificateCheck
       }
-    }
-
-    $i = 1
-    while ($NextLinkUrl) {
-      if ($MaxPages) {
-        if ($i -ge $MaxPages) {
-          break
+  
+      if ($null -ne $CountData.'value') {
+        $Data += $CountData.'value'
+      }
+      else {
+        $Data += $CountData
+      }
+        
+      if ($CountData.'@odata.nextLink') {
+        $NextLinkUrl = $BaseUri + $CountData.'@odata.nextLink'
+      }
+  
+      $i = 1
+      while ($NextLinkUrl) {
+        if ($MaxPages) {
+          if ($i -ge $MaxPages) {
+            break
+          }
+          $i = $i + 1
         }
-        $i = $i + 1
-      }
-      
-      $NextLinkData = Invoke-RestMethod -Uri "$($NextLinkUrl)" -Method Get -Credential $Credentials `
-      -ContentType $Type -SkipCertificateCheck
-          
-      if ($null -ne $NextLinkData.'value') {
-        $Data += $NextLinkData.'value'
-      }
-      else {
-        $Data += $NextLinkData
-      }    
-      
-      # Check to see if $NextLinkUrl is an absolute URI or a relative URI
-      if ($NextLinkData.'@odata.nextLink') {
-        if ($null -ne ($NextLinkData.'@odata.nextLink' -as [System.URI]).AbsoluteURI) {
-          $NextLinkUrl = $NextLinkData.'@odata.nextLink'
+        $NextLinkData = Invoke-RestMethod -Uri "https://$($IpAddress)$($NextLinkUrl)" -Method Get -Credential $Credentials `
+          -ContentType $Type -SkipCertificateCheck
+            
+        if ($null -ne $NextLinkData.'value') {
+          $Data += $NextLinkData.'value'
         }
         else {
-          $NextLinkUrl = "https://$($IpAddress)$($NextLinkData.'@odata.nextLink')"
+          $Data += $NextLinkData
+        }    
+            
+        if ($NextLinkData.'@odata.nextLink') {
+          $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
+        }
+        else {
+          $NextLinkUrl = $null
         }
       }
-      else {
-        $NextLinkUrl = $null
-      }
+    
+      return $Data
+  
+    }
+    catch [System.Net.Http.HttpRequestException] {
+      Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+      return @{}
     }
   
-    return $Data
-
   }
-  catch [System.Net.Http.HttpRequestException] {
-    Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
-    return @{}
-  }
-
-}
 
 
 function Get-DeviceId {
