@@ -33,9 +33,9 @@ import json
 import sys
 import time
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 from pprint import pprint
 from urllib.parse import urlparse
-from getpass import getpass
 
 try:
     import urllib3
@@ -592,7 +592,7 @@ if __name__ == '__main__':
                              "clicking \"Run inventory\" on quick links on the devices page. A regular inventory is "
                              "the same as clicking \"Run inventory\" on a specific device\'s page.")
     parser.add_argument("--ignore-group", default=False, action='store_true', help="Used when you only want to run a"
-                        " regular inventory and you do not want to provide a group.")
+                                                                                   " regular inventory and you do not want to provide a group.")
     args = parser.parse_args()
 
     if not args.password:

@@ -51,10 +51,10 @@ import json
 import sys
 import time
 from argparse import RawTextHelpFormatter
-from getpass import getpass
-from urllib.parse import urlparse
-from pprint import pprint
 from datetime import datetime
+from getpass import getpass
+from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3
@@ -606,11 +606,12 @@ if __name__ == '__main__':
                 "TemplateId": int(template_id),
                 "IdentityPoolId": int(identity_pool_id)
             }
-    
-            assign_ip_response = requests.post('https://%s/api/TemplateService/Actions/TemplateService.UpdateNetworkConfig'
-                                               % args.ip, verify=False,
-                                               data=json.dumps(payload),
-                                               headers=headers)
+
+            assign_ip_response = requests.post(
+                'https://%s/api/TemplateService/Actions/TemplateService.UpdateNetworkConfig'
+                % args.ip, verify=False,
+                data=json.dumps(payload),
+                headers=headers)
 
             if assign_ip_response.status_code == 200:
                 print("Identity pool successfully assigned to template!")

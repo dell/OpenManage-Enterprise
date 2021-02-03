@@ -75,6 +75,7 @@ logging.info("Scanning Python files for docstrings and extracting them...")
 script_tracker = {}  # Used to track if a key has Python scripts, PowerShell scripts, or both
 for module_path in python_file_list:
 
+    print("Processing " + module_path)
     with open(module_path) as fd:
         module_contents = fd.read()
     module = ast.parse(module_contents)

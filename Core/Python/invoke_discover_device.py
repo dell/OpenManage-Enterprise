@@ -51,16 +51,17 @@ import json
 import os
 import sys
 import time
+from urllib.parse import urlparse
 from argparse import RawTextHelpFormatter
-from pprint import pprint
 from getpass import getpass
+from pprint import pprint
 
 try:
     import urllib3
     import requests
 except ModuleNotFoundError:
-    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests`"
-          "urllib3")
+    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
+          "urllib3`")
     sys.exit(0)
 
 
@@ -100,6 +101,83 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
           "and IP?")
     raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
                     "password, and IP?")
+
+
+def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> dict:
+    """
+    This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+    handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+    pages to get a complete listing.
+
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        url: The API url against which you would like to make a request
+        odata_filter: An optional parameter for providing an odata filter to run against the API endpoint.
+        max_pages: The maximum number of pages you would like to return
+
+    Returns: Returns a dictionary of data received from OME
+
+    """
+
+    next_link_url = None
+
+    if odata_filter:
+        count_data = requests.get(url + '?$filter=' + odata_filter, headers=authenticated_headers, verify=False)
+
+        if count_data.status_code == 400:
+            print("Received an error while retrieving data from %s:" % url + '?$filter=' + odata_filter)
+            pprint(count_data.json()['error'])
+            return {}
+
+        count_data = count_data.json()
+        if count_data['@odata.count'] <= 0:
+            print("No results found!")
+            return {}
+    else:
+        count_data = requests.get(url, headers=authenticated_headers, verify=False).json()
+
+    if 'value' in count_data:
+        data = count_data['value']
+    else:
+        data = count_data
+
+    if '@odata.nextLink' in count_data:
+        # Grab the base URI
+        next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + count_data['@odata.nextLink']
+
+    i = 1
+    while next_link_url is not None:
+        # Break if we have reached the maximum number of pages to be returned
+        if max_pages:
+            if i >= max_pages:
+                break
+            else:
+                i = i + 1
+        response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
+        next_link_url = None
+        if response.status_code == 200:
+            requested_data = response.json()
+            if requested_data['@odata.count'] <= 0:
+                print("No results found!")
+                return {}
+
+            # The @odata.nextLink key is only present in data if there are additional pages. We check for it and if it
+            # is present we get a link to the page with the next set of results.
+            if '@odata.nextLink' in requested_data:
+                next_link_url = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(url)) + \
+                                requested_data['@odata.nextLink']
+
+            if 'value' in requested_data:
+                data += requested_data['value']
+            else:
+                data += requested_data
+        else:
+            print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
+                  " with error: " + response.text)
+            raise Exception("Unknown error occurred. Received HTTP response code: " + str(response.status_code)
+                            + " with error: " + response.text)
+
+    return data
 
 
 def get_discover_device_payload() -> dict:

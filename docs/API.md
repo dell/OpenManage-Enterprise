@@ -28,6 +28,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#invoke-manage-query-groups">Invoke Manage Query Groups</a></li>
 
+<li><a href="#new-identitypool">New Identitypool</a></li>
+
 <li><a href="#new-mcm-group">New Mcm Group</a></li>
 
 <li><a href="#new-network">New Network</a></li>
@@ -37,6 +39,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <li><a href="#new-static-group">New Static Group</a></li>
 
 <li><a href="#set-power-state">Set Power State</a></li>
+
+<li><a href="#set-template-identitypool">Set Template Identitypool</a></li>
 
 </ul>
 <li><a href="#update-scripts">Update Scripts</a></li>
@@ -72,9 +76,13 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-identitypool-usage">Get Identitypool Usage</a></li>
 
+<li><a href="#get-network">Get Network</a></li>
+
 <li><a href="#get-ome-users">Get Ome Users</a></li>
 
 <li><a href="#get-report-list">Get Report List</a></li>
+
+<li><a href="#get-template">Get Template</a></li>
 
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
 
@@ -436,6 +444,34 @@ Deletes a group with the name "Some Group"
 
 
 ---
+### New Identitypool
+
+#### Available Scripts
+
+- [new_identitypool.py](../Core/Python/new_identitypool.py)
+
+
+#### Synopsis
+Script to create identity pool in OpenManage Enterprise
+
+#### Description
+This script uses the OME REST API to create identity pools
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+*Must include header row with at least the rows in the example below
+*Use get_identitypool.py to export CSV file
+Example:
+Name,EthernetSettings IdentityCount,EthernetSettings StartingMacAddress,IscsiSettings IdentityCount,IscsiSettings StartingMacAddress,IscsiSettings InitiatorConfig IqnPrefix,IscsiSettings InitiatorIpPoolSettings IpRange,IscsiSettings InitiatorIpPoolSettings SubnetMask,IscsiSettings InitiatorIpPoolSettings Gateway,IscsiSettings InitiatorIpPoolSettings PrimaryDnsServer,IscsiSettings InitiatorIpPoolSettings SecondaryDnsServer,FcoeSettings IdentityCount,FcoeSettings StartingMacAddress,FcSettings Wwnn IdentityCount,FcSettings Wwnn StartingAddress,FcSettings Wwpn IdentityCount,FcSettings Wwpn StartingAddress
+TestPool01,30,04:00:00:00:01:00,30,04:00:00:00:02:00,iqn01,192.168.1.100/24,,,,,30,04:00:00:00:03:00,30,20:00:04:00:00:00:04:00,30,20:01:04:00:00:00:04:00
+
+#### Example
+`python .
+ew_identitypool.py --ip "mx7000-chassis.example.com" --user admin --password 'password' --in-file "C:\Temp\IdentityPools_New.csv"`
+
+
+
+---
 ### New Mcm Group
 
 #### Available Scripts
@@ -510,7 +546,14 @@ Set Minimum and Maximum to the same value to a single VLAN
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
+*Must include header row with at least the rows in the example below
+*NetworkType must be an integer value. Use get_network.py --list-networktypes
+*For a single VLAN set VlanMinimum=VlanMaximum
+Example:
+Name,Description,VlanMaximum,VlanMinimum,NetworkType
+VLAN 800,Description for VLAN 800,800,800,1
+
+#### Example
 `python new_network.py --ip <xx> --user <username> --password <pwd> --groupname "Random Test Group"`
 
 
@@ -634,6 +677,28 @@ PS C:\>$cred = Get-Credential
     test.csv
 
 ```
+
+
+---
+### Set Template Identitypool
+
+#### Available Scripts
+
+- [set_template_identitypool.py](../Core/Python/set_template_identitypool.py)
+
+
+#### Synopsis
+Script to associate an identity pool to a template in OpenManage Enterprise
+
+#### Description
+This script uses the OME REST API to associate an identity pool to a template
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python .\set_template_identitypool.py --ip <xx> --user <username> --password <pwd> --name "MX840c Test" --identitypool-id 4`
+
 
 
 
@@ -1115,26 +1180,17 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_identitypool_usage.py](../Core/Python/get_identitypool_usage.py)
-
 - [Get-IdentityPoolUsage.ps1](../Core/PowerShell/Get-IdentityPoolUsage.ps1)
 
 
 #### Synopsis
 Script to get the list of virtual addresses in an Identity Pool
-
 #### Description
 This script uses the OME REST API to get a list of virtual addresses in an Identity Pool.
-Will export to a CSV file called IdentityPoolUsage.csv in the current directory.
+Will export to a CSV file called Get-IdentityPoolUsage.csv in the current directory
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
-#### Python Example
-```bash
-python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd>
-python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11
-python get_identitypool_usage.py --ip <xx> --user <username> --password <pwd> --id 11 --outfile "/tmp/temp.csv"
-```
 
 
 #### PowerShell Example
@@ -1155,6 +1211,28 @@ PS C:\>$cred = Get-Credential
     In this instance you will be prompted for credentials to use
 
 ```
+
+
+---
+### Get Network
+
+#### Available Scripts
+
+- [get_network.py](../Core/Python/get_network.py)
+
+
+#### Synopsis
+Script to save all networks to a csv file
+
+#### Description
+Will export to a CSV file called Networks.csv in the current directory by default.
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python get_network.py --ip <xx> --user <username> --password <pwd> --out_file <exported csv file>`
+
 
 
 ---
@@ -1214,6 +1292,29 @@ PS C:\>$cred = Get-Credential
     connect to the appliance
 
 ```
+
+
+---
+### Get Template
+
+#### Available Scripts
+
+- [get_template.py](../Core/Python/get_template.py)
+
+
+#### Synopsis
+Script to export templates in OpenManage Enterprise
+
+#### Description
+This script uses the OME REST API to export templates to a file
+Will export to a CSV file the same name as the template in the current directory unless --export-directory is specified
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+`python .\get_template.py --ip <xx> --user <username> --password <pwd> --name "TestTemplate" --out-directory "C:\Backup"`
+
 
 
 ---
