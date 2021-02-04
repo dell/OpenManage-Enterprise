@@ -17,6 +17,15 @@ For a listing of each script and its accompanying documentation see our [Example
 
 For more information on contributing to the repository see [the contribution guide](docs/CONTRIBUTING.md).
 
+## devel Branch
+
+The devel branch contains untested scripts or scripts which do not currently meet the contributor guidelines. If you
+do not find what you are looking for in the master branch and are willing to be a tester, you may find what you are
+looking for there!
+
+If you have scripts you made that you think could be helpful but don't have time to work them over to meet the 
+contributor guidelines, feel free to pull request them to the devel branch!
+
 ## Requests
 
 If there is a script you would like feel free to put a request [on our issues](https://github.com/dell/OpenManage-Enterprise/issues). This repository is maintained in our free time, but we're happy to take a look at things the community needs. The more descriptive you can be about exactly what you want the better. Screenshots of exactly the functionality you are looking for are fantastic!
