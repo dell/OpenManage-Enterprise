@@ -24,6 +24,8 @@ deploy:
     - Invoke-DiscoverDevice.ps1
   invoke_manage_query_groups:
     - invoke_manage_query_groups.py
+  new_identity_pool:
+    - new_identity_pool.py
   new_mcm_group:
     - new_mcm_group.py
     - New-McmGroup.ps1
@@ -35,6 +37,10 @@ deploy:
   new_static_group:
     - new_static_group.py
     - New-StaticGroup.ps1
+  new_template:
+    - new_template.py
+  set_chassis_profile:
+    - set_chassis_profile.py
   set_power_state:
     - set_power_state.py
     - Set-PowerState.ps1
@@ -42,6 +48,8 @@ update:
   invoke_refresh_inventory:
     - invoke_refresh_inventory.py
     - Invoke-RefreshInventory.ps1
+  set_template_vlan:
+    - set_template_vlan.py
   update_firmware_using_catalog:
     - update_firmware_using_catalog.py
     - Update-FirmwareUsingCatalog.ps1
@@ -55,6 +63,8 @@ monitor:
   get_audit_logs:
     - get_audit_logs.py
     - Get-AuditLogs.ps1
+  get_chassis_profile:
+    - get_chassis_profile.py
   get_chassis_inventory:
     - get_chassis_inventory.py
     - Get-ChassisInventory.ps1
@@ -85,9 +95,13 @@ monitor:
   get_report_list:
     - get_report_list.py
     - Get-ReportList.ps1
+  get_template:
+    - get_template.py
   invoke_report_execution:
     - invoke_report_execution.py
     - Invoke-ReportExecution.ps1
+  set_template_identity_pool:
+    - set_template_identity_pool.py
 maintain:
   invoke_retire_lead:
     - invoke_retire_lead.py
