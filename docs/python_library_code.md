@@ -377,3 +377,16 @@ if len(group_devices) < 1:
 for device in group_devices:
     target_ids.append(device['Id'])
 ```
+
+## Printing a Dictionary to a CSV File
+
+```python
+# Use UTF 8 in case there are non-ASCII characters like 格蘭特
+print("Writing CSV to file...")
+with open(out_file, 'w', encoding='utf-8', newline='') as csv_file:
+    csv_columns = ["Id", "Name", "Description", "VlanMaximum", "VlanMinimum", "Type"]
+    writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
+    writer.writeheader()
+    for network in network_data:
+        writer.writerow(network)
+```
