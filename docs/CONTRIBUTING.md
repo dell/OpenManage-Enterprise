@@ -321,6 +321,6 @@ There is a great tutorial on writing good Python code [here](https://realpython.
 
 Every script in this repository should be stand alone and copy and pastable. This has the unfortunate side effect of complicating code reuse. In an effort to standardize things we ask you use the standard functions we provide below for common tasks.
 
-[Python Library Code](docs/python_library_code.md)
+[Python Library Code](./python_library_code.md)
 
-[PowerShell Library Code](docs/powershell_library_code.md)
+[PowerShell Library Code](./powershell_library_code.md)
