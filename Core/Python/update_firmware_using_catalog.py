@@ -655,7 +655,7 @@ if __name__ == '__main__':
                              help="Id of the device to update")
     mutex_group.add_argument("--servicetags", nargs="*",
                              help="Servicetags of devices to update")
-    parser.add_argument("--repotype", required=True, help="Repository type",
+    parser.add_argument("--repotype", required=False, help="Repository type",
                         default='DELL_ONLINE',
                         choices=['DELL_ONLINE', 'NFS', 'CIFS'])
     parser.add_argument("--reposourceip", required=False,

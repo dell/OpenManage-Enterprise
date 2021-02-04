@@ -1,5 +1,6 @@
 ﻿<#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
+_author_ = Grant Curell <grant_curell@dell.com>
 
 Copyright (c) 2021 Dell EMC Corporation
 
@@ -85,7 +86,7 @@ param(
     [ValidateSet('upgrade', 'downgrade', 'flash-all')]
     [String]$UpdateActions = 'upgrade',
 
-    [Parameter(Mandatory)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('DELL_ONLINE', 'NFS', 'CIFS')]
     [String]$RepoType = "DELL_ONLINE",
 
