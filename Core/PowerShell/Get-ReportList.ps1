@@ -49,85 +49,122 @@ param(
   [pscredential] $Credentials
 )
 
-function Set-CertPolicy() {
-  ## Trust all certs - for sample usage only
-  Try {
-    add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
+function Get-Data {
+  <#
+  .SYNOPSIS
+    Used to interact with API resources
+
+  .DESCRIPTION
+    This function retrieves data from a specified URL. Get requests from OME return paginated data. The code below
+    handles pagination. This is the equivalent in the UI of a list of results that require you to go to different
+    pages to get a complete listing.
+
+  .PARAMETER Url
+    The API url against which you would like to make a request
+
+  .PARAMETER OdataFilter
+    An optional parameter for providing an odata filter to run against the API endpoint.
+
+  .PARAMETER MaxPages
+    The maximum number of pages you would like to return
+
+  .INPUTS
+    None. You cannot pipe objects to Get-Data.
+
+  .OUTPUTS
+    dict. A dictionary containing the results of the API call or an empty dictionary in the case of a failure
+
+  #>
+
+  [CmdletBinding()]
+  param (
+
+    [Parameter(Mandatory)]
+    [string]
+    $Url,
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $OdataFilter,
+
+    [Parameter(Mandatory = $false)]
+    [int]
+    $MaxPages = $null
+  )
+
+  $Data = @()
+  $NextLinkUrl = $null
+  try {
+
+    if ($PSBoundParameters.ContainsKey('OdataFilter')) {
+      $CountData = Invoke-RestMethod -Uri $Url"?`$filter=$($OdataFilter)" -Method Get -Credential $Credentials -SkipCertificateCheck
+
+      if ($CountData.'@odata.count' -lt 1) {
+        Write-Error "No results were found for filter $($OdataFilter)."
+        return @{}
+      } 
     }
-}
-"@
-    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    else {
+      $CountData = Invoke-RestMethod -Uri $Url -Method Get -Credential $Credentials -ContentType $Type `
+        -SkipCertificateCheck
+    }
+
+    if ($null -ne $CountData.'value') {
+      $Data += $CountData.'value'
+    }
+    else {
+      $Data += $CountData
+    }
+    
+    if ($CountData.'@odata.nextLink') {
+      $NextLinkUrl = "https://$($IpAddress)$($CountData.'@odata.nextLink')"
+    }
+
+    $i = 1
+    while ($NextLinkUrl) {
+      if ($MaxPages) {
+        if ($i -ge $MaxPages) {
+          break
+        }
+        $i = $i + 1
+      }
+      
+      $NextLinkData = Invoke-RestMethod -Uri "$($NextLinkUrl)" -Method Get -Credential $Credentials `
+      -ContentType $Type -SkipCertificateCheck
+          
+      if ($null -ne $NextLinkData.'value') {
+        $Data += $NextLinkData.'value'
+      }
+      else {
+        $Data += $NextLinkData
+      }    
+      
+      if ($NextLinkData.'@odata.nextLink') {
+        $NextLinkUrl = "https://$($IpAddress)$($NextLinkData.'@odata.nextLink')"
+      }
+      else {
+        $NextLinkUrl = $null
+      }
+    }
+
+    return $Data
+
   }
-  catch {
-    Write-Error "Unable to add type for cert policy"
+  catch [System.Net.Http.HttpRequestException] {
+    Write-Error "There was a problem connecting to OME or the URL supplied is invalid. Did it become unavailable?"
+    return @{}
   }
+
 }
 
 Try {
-  Set-CertPolicy
   $BaseUri = "https://$($IpAddress)"
-  $SessionUrl = $BaseUri + "/api/SessionService/Sessions"
   $ReportUrl = $BaseUri + "/api/ReportService/ReportDefs"
   $NextLinkUrl = $null
   $Type = "application/json"
-  $UserName = $Credentials.username
-  $Password = $Credentials.GetNetworkCredential().password
-  $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
-  $Headers = @{}
 
-  $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
-  if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
-    ## Successfully created a session - extract the auth token from the response
-    ## header and update our headers for subsequent requests
-    $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-    $ReportResp = Invoke-WebRequest -Uri $ReportUrl -Method Get -Headers $Headers -ContentType $Type
-    if ($ReportResp.StatusCode -eq 200) {
-      $ReportInfo = $ReportResp.Content | ConvertFrom-Json
-      $ReportList = $ReportInfo.value
-      $totalReports = $ReportInfo.'@odata.count'
-      if ($totalReports -gt 0) {
-        if ($ReportInfo.'@odata.nextLink') {
-          $NextLinkUrl = $BaseUri + $ReportInfo.'@odata.nextLink'
-        }
-        while ($NextLinkUrl) {
-          $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
-          if ($NextLinkResponse.StatusCode -eq 200) {
-            $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
-            $ReportList += $NextLinkData.'value'
-            if ($NextLinkData.'@odata.nextLink') {
-              $NextLinkUrl = $BaseUri + $NextLinkData.'@odata.nextLink'
-            }
-            else {
-              $NextLinkUrl = $null
-            }
-          }
-          else {
-            Write-Warning "Unable to get nextlink response for $($NextLinkUrl)"
-            $NextLinkUrl = $null
-          }
-        }
-        Write-Output "*** List of pre-defined reports ***"
-        $ReportList | Format-List
-      }
-      else {
-        Write-Warning "No pre-defined reports found on $($IpAddress)"
-      }
-    }
-    else {
-      Write-Warning "Unable to retrieve reports from $($IpAddress)"
-    }
-  }
-  else {
-    Write-Error "Unable to create a session with appliance $($IpAddress)"
-  }
+  Get-Data $ReportUrl
+
 }
 catch {
   Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
