@@ -24,8 +24,6 @@ deploy:
     - Invoke-DiscoverDevice.ps1
   invoke_manage_query_groups:
     - invoke_manage_query_groups.py
-  new_identitypool:
-    - new_identitypool.py
   new_mcm_group:
     - new_mcm_group.py
     - New-McmGroup.ps1
@@ -40,8 +38,6 @@ deploy:
   set_power_state:
     - set_power_state.py
     - Set-PowerState.ps1
-  set_template_identitypool:
-    - set_template_identitypool.py
 update:
   invoke_refresh_inventory:
     - invoke_refresh_inventory.py
@@ -82,10 +78,8 @@ monitor:
     - Get-GroupList.ps1
   get_identitypool_usage:
     - Get-IdentityPoolUsage.ps1
-  get_network:
-    - get_network.py
-  get_template:
-    - get_template.py
+  get_ome_vlans:
+    - get_ome_vlans.py
   get_ome_users:
     - Get-OmeUsers.ps1
   get_report_list:
