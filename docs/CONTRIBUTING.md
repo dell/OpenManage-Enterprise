@@ -49,6 +49,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
 ## PowerShell
 
 - Must be tested and run against PowerShell 7. Scripts should include `#Requires -Version 7` at the top to indicate this requirement.
+- All status messages should use `Write-Host` so that piping between scripts functions correctly. Ex: "Starting up the engines..."
 - Function names must use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
 - Variable names should use CamelCaseLikeThis for regular variable names and ALLCAPS for constants. 
 - We suggest for development you use [Visual Studio Code](https://code.visualstudio.com/download). It provides a `Format Document` function which automatically updates your PowerShell code to follow best practices. If you would rather use something else you can use [Get-FirmwareBaselines.ps1](Core/PowerShell/Get-FirmwareBaselines.ps1) as a reference for our preferred PowerShell coding practices.
