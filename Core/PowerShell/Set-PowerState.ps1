@@ -1,6 +1,4 @@
-﻿#Requires -Version 7
-
-<#
+﻿<#
 _author_ = Grant Curell <grant_curell@dell.com>
 
 Copyright (c) 2021 Dell EMC Corporation

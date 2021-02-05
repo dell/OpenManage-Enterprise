@@ -1,6 +1,4 @@
-﻿#Requires -Version 7
-
-<#
+﻿<#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
 _author_ = Grant Curell <grant_curell@dell.com>
 
