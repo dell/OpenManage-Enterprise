@@ -9,6 +9,15 @@ This repository hosts cookbooks for OME/OME-M and associated plugins. Script exa
 
 The Core directory is further subdivided into Python and PowerShell. We do our best to maintain functional equivalance between the two, but sometimes they differ. These differences are typically noted in [the docs](docs/API.md).
 
+## PowerShell Scripts Require PS7
+
+In an effort to future proof the repository and make our code portable across multiple platforms, all new scripts added to the repo are written for PowerShell (Core) 7. Microsoft makes PowerShell 7 available [on their GitHub page](https://github.com/PowerShell/PowerShell/releases).
+
+Some older scripts may not carry this requirement. You can tell if a script requires PowerShell 7 by looking at the top of the script. If the top line is `#Requires -Version 7` this means it requires PowerShell 7.
+
+### PS5.1 Support
+
+Currently we do not have any plans to backport new scripts or provide cross compatibility. If there is enough community interest we will raise the priority. If PS5.1 is a hard requirement for you please leave a comment on [this ticket](https://github.com/dell/OpenManage-Enterprise/issues/181).
 ## Script Documentation
 
 For a listing of each script and its accompanying documentation see our [Example API Documentation](docs/API.md)
