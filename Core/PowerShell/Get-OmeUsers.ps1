@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Grant Curell <grant_curell@dell.com>
 _author_ = Chris Steinbeisser <chris.steinbeisser@Dell.com>
