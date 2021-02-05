@@ -160,8 +160,12 @@ function Get-Data {
 }
 
 Try {
+  $BaseUri = "https://$($IpAddress)"
+  $ReportUrl = $BaseUri + "/api/ReportService/ReportDefs"
+  $NextLinkUrl = $null
+  $Type = "application/json"
 
-  Get-Data "https://$($IpAddress)/api/ReportService/ReportDefs"
+  Get-Data $ReportUrl
 
 }
 catch {

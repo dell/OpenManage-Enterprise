@@ -1,15 +1,5 @@
 # Python Library Code
 
-- [Python Library Code](#python-library-code)
-  - [Authenticating to an OME Instance](#authenticating-to-an-ome-instance)
-  - [Interact with an API Resource](#interact-with-an-api-resource)
-  - [Resolve a device to its ID](#resolve-a-device-to-its-id)
-    - [Helpful device ID pattern](#helpful-device-id-pattern)
-    - [Get Group ID by Name](#get-group-id-by-name)
-  - [Track a Job to Completion](#track-a-job-to-completion)
-  - [Pattern for Getting a Group's ID and a List of Devices in the Group](#pattern-for-getting-a-groups-id-and-a-list-of-devices-in-the-group)
-  - [Printing a Dictionary to a CSV File](#printing-a-dictionary-to-a-csv-file)
-
 ## Authenticating to an OME Instance
 
 Used to create a session to OME. You can then pass the resulting dictionary headers around to your various functions to authenticate.
