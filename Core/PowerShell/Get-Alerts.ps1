@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Grant Curell <grant_curell@dell.com>
 _contributor_ = Raajeev Kalyanaraman wrote the method for getting alerts by group

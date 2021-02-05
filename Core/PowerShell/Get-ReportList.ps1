@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
