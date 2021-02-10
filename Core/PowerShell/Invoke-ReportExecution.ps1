@@ -402,12 +402,21 @@ Try {
     Write-Host "Looking up the report with name $($ReportName)"
     $ReportData = Get-Data -Url "https://$($IpAddress)/api/ReportService/ReportDefs" -OdataFilter "Name eq `'$($ReportName)`'"
 
-    if ($ReportData.Count -gt 0) {
+    if ($ReportData.Count -eq 1) {
       $ReportId = $ReportData.Id
     }
-    else {
+    elseif ($ReportData.Count -gt 1) {
+      foreach ($Report in $ReportData) {
+        if ($Report.Name -eq $ReportName) {
+          $ReportId = $Report.Id
+        }
+      }
+    }
+
+    if ($ReportId -eq 0) {
       Write-Error "Could not find a report with the name $($ReportName). Exiting." -ErrorAction Stop
     }
+
   }
 
   if ($PSBoundParameters.ContainsKey('GroupName')) {
