@@ -283,7 +283,7 @@ def track_job_to_completion(ome_ip_address: str,
             return False
 
     if job_incomplete:
-        print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, max_retries))
+        print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, loop_ctr))
         return False
 
     return True

@@ -416,7 +416,6 @@ Try {
     if ($ReportId -eq 0) {
       Write-Error "Could not find a report with the name $($ReportName). Exiting." -ErrorAction Stop
     }
-
   }
 
   if ($PSBoundParameters.ContainsKey('GroupName')) {
