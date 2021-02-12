@@ -1,5 +1,17 @@
 # PowerShell Library Code
 
+- [PowerShell Library Code](#powershell-library-code)
+  - [Interact with an API Resource](#interact-with-an-api-resource)
+  - [Resolve a device to its ID](#resolve-a-device-to-its-id)
+    - [Helpful device ID pattern](#helpful-device-id-pattern)
+    - [Resolve Group Name to ID](#resolve-group-name-to-id)
+  - [Track a Job to Completion](#track-a-job-to-completion)
+  - [Working with CSVs](#working-with-csvs)
+    - [Writing a CSV to a File Share](#writing-a-csv-to-a-file-share)
+    - [Writing an Array of Hashtables to a CSV File](#writing-an-array-of-hashtables-to-a-csv-file)
+  - [Prompt a User with a Yes / No Question](#prompt-a-user-with-a-yes--no-question)
+  - [Validate a File Path](#validate-a-file-path)
+
 ## Interact with an API Resource
 
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
@@ -260,15 +272,17 @@ if ($PSBoundParameters.ContainsKey('DeviceNames')) {
 
 ```powershell
 if ($PSBoundParameters.ContainsKey('GroupName')) {
+  Write-Host "Resolving group name $($GroupName) to a group ID..."
 
-    $GroupData = Get-Data "https://$($IpAddress)/api/GroupService/Groups" "Name eq '$($GroupName)'"
+  $GroupData = Get-Data "https://$($IpAddress)/api/GroupService/Groups" "Name eq '$($GroupName)'"
 
-    if ($null -eq $GroupData) {
-        Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
-        Exit
-    }
+  if ($null -eq $GroupData) {
+      Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
+      Exit
+  }
 
-    $GroupId = $GroupData.'Id'
+  Write-Host "$($GroupName)'s ID is $($GroupData.'Id')"
+  $GroupId = $GroupData.'Id'
 }
 ```
 
@@ -392,3 +406,116 @@ $(Foreach($Device in $DevicePowerStates){
 ```
 
 See [this StackOverflow link](https://stackoverflow.com/questions/11173795/powershell-convert-array-of-hastables-into-csv)
+
+## Prompt a User with a Yes / No Question
+
+```powershell
+function Read-Confirmation {
+    <#
+    .SYNOPSIS
+      Prompts a user with a yes or no question
+
+    .DESCRIPTION
+      Prompts a user with a yes or no question. The question text should include something telling the user
+      to type y/Y/Yes/yes or N/n/No/no
+
+    .PARAMETER QuestionText
+      The text which you want to display to the user
+
+    .OUTPUTS
+      Returns true if the user enters yes and false if the user enters no
+    #>
+    [CmdletBinding()]
+    param (
+  
+        [Parameter(Mandatory)]
+        [string]
+        $QuestionText
+    )
+    do {
+        $Confirmation = (Read-Host $QuestionText).ToUpper()
+    } while ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y' -and $Confirmation -ne 'N' -and $Confirmation -ne 'NO')
+
+    if ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y') {
+        return $false
+    }
+
+    return $true
+}
+```
+
+## Validate a File Path
+
+This code is reliant on [Read-Confirmation](#prompt-a-user-with-a-yes--no-question)
+
+```powershell
+function Confirm-IsValid {
+  <#
+  .SYNOPSIS
+    Tests whether a filepath is valid or not.
+
+  .DESCRIPTION
+    Performs different tests depending on whether you are testing a file for the ability to read
+    (InputFilePath) or write (OutputFilePath)
+
+  .PARAMETER OutputFilePath
+    The path to an output file you want to test
+
+  .PARAMETER InputFilePath
+    The path to an input file you want to test
+
+  .OUTPUTS
+    Returns true if the path is valid and false if it is not
+  #>
+  [CmdletBinding()]
+  param (
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $OutputFilePath,
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $InputFilePath
+  )
+
+  if ($PSBoundParameters.ContainsKey('InputFilePath') -and $PSBoundParameters.ContainsKey('OutputFilePath')) {
+    Write-Error "You can only provide either an InputFilePath or an OutputFilePath."
+    Exit
+  }
+
+  # Some of the tests are the same - we can use the same variable name
+  if ($PSBoundParameters.ContainsKey('InputFilePath')) {
+    $OutputFilePath = $InputFilePath
+  }
+
+  if ($PSBoundParameters.ContainsKey('InputFilePath')) {
+    if (-not $(Test-Path -Path $InputFilePath -PathType Leaf)) {
+      Write-Error "The file $($InputFilePath) does not exist."
+      return $false
+    }
+  }
+  else {
+    if (Test-Path -Path $OutputFilePath -PathType Leaf) {
+      if (-not $(Read-Confirmation "$($OutputFilePath) already exists. Do you want to continue? (Y/N)")) {
+        return $false
+      } 
+    }
+  }
+
+  $ParentPath = $(Split-Path -Path $OutputFilePath -Parent)
+  if ($ParentPath -ne "") {
+    if (-not $(Test-Path -PathType Container $ParentPath)) {
+      Write-Error "The path '$($OutputFilePath)' does not appear to be valid."
+      return $false
+    }
+  }
+
+  if (Test-Path $(Split-Path -Path $OutputFilePath -Leaf) -PathType Container) {
+    Write-Error "You must provide a filename as part of the path. It looks like you only provided a folder in $($OutputFilePath)!"
+    return $false
+  }
+
+  return $true
+}
+```

@@ -176,7 +176,7 @@ def get_firmware_baselines(authenticated_headers: dict,
 
     print("Retrieving a list of firmware")
     firmware_baselines = \
-        get_data(authenticated_headers, "https://%s/api/UpdateService/Baselines" % ome_ip_address)  # type: list
+        get_data(authenticated_headers, "https://%s/api/UpdateService/Baselines" % ome_ip_address)  # type: dict
 
     if not firmware_baselines:
         print("Unable to retrieve firmware list from %s. This could happen for many reasons but the most likely is a"

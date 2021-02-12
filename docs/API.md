@@ -692,13 +692,18 @@ PS C:\>$cred = Get-Credential
 Script to update firmware using catalog
 
 #### Description:
-This script uses the OME REST API to allow updating a firmware using catalog.
+This script uses the OME REST API to update firmware using a catalog. Note: The Python version is more feature rich
+currently than the PowerShell version. The primary functionality difference is the ability to specify a catalog instead
+of deleting old catalogs/baselines and creating new ones. If the PowerShell version is a priority for you please leave
+a comment on https://github.com/dell/OpenManage-Enterprise/issues/194
 
 Note that the credentials entered are not stored to disk.
 
 #### Python Example
-`python update_firmware_using_catalog_3.0.py --ip <ip addr> --user admin
---password <passwd> --groupid 25315`
+    python update_firmware_using_catalog.py --ip <ip addr> --user admin --password <passwd> --groupname Test
+    python update_firmware_using_catalog.py --ip 192.168.1.93 --user admin --password <passwd> --updateactions upgrade --service-tags AAAAAA --idrac-ips 192.168.1.63 --reposourceip 192.168.1.153 --catalogpath OpenManage/Current_1.01_Catalog.xml --repouser <username> --repopassword <passwd> --repotype CIFS --refresh-retry-length 5
+    python update_firmware_using_catalog.py --ip 192.168.1.93 --user admin --password <passwd> --updateactions upgrade --idrac-ips 192.168.1.63,192.168.1.120 --catalog-name Dell_Online --refresh
+    python update_firmware_using_catalog.py --ip 192.168.1.93 --updateactions upgrade --idrac-ips 192.168.1.63,192.168.1.120 --device-names "Test-Device" --catalog-name Dell_Online
 
 
 #### PowerShell Example
@@ -1287,10 +1292,10 @@ and print out results
 #### PowerShell Example
 ```
 PS C:\>$cred = Get-Credential
-    .\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -ReportId 10043
+    .\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -ReportId 10043 -OutputFilePath test.csv
     
 
-    PS C:\>.\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -ReportId 10043
+    PS C:\>.\Invoke-ReportExecution.ps1 -IpAddress "10.xx.xx.xx" -ReportName SomeReport
     In this instance you will be prompted for credentials to use to
     connect to the appliance
 

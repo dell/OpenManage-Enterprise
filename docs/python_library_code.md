@@ -1,5 +1,16 @@
 # Python Library Code
 
+- [Python Library Code](#python-library-code)
+  - [Authenticating to an OME Instance](#authenticating-to-an-ome-instance)
+  - [Interact with an API Resource](#interact-with-an-api-resource)
+  - [Resolve a device to its ID](#resolve-a-device-to-its-id)
+    - [Helpful device ID pattern](#helpful-device-id-pattern)
+    - [Get Group ID by Name](#get-group-id-by-name)
+    - [Pattern for Getting a Group's ID and a List of Devices in the Group](#pattern-for-getting-a-groups-id-and-a-list-of-devices-in-the-group)
+  - [Track a Job to Completion](#track-a-job-to-completion)
+  - [Printing a Dictionary to a CSV File](#printing-a-dictionary-to-a-csv-file)
+  - [Prompt a User with a Yes/No Question](#prompt-a-user-with-a-yesno-question)
+
 ## Authenticating to an OME Instance
 
 Used to create a session to OME. You can then pass the resulting dictionary headers around to your various functions to authenticate.
@@ -56,7 +67,7 @@ try:
     import requests
 except ModuleNotFoundError:
     print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
-            "urllib3`")
+          "urllib3`")
     sys.exit(0)
 
 def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, max_pages: int = None) -> dict:
@@ -142,22 +153,22 @@ Use this function to resolve a service tag, idrac IP, or an OME device name to i
 
 ```python
 def get_device_id(authenticated_headers: dict,
-                ome_ip_address: str,
-                service_tag: str = None,
-                device_idrac_ip: str = None,
-                device_name: str = None) -> int:
-"""
-Resolves a service tag, idrac IP or device name to a device ID
+                  ome_ip_address: str,
+                  service_tag: str = None,
+                  device_idrac_ip: str = None,
+                  device_name: str = None) -> int:
+    """
+    Resolves a service tag, idrac IP or device name to a device ID
 
-Args:
-    authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
-    ome_ip_address: IP address of the OME server
-    service_tag: (optional) The service tag of a host
-    device_idrac_ip: (optional) The idrac IP of a host
-    device_name: (optional): The name of a host
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        service_tag: (optional) The service tag of a host
+        device_idrac_ip: (optional) The idrac IP of a host
+        device_name: (optional): The name of a host
 
-Returns: Returns the device ID or -1 if it couldn't be found
-"""
+    Returns: Returns the device ID or -1 if it couldn't be found
+    """
 
     if not service_tag and not device_idrac_ip and not device_name:
         print("No argument provided to get_device_id. Must provide service tag, device idrac IP or device name.")
@@ -166,7 +177,7 @@ Returns: Returns the device ID or -1 if it couldn't be found
     # If the user passed a device name, resolve that name to a device ID
     if device_name:
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                "DeviceName eq \'%s\'" % device_name)
+                             "DeviceName eq \'%s\'" % device_name)
         if len(device_id) == 0:
             print("Error: We were unable to find device name " + device_name + " on this OME server. Exiting.")
             return -1
@@ -175,7 +186,7 @@ Returns: Returns the device ID or -1 if it couldn't be found
 
     elif service_tag:
         device_id = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                "DeviceServiceTag eq \'%s\'" % service_tag)
+                             "DeviceServiceTag eq \'%s\'" % service_tag)
 
         if len(device_id) == 0:
             print("Error: We were unable to find service tag " + service_tag + " on this OME server. Exiting.")
@@ -186,7 +197,7 @@ Returns: Returns the device ID or -1 if it couldn't be found
     elif device_idrac_ip:
         device_id = -1
         device_ids = get_data(authenticated_headers, "https://%s/api/DeviceService/Devices" % ome_ip_address,
-                                "DeviceManagement/any(d:d/NetworkAddress eq '%s')" % device_idrac_ip)
+                              "DeviceManagement/any(d:d/NetworkAddress eq '%s')" % device_idrac_ip)
 
         if len(device_ids) == 0:
             print("Error: We were unable to find idrac IP " + device_idrac_ip + " on this OME server. Exiting.")
@@ -245,6 +256,9 @@ if args.device_names:
             print("Could not resolve ID for: " + device_name)
 else:
     device_names = None
+    
+# Eliminate any duplicate IDs in the list
+target_ids = list(dict.fromkeys(target_ids))
 ```
 
 ### Get Group ID by Name
@@ -258,6 +272,32 @@ if len(groups) < 1:
     sys.exit(0)
 
 group_id = groups[0]['Id']
+```
+
+### Pattern for Getting a Group's ID and a List of Devices in the Group
+This is typically used with the ID pattern to populate a target list.
+
+```python
+if args.groupname:
+    group_url = "https://%s/api/GroupService/Groups" % args.ip
+    
+    group_data = get_data(headers, group_url, 
+                            "Name eq '%s'" % args.groupname)
+    
+    if len(group_data) < 1:
+        print("No groups were found with name " + args.groupname)
+        sys.exit(0)
+    
+    print("Found group " + group_data[0]['Name'] + "!")
+    
+    group_devices = get_data(headers, group_url + "(%s)/Devices" % group_data[0]['Id'])
+    
+    if len(group_devices) < 1:
+        print("Error: There was a problem retrieving the devices for group " + args.groupname + ". Exiting")
+        sys.exit(0)
+    
+    for device in group_devices:
+        target_ids.append(device['Id'])
 ```
 
 ## Track a Job to Completion
@@ -347,35 +387,10 @@ def track_job_to_completion(ome_ip_address: str,
             print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
 
     if job_incomplete:
-        print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, max_retries))
+        print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, loop_ctr))
         return False
 
     return True
-```
-
-## Pattern for Getting a Group's ID and a List of Devices in the Group
-This is typically used with the ID pattern to populate a target list.
-
-```python
-group_url = "https://%s/api/GroupService/Groups" % args.ip
-
-group_data = get_data(headers, group_url, 
-                        "Name eq '%s'" % args.groupname)
-
-if len(group_data) < 1:
-    print("No groups were found with name " + args.groupname)
-    sys.exit(0)
-
-print("Found group " + group_data[0]['Name'] + "!")
-
-group_devices = get_data(headers, group_url + "(%s)/Devices" % group_data[0]['Id'])
-
-if len(group_devices) < 1:
-    print("Error: There was a problem retrieving the devices for group " + args.groupname + ". Exiting")
-    sys.exit(0)
-
-for device in group_devices:
-    target_ids.append(device['Id'])
 ```
 
 ## Printing a Dictionary to a CSV File
@@ -389,4 +404,41 @@ with open(out_file, 'w', encoding='utf-8', newline='') as csv_file:
     writer.writeheader()
     for network in network_data:
         writer.writerow(network)
+```
+
+## Prompt a User with a Yes/No Question
+
+```python
+def query_yes_no(question: str, default: str = "yes") -> bool:
+    """
+    Prompts the user with a yes/no question
+
+    Args:
+        question: The question to ask the user
+        default: Whether the default answer is no or yes. Defaults to yes
+
+    Returns: A boolean - true if yes and false if no
+
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
 ```
