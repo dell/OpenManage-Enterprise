@@ -2,6 +2,7 @@
 #  Python script to get the list of virtual addresses in an Identity Pool
 #
 # _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
+# _author_ = Grant Curell <grant_curell@dell.com>
 #
 # Copyright (c) 2021 Dell EMC Corporation
 #
@@ -29,112 +30,158 @@ For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
 
 #### Example
-`python .\new_template.py ---ip <xx> --user <username> --password <pwd> --name "TestTemplate" --in-file "Template.xml"`
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name 格蘭特是最好的
 """
-
-import sys
-import traceback
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import requests
-import urllib3
-import os
-import csv
+import sys
+from argparse import RawTextHelpFormatter
+from os import path
+from pprint import pprint
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+try:
+    import urllib3
+    import requests
+except ModuleNotFoundError:
+    print("This program requires urllib3 and requests. To install them on most systems run `pip install requests"
+          "urllib3`")
+    sys.exit(0)
 
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-session_auth_token = {}
+def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
+    """
+    Authenticates with OME and creates a session
 
+    Args:
+        ome_ip_address: IP address of the OME server
+        ome_username:  Username for OME
+        ome_password: OME password
 
-def get_session(ip_address, username, password):
-    session_url = 'https://%s/api/SessionService/Sessions' % (ip_address)
-    headers = {'content-type': 'application/json'}
-    user_details = {'UserName': username,
-                    'Password': password,
+    Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect
+    """
+
+    authenticated_headers = {'content-type': 'application/json'}
+    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
+    user_details = {'UserName': ome_username,
+                    'Password': ome_password,
                     'SessionType': 'API'}
-    session_info = requests.post(session_url, verify=False,
-                                 data=json.dumps(user_details),
-                                 headers=headers)
-    if session_info.status_code == 201:
-        session_info_token = session_info.headers['X-Auth-Token']
-        session_info_data = session_info.json()
-        session_auth_token = {
-            "token": session_info_token,
-            "id": session_info_data['Id']
-        }
-    return session_auth_token
-
-
-def delete_session(ip_address, headers, id):
-    session_url = "https://%s/api/SessionService/Sessions('%s')" % (ip_address, id)
-    session_info = requests.delete(session_url, verify=False, headers=headers)
-    if session_info.status_code == 204:
-        return True
-    else:
-        print("Unable to delete session %s" % id)
-        return False
-
-
-def import_template(base_uri, auth_token, name, filename):
-    """
-    Import template from file
-    """
     try:
+        session_info = requests.post(session_url, verify=False,
+                                     data=json.dumps(user_details),
+                                     headers=authenticated_headers)
+    except requests.exceptions.ConnectionError:
+        print("Failed to connect to OME. This typically indicates a network connectivity problem. Can you ping OME?")
+        sys.exit(0)
+
+    if session_info.status_code == 201:
+        authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        return authenticated_headers
+
+    print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
+          "and IP?")
+    raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
+                    "password, and IP?")
+
+
+def post_data(url: str, authenticated_headers: dict, payload: dict, error_message: str) -> dict:
+    """
+    Posts data to OME and returns the results
+
+    Args:
+        url: The URL to which you want to post
+        authenticated_headers: Headers used for authentication to the OME server
+        payload: A payload to post to the OME server
+        error_message: If the POST fails this is the message which will be displayed to the user
+
+    Returns: A dictionary with the results of the post request or an empty dictionary in the event of a failure. If the
+             result is a 204 - No Content (which indicates success but there is no data) then it will return a
+             dictionary with the value {'status_code': 204}
+
+    """
+    response = requests.post(url, headers=authenticated_headers, verify=False, data=json.dumps(payload))
+
+    if response.status_code == 204:
+        return {'status_code': 204}
+    if response.status_code != 400:
+        return json.loads(response.content)
+    else:
+        print(error_message + " Error was:")
+        pprint(json.loads(response.content))
+        return {}
+
+
+def import_template(ome_ip_address, authenticated_headers, template_name, filename):
+    """
+    Imports a template from file
+
+    Args:
+        ome_ip_address: IP address of the OME server
+        authenticated_headers: Headers used for authentication to the OME server
+        template_name: The name of the template as you would like it to appear in OME
+        filename: The filename of the template you would like to push
+
+    Returns: True if the template pushed successfully and false otherwise
+
+    """
+    url = "https://%s/api/TemplateService/Actions/TemplateService.Import" % ome_ip_address
+
+    with open(filename, "r") as template_file:
+
         payload = {
-            "Name": "Template Import",
+            "Name": template_name,
             "Type": 2,
             "ViewTypeId": 2,
-            "Content": ""
+            "Content": template_file.read()
         }
-        url = base_uri + '/api/TemplateService/Actions/TemplateService.Import'
-        payload["Name"] = name
-        f = open(filename, "r")
-        content = f.read()
-        payload["Content"] = content
-        create_resp = requests.post(url, headers=headers,
-                                    verify=False,
-                                    data=json.dumps(payload))
-        if create_resp.status_code == 200:
-            print("New template created %s" % (name))
-        elif create_resp.status_code == 400:
-            print("Failed creation... ")
-            print(json.dumps(create_resp.json(), indent=4,
-                             sort_keys=False))
-    except Exception as e:
-        print(traceback.format_exc())
+
+        print("POSTing the data to OME and beginning the template import.")
+
+        if post_data(url, authenticated_headers, payload, "There was a problem posting the template."):
+            print("Template import successful!")
+            return True
+        else:
+            print("Could not create template. Exiting.")
+            return False
 
 
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description=__doc__,
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
-    PARSER.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
-    PARSER.add_argument("--user", "-u", required=False,
+    parser.add_argument("--ip", "-i", required=True, help="OME Appliance IP")
+    parser.add_argument("--user", "-u", required=False,
                         help="Username for OME Appliance", default="admin")
-    PARSER.add_argument("--password", "-p", required=True,
+    parser.add_argument("--password", "-p", required=True,
                         help="Password for OME Appliance")
-    PARSER.add_argument("--name", "-n", required=True,
-                        help="Name of Template")
-    PARSER.add_argument("--in-file", "-f", required=True,
+    parser.add_argument("--template-file", "-f", required=True,
                         help="Path of Template File to Import")
+    parser.add_argument("--template-name", "-n", required=False,
+                        help="The name of the template you would like to use. If it is not provided it defaults to the"
+                             " name of the file provided with the extension dropped.")
 
-    ARGS = PARSER.parse_args()
-    base_uri = 'https://%s' % (ARGS.ip)
-    auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
-    headers = {'content-type': 'application/json'}
-    if auth_token.get('token') != None:
-        headers['X-Auth-Token'] = auth_token['token']
-    else:
-        print("Unable to create a session with appliance %s" % (base_uri))
-        quit()
+    args = parser.parse_args()
 
     try:
-        if ARGS.in_file:
-            import_template(base_uri, headers, ARGS.name, ARGS.in_file)
-    except Exception as e:
-        print(traceback.format_exc())
-    finally:
-        delete_session(ARGS.ip, headers, auth_token['id'])
+        headers = authenticate(args.ip, args.user, args.password)
+
+        if not headers:
+            sys.exit(0)
+
+        if path.isfile(args.template_file):
+            if args.template_name:
+                import_template(args.ip, headers, args.template_name, args.template_file)
+            else:
+                import_template(args.ip,
+                                headers,
+                                path.basename(path.splitext(args.template_file)[0]),
+                                args.template_file)
+        else:
+            print("Error: It looks like %s does not exist! Are you sure the path is correct?" % args.template_file)
+            sys.exit(0)
+
+    except Exception as error:
+        print("Unexpected error:", str(error))
