@@ -36,6 +36,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#new-static-group">New Static Group</a></li>
 
+<li><a href="#new-template">New Template</a></li>
+
 <li><a href="#set-power-state">Set Power State</a></li>
 
 </ul>
@@ -608,6 +610,29 @@ PS C:\>$cred = Get-Credential
     In this instance you will be prompted for credentials to use
 
 ```
+
+
+---
+### New Template
+
+#### Available Scripts
+
+- [new_template.py](../Core/Python/new_template.py)
+
+
+#### Synopsis
+Script to manage templates in OpenManage Enterprise
+
+#### Description
+This script uses the OME REST API to create a template from file
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name 格蘭特第一實驗
+
 
 
 ---
