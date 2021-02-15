@@ -18,9 +18,21 @@ Some older scripts may not carry this requirement. You can tell if a script requ
 ### PS5.1 Support
 
 Currently we do not have any plans to backport new scripts or provide cross compatibility. If there is enough community interest we will raise the priority. If PS5.1 is a hard requirement for you please leave a comment on [this ticket](https://github.com/dell/OpenManage-Enterprise/issues/181).
+
+## We Love Feedback
+
+We build, revise, or add features to scripts mostly based on user feedback. If there is something you want to see and it's applicable to a wide audience please open an issue on [our issues page](https://github.com/dell/OpenManage-Enterprise/issues) or feel free to leave a comment on an existing issue. This helps tremendously in determining what kind of functionality the community is looking for.
 ## Script Documentation
 
 For a listing of each script and its accompanying documentation see our [Example API Documentation](docs/API.md)
+
+## Writing Your Own Code
+
+All scripts are self contained. We deliberately do not use an internal library. To write your own code simply copy one of our scripts and modify it as you please. We have cookie cutter code for common tasks available in the links below:
+
+[Python Common Code](docs/python_library_code.md)
+<br>
+[PowerShell Common Code](docs/powershell_library_code.md)
 
 ## Contributing to this Repository
 
@@ -34,10 +46,6 @@ looking for there!
 
 If you have scripts you made that you think could be helpful but don't have time to work them over to meet the 
 contributor guidelines, feel free to pull request them to the devel branch!
-
-## Requests
-
-If there is a script you would like feel free to put a request [on our issues](https://github.com/dell/OpenManage-Enterprise/issues). This repository is maintained in our free time, but we're happy to take a look at things the community needs. The more descriptive you can be about exactly what you want the better. Screenshots of exactly the functionality you are looking for are fantastic!
 
 ## Problems
 

@@ -3,6 +3,8 @@
 - [Python Library Code](#python-library-code)
   - [Authenticating to an OME Instance](#authenticating-to-an-ome-instance)
   - [Interact with an API Resource](#interact-with-an-api-resource)
+    - [GET from an API resource](#get-from-an-api-resource)
+    - [POST to an API resource](#post-to-an-api-resource)
   - [Resolve a device to its ID](#resolve-a-device-to-its-id)
     - [Helpful device ID pattern](#helpful-device-id-pattern)
     - [Get Group ID by Name](#get-group-id-by-name)
@@ -56,6 +58,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
 
 ## Interact with an API Resource
 
+### GET from an API resource
 This is used to perform any sort of interaction with a REST API resource. It includes the ability to pass in odata filters. Anytime you need to POST or GET an API resource we recommend you use this function.
 
 ```python
@@ -145,6 +148,36 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
                             + " with error: " + response.text)
 
     return data
+```
+
+### POST to an API resource
+
+```python
+def post_data(url: str, authenticated_headers: dict, payload: dict, error_message: str) -> dict:
+    """
+    Posts data to OME and returns the results
+
+    Args:
+        url: The URL to which you want to post
+        authenticated_headers: Headers used for authentication to the OME server
+        payload: A payload to post to the OME server
+        error_message: If the POST fails this is the message which will be displayed to the user
+
+    Returns: A dictionary with the results of the post request or an empty dictionary in the event of a failure. If the
+             result is a 204 - No Content (which indicates success but there is no data) then it will return a
+             dictionary with the value {'status_code': 204}
+
+    """
+    response = requests.post(url, headers=authenticated_headers, verify=False, data=json.dumps(payload))
+
+    if response.status_code == 204:
+        return {'status_code': 204}
+    if response.status_code != 400:
+        return json.loads(response.content)
+    else:
+        print(error_message + " Error was:")
+        pprint(json.loads(response.content))
+        return {}
 ```
 
 ## Resolve a device to its ID
