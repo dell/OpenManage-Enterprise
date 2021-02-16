@@ -622,7 +622,7 @@ Try {
         $DevicePowerStates | Export-Csv -Path $CsvFile -NoTypeInformation
         $(Foreach($Device in $DevicePowerStates){
             New-object psobject -Property $Device
-        }) | Export-Csv test.csv
+        }) | Export-Csv $CsvFile
 
     }
     else {

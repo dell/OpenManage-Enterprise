@@ -112,7 +112,7 @@ def post_data(url: str, authenticated_headers: dict, payload: dict, error_messag
         return {}
 
 
-def import_template(ome_ip_address, authenticated_headers, template_name, filename):
+def import_template(ome_ip_address, authenticated_headers, template_name, filename) -> bool:
     """
     Imports a template from file
 

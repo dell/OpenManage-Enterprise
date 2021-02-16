@@ -397,12 +397,28 @@ else {
 
 ### Writing an Array of Hashtables to a CSV File
 
+This is a bit strange in PowerShell. The main thing is that before passing code to the second part (the foreach loop actually doing the export) you have to remove the date from the Get-Data output and manually put it in a PS hashtable.
+
 ```powershell
+$DevicePowerStates = @()
+foreach ($DeviceId in $Targets) {
+    $DeviceStatus = Get-Data "https://$($IpAddress)/api/DeviceService/Devices($DeviceId)"
+    $DevicePowerState = @{
+        "OME ID" = $DeviceStatus.Id
+        Identifier = $DeviceStatus.Identifier
+        Model = $DeviceStatus.Model
+        "Device Name" = $DeviceStatus.DeviceName
+        "idrac IP" = $DeviceStatus.DeviceManagement[0]['NetworkAddress']
+        "Power State" = $PowerStateMap[[int]$($DeviceStatus.PowerState)]
+    }
+    $DevicePowerStates += $DevicePowerState
+}
+
 $DevicePowerStates | Export-Csv -Path $CsvFile -NoTypeInformation
 # Using $( foreach ($x in $a) {} ) | Export-Csv
-$(Foreach($Device in $DevicePowerStates){
+$(foreach($Device in $DevicePowerStates){
     New-object psobject -Property $Device
-}) | Export-Csv test.csv
+}) | Export-Csv $CsvFile
 ```
 
 See [this StackOverflow link](https://stackoverflow.com/questions/11173795/powershell-convert-array-of-hastables-into-csv)

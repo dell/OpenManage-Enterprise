@@ -80,6 +80,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-report-list">Get Report List</a></li>
 
+<li><a href="#get-supportassist-cases">Get Supportassist Cases</a></li>
+
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
 
 </ul>
@@ -631,7 +633,7 @@ Note that the credentials entered are not stored to disk.
 
 #### Example
     python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml
-    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name 格蘭特第一實驗
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name 格蘭特是最好的
 
 
 
@@ -1265,6 +1267,36 @@ PS C:\>$cred = Get-Credential
     PS C:\>.\Get-ReportList.ps1 -IpAddress "10.xx.xx.xx"
     In this instance you will be prompted for credentials to use to
     connect to the appliance
+
+```
+
+
+---
+### Get Supportassist Cases
+
+#### Available Scripts
+
+- [get_supportassist_cases.py](../Core/Python/get_supportassist_cases.py)
+
+- [Get-SupportassistCases.ps1](../Core/PowerShell/Get-SupportassistCases.ps1)
+
+
+#### Synopsis
+Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
+
+#### Description
+The --out-file argument is optional. If specified the output will go to a file. Otherwise it prints to screen.
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+    python get_supportassist_cases.py --ip <xx> --user <username> --password <pwd> --out-file <some csv file>
+
+
+#### PowerShell Example
+```
+PS C:\>.\Get-SupportassistCases.ps1' -credentials $creds -outfile test.csv -ipaddress 192.168.1.93
 
 ```
 
