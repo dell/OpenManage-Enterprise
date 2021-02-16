@@ -87,6 +87,9 @@ monitor:
   get_report_list:
     - get_report_list.py
     - Get-ReportList.ps1
+  get_supportassist_cases:
+    - get_supportassist_cases.py
+    - Get-SupportassistCases.ps1
   invoke_report_execution:
     - invoke_report_execution.py
     - Invoke-ReportExecution.ps1
