@@ -82,6 +82,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-supportassist-cases">Get Supportassist Cases</a></li>
 
+<li><a href="#get-warranty-information">Get Warranty Information</a></li>
+
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
 
 </ul>
@@ -1285,7 +1287,7 @@ PS C:\>$cred = Get-Credential
 Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
 
 #### Description
-The --out-file argument is optional. If specified the output will go to a file. Otherwise it prints to screen.
+The --out-file argument is optional. If specified the output will go to a CSV file. Otherwise it prints to screen.
 
 For authentication X-Auth is used over Basic Authentication
 Note that the credentials entered are not stored to disk.
@@ -1297,6 +1299,37 @@ Note that the credentials entered are not stored to disk.
 #### PowerShell Example
 ```
 PS C:\>.\Get-SupportassistCases.ps1' -credentials $creds -outfile test.csv -ipaddress 192.168.1.93
+
+```
+
+
+---
+### Get Warranty Information
+
+#### Available Scripts
+
+- [get_warranty_information.py](../Core/Python/get_warranty_information.py)
+
+- [Get-WarrantyInformation.ps1](../Core/PowerShell/Get-WarrantyInformation.ps1)
+
+
+#### Synopsis
+Retrieves the warranty information for all devices on an OME instance.
+
+#### Description
+You can provide a keyword argument to filter devices by the service description. For example you can specify 'pro'
+and that would match a Service Level Description of 'Silver Support or ProSupport'
+
+For authentication X-Auth is used over Basic Authentication Note that the credentials entered are not stored to disk.
+
+#### Example
+    python get_warranty_information.py --ip 192.168.1.93 --user admin --password password --warranty-keyword prosupport --out-file <csv_file>
+
+
+#### PowerShell Example
+```
+PS C:\>.\Get-WarrantyInformation.ps1' -IpAddress 192.168.1.93 -credentials $creds -outfile test.csv 
+    -WarrantyKeyword silver
 
 ```
 
