@@ -22,25 +22,29 @@ limitations under the License.
 <#
 
   .SYNOPSIS
-    Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
+    Retrieves the warranty information for all devices on an OME instance.
 
   .DESCRIPTION
-    The -OutFile argument is optional. If specified the output will go to a CSV file. Otherwise it prints to screen.
+    You can provide a keyword argument to filter devices by the service description. For example you can specify 'pro'
+    and that would match a Service Level Description of 'Silver Support or ProSupport'
 
-    For authentication X-Auth is used over Basic Authentication
-    Note that the credentials entered are not stored to disk.
+    For authentication X-Auth is used over Basic Authentication Note that the credentials entered are not stored to disk.
 
   .PARAMETER IpAddress
     IP Address of the OME Appliance
 
   .PARAMETER Credentials
     Credentials used to talk to the OME Appliance
- 
+
   .PARAMETER OutFile
     Path to which you want to write the output.
 
-  .EXAMPLE
-   .\Get-SupportassistCases.ps1' -credentials $creds -outfile test.csv -ipaddress 192.168.1.93
+  .PARAMETER WarrantyKeyword
+    Performs a case insensitive search against the field 'Service Level Description' in the  OME UI. This allows you
+    to search for a specific type of warranty. For example, searching prosupport would return all warranties with the word prosupport in their description.
+
+ .EXAMPLE
+   .\Get-WarrantyInformation.ps1' -IpAddress 192.168.1.93 -credentials $creds -outfile test.csv -WarrantyKeyword silver
 #>
 
 [CmdletBinding()]
@@ -52,7 +56,10 @@ param(
     [pscredential] $Credentials,
 
     [Parameter(Mandatory=$false)]
-    [string] $OutFile
+    [string] $OutFile,
+
+    [Parameter(Mandatory=$false)]
+    [string] $WarrantyKeyword
 )
 
 function Get-Data {
@@ -265,44 +272,87 @@ function Confirm-IsValid {
   return $true
 }
 
+function ConvertPSObjectToHashtable
+{
+  <#
+    .SYNOPSIS
+      Converts a PSObject to a HashTable
+
+    .DESCRIPTION
+      Often, when we get input back from the API we want to be able to manipulate the output as a hashtable rather
+      than a PSCustomObject. This function will take as input a PSObject and convert it to a hashtable. When data
+      is converted using ConvertFromJson that requires some extra handling.
+
+      Note: This was shamelessly stolen from @Dave Wyatt's answere here:
+      https://stackoverflow.com/questions/22002748/hashtables-from-convertfrom-json-have-different-type-from-powershells-built-in-h
+
+    .PARAMETER InputObject
+      The PSObject you would like to convert.
+
+    .OUTPUTS
+      A HashTable equivalent of the input PSObject.
+  #>
+    param (
+        [Parameter(ValueFromPipeline)]
+        $InputObject
+    )
+
+    process
+    {
+        if ($null -eq $InputObject) { return $null }
+
+        if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string])
+        {
+            $Collection = @(
+                foreach ($object in $InputObject) { ConvertPSObjectToHashtable $object }
+            )
+
+            Write-Output -NoEnumerate $Collection
+        }
+        elseif ($InputObject -is [psobject])
+        {
+            $Hash = @{}
+
+            foreach ($Property in $InputObject.PSObject.Properties)
+            {
+                $Hash[$Property.Name] = ConvertPSObjectToHashtable $Property.Value
+            }
+
+            return $Hash
+        }
+        else
+        {
+            return $InputObject
+        }
+    }
+}
+
 try {
 
-    Write-Host "Sending the request to OME..."
-    $Cases = Get-Data "https://$($IpAddress)/api/SupportAssistService/Cases?sort=id"
+  Write-Host "Sending the request to OME..."
+  $WarrantyInfo = ConvertPSObjectToHashtable $(Get-Data "https://$($IpAddress)/api/WarrantyService/Warranties")
 
-    if($Cases.count -gt 0) {
-      if ($PSBoundParameters.ContainsKey('OutFile')) {
-        if (-not $(Confirm-IsValid -OutputFilePath $OutFile)) {
-          Exit
-        }
+  if ($PSBoundParameters.ContainsKey('WarrantyKeyword')) {
+    $WarrantyInfo = $WarrantyInfo | Where-Object 'ServiceLevelDescription' -Match ^*$WarrantyKeyword*
+  }
 
-        $CasesDictionary = @()
-        foreach ($Case in $Cases) {
-            $CaseDict = @{
-                "Id" = $Case.Id
-                "Name" = $Case.Name
-                "Title" = $Case.Title
-                "ServiceTag" = $Case.ServiceTag
-                "Status" = $Case.Status
-                "EventSource" = $Case.EventSource
-                "DummyCase" = $Case.DummyCase
-                "UpdatedDate" = $Case.UpdatedDate
-                "CreatedDate" = $Case.CreatedDate
-            }
-            $CasesDictionary += $CaseDict
-        }
-
-        $Cases | Export-Csv -Path $OutFile -NoTypeInformation
-        $(Foreach($Case in $CasesDictionary){
-            New-object psobject -Property $Case
-        }) | Export-Csv $OutFile
+  if($WarrantyInfo.count -gt 0) {
+    if ($PSBoundParameters.ContainsKey('OutFile')) {
+      if (-not $(Confirm-IsValid -OutputFilePath $OutFile)) {
+        Exit
       }
-      else {
-        $Cases
-      }
+
+      $WarrantyInfo | Export-Csv -Path $OutFile -NoTypeInformation
+      $(Foreach($Case in $WarrantyInfo){
+          New-object psobject -Property $Case
+      }) | Export-Csv $OutFile
     }
+    else {
+      $WarrantyInfo
+    }
+  }
 
-    Write-Host "Task completed successfully!"
+  Write-Host "Task completed successfully!"
     
 }
 catch {

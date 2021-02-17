@@ -12,6 +12,7 @@
   - [Track a Job to Completion](#track-a-job-to-completion)
   - [Printing a Dictionary to a CSV File](#printing-a-dictionary-to-a-csv-file)
   - [Prompt a User with a Yes/No Question](#prompt-a-user-with-a-yesno-question)
+  - [Check that a Filepath is Valid](#check-that-a-filepath-is-valid)
 
 ## Authenticating to an OME Instance
 
@@ -433,15 +434,32 @@ def track_job_to_completion(ome_ip_address: str,
 
 ## Printing a Dictionary to a CSV File
 
+This code is a generic template for getting some data from OME and then sending it to CSV. The variable names at a
+minimum will need to be updated.
+
 ```python
-# Use UTF 8 in case there are non-ASCII characters like 格蘭特
-print("Writing CSV to file...")
-with open(out_file, 'w', encoding='utf-8', newline='') as csv_file:
-    csv_columns = ["Id", "Name", "Description", "VlanMaximum", "VlanMinimum", "Type"]
-    writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
-    writer.writeheader()
-    for network in network_data:
-        writer.writerow(network)
+warranty_info = get_data(headers, base_uri)
+
+if warranty_info:
+    if args.out_file:
+        # Use UTF 8 in case there are non-ASCII characters like 格蘭特
+        print("Writing CSV to file...")
+        with open(args.out_file, 'w', encoding='utf-8', newline='') as csv_file:
+            # This code takes the list of dictionaries called warranty info, extracts the first dictionary in
+            # the list, which we assume will have keys identical to the other dictionaries in the list,
+            # creates an iterable from its keys, and then runs it through a lambda function which will remove
+            # any elements that have the string @odata in them. It will show add all other elements to the CSV
+            # file. In this way we do not need to manually enumerate the CSV header elements.
+            csv_columns = list(filter(lambda elem: '@odata' not in elem, warranty_info[0].keys()))
+            writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
+            writer.writeheader()
+            for warranty in warranty_info:
+                writer.writerow(warranty)
+    else:
+        pprint(warranty_info)
+else:
+    print("There was a problem retrieving the SupportAssist data from OME! Exiting.")
+    sys.exit(0)
 ```
 
 ## Prompt a User with a Yes/No Question
@@ -479,4 +497,47 @@ def query_yes_no(question: str, default: str = "yes") -> bool:
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
+```
+
+## Check that a Filepath is Valid
+
+```python
+
+from os.path import isfile
+
+def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool:
+    """
+    Tests whether a filepath is valid or not. You can only provide either input_filepath or output_filepath. Not both.
+
+    Args:
+        output_filepath: The path to an output file you want to test
+        input_filepath:The path to an input file you want to test
+
+    Returns:
+        Returns true if the path is valid and false if it is not
+    """
+
+    if input_filepath != "" and output_filepath != "":
+        print("You can only provide either an InputFilePath or an OutputFilePath.")
+        sys.exit(0)
+
+    if isfile(output_filepath):
+        if not query_yes_no(output_filepath + " already exists? Do you want to continue? (y/n): ", "no"):
+            return False
+
+    if output_filepath:
+        try:
+            open(output_filepath, 'w')
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % output_filepath)
+            return False
+
+    if input_filepath:
+        try:
+            open(output_filepath, 'r')
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % input_filepath)
+            return False
 ```

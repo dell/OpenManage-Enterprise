@@ -11,6 +11,7 @@
     - [Writing an Array of Hashtables to a CSV File](#writing-an-array-of-hashtables-to-a-csv-file)
   - [Prompt a User with a Yes / No Question](#prompt-a-user-with-a-yes--no-question)
   - [Validate a File Path](#validate-a-file-path)
+  - [Convert PSObject to a HashTable](#convert-psobject-to-a-hashtable)
 
 ## Interact with an API Resource
 
@@ -400,25 +401,23 @@ else {
 This is a bit strange in PowerShell. The main thing is that before passing code to the second part (the foreach loop actually doing the export) you have to remove the date from the Get-Data output and manually put it in a PS hashtable.
 
 ```powershell
-$DevicePowerStates = @()
-foreach ($DeviceId in $Targets) {
-    $DeviceStatus = Get-Data "https://$($IpAddress)/api/DeviceService/Devices($DeviceId)"
-    $DevicePowerState = @{
-        "OME ID" = $DeviceStatus.Id
-        Identifier = $DeviceStatus.Identifier
-        Model = $DeviceStatus.Model
-        "Device Name" = $DeviceStatus.DeviceName
-        "idrac IP" = $DeviceStatus.DeviceManagement[0]['NetworkAddress']
-        "Power State" = $PowerStateMap[[int]$($DeviceStatus.PowerState)]
-    }
-    $DevicePowerStates += $DevicePowerState
-}
+$WarrantyInfo = ConvertPSObjectToHashtable $(Get-Data "https://$($IpAddress)/api/WarrantyService/Warranties")
 
-$DevicePowerStates | Export-Csv -Path $CsvFile -NoTypeInformation
-# Using $( foreach ($x in $a) {} ) | Export-Csv
-$(foreach($Device in $DevicePowerStates){
-    New-object psobject -Property $Device
-}) | Export-Csv $CsvFile
+if($WarrantyInfo.count -gt 0) {
+  if ($PSBoundParameters.ContainsKey('OutFile')) {
+    if (-not $(Confirm-IsValid -OutputFilePath $OutFile)) {
+      Exit
+    }
+
+    $WarrantyInfo | Export-Csv -Path $OutFile -NoTypeInformation
+    $(Foreach($Case in $WarrantyInfo){
+        New-object psobject -Property $Case
+    }) | Export-Csv $OutFile
+  }
+  else {
+    $WarrantyInfo
+  }
+}
 ```
 
 See [this StackOverflow link](https://stackoverflow.com/questions/11173795/powershell-convert-array-of-hastables-into-csv)
@@ -533,5 +532,67 @@ function Confirm-IsValid {
   }
 
   return $true
+}
+```
+
+## Convert PSObject to a HashTable
+
+Often, when we get input back from the API we want to be able to manipulate the output as a hashtable rather than a PSCustomObject. This function will take as input a PSObject and convert it to a hashtable. This will be most often
+used in conjunction with Get-Data.
+
+```powershell
+function ConvertPSObjectToHashtable
+{
+  <#
+    .SYNOPSIS
+      Converts a PSObject to a HashTable
+
+    .DESCRIPTION
+      Often, when we get input back from the API we want to be able to manipulate the output as a hashtable rather
+      than a PSCustomObject. This function will take as input a PSObject and convert it to a hashtable. When data
+      is converted using ConvertFromJson that requires some extra handling.
+
+      Note: This was shamelessly stolen from @Dave Wyatt's answere here:
+      https://stackoverflow.com/questions/22002748/hashtables-from-convertfrom-json-have-different-type-from-powershells-built-in-h
+
+    .PARAMETER InputObject
+      The PSObject you would like to convert.
+
+    .OUTPUTS
+      A HashTable equivalent of the input PSObject.
+  #>
+    param (
+        [Parameter(ValueFromPipeline)]
+        $InputObject
+    )
+
+    process
+    {
+        if ($null -eq $InputObject) { return $null }
+
+        if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string])
+        {
+            $Collection = @(
+                foreach ($object in $InputObject) { ConvertPSObjectToHashtable $object }
+            )
+
+            Write-Output -NoEnumerate $Collection
+        }
+        elseif ($InputObject -is [psobject])
+        {
+            $Hash = @{}
+
+            foreach ($Property in $InputObject.PSObject.Properties)
+            {
+                $Hash[$Property.Name] = ConvertPSObjectToHashtable $Property.Value
+            }
+
+            return $Hash
+        }
+        else
+        {
+            return $InputObject
+        }
+    }
 }
 ```
