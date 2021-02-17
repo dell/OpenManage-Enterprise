@@ -18,22 +18,23 @@
 
 """
 #### Synopsis
-Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
+Retrieves the warranty information for all devices on an OME instance.
 
 #### Description
-The --out-file argument is optional. If specified the output will go to a CSV file. Otherwise it prints to screen.
+You can provide a keyword argument to filter devices by the service description. For example you can specify 'pro'
+and that would match a Service Level Description of 'Silver Support or ProSupport'
 
-For authentication X-Auth is used over Basic Authentication
-Note that the credentials entered are not stored to disk.
+For authentication X-Auth is used over Basic Authentication Note that the credentials entered are not stored to disk.
 
 #### Example
-    python get_supportassist_cases.py --ip <xx> --user <username> --password <pwd> --out-file <some csv file>
+    python get_warranty_information.py --ip 192.168.1.93 --user admin --password password --warranty-keyword prosupport --out-file <csv_file>
 """
 
 import argparse
 import csv
 import json
 import sys
+from os.path import isfile
 from argparse import RawTextHelpFormatter
 from urllib.parse import urlparse
 from getpass import getpass
@@ -164,6 +165,77 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
     return data
 
 
+def query_yes_no(question: str, default: str = "yes") -> bool:
+    """
+    Prompts the user with a yes/no question
+
+    Args:
+        question: The question to ask the user
+        default: Whether the default answer is no or yes. Defaults to yes
+
+    Returns: A boolean - true if yes and false if no
+
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+
+def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool:
+    """
+    Tests whether a filepath is valid or not. You can only provide either input_filepath or output_filepath. Not both.
+
+    Args:
+        output_filepath: The path to an output file you want to test
+        input_filepath:The path to an input file you want to test
+
+    Returns:
+        Returns true if the path is valid and false if it is not
+    """
+
+    if input_filepath != "" and output_filepath != "":
+        print("You can only provide either an InputFilePath or an OutputFilePath.")
+        sys.exit(0)
+
+    if isfile(output_filepath):
+        if not query_yes_no(output_filepath + " already exists? Do you want to continue? (y/n): ", "no"):
+            return False
+
+    if output_filepath:
+        try:
+            open(output_filepath, 'w')
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % output_filepath)
+            return False
+
+    if input_filepath:
+        try:
+            open(output_filepath, 'r')
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % input_filepath)
+            return False
+
+
 if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -176,9 +248,13 @@ if __name__ == '__main__':
                         help="Password for OME Appliance")
     parser.add_argument("--out-file", "-f", required=False,
                         help="The name of a file to which you want to write your VLANs")
+    parser.add_argument("--warranty-keyword", "-k", required=False, type=str,
+                        help="Performs a case insensitive search against the field 'Service Level Description' in the "
+                             "OME UI. This allows you to search for a specific type of warranty. For example, searching"
+                             " prosupport would return all warranties with the word prosupport in their description.")
     args = parser.parse_args()
 
-    base_uri = 'https://%s/api/SupportAssistService/Cases?sort=id' % args.ip
+    base_uri = 'https://%s/api/WarrantyService/Warranties' % args.ip
 
     if not args.password:
         args.password = getpass()
@@ -191,21 +267,35 @@ if __name__ == '__main__':
 
         print("Sending the request to OME...")
 
-        cases = get_data(headers, base_uri)
+        warranty_info = get_data(headers, base_uri)
 
-        if cases:
+        if warranty_info:
+
+            if args.warranty_keyword:
+                # Use a list comprehension to filter the dictionaries
+                warranty_info = [warranty for warranty in warranty_info if
+                                 args.warranty_keyword.lower() in warranty['ServiceLevelDescription'].lower()]
+
             if args.out_file:
+
+                if not confirm_isvalid(output_filepath=args.out_file):
+                    sys.exit(0)
+
                 # Use UTF 8 in case there are non-ASCII characters like 格蘭特
                 print("Writing CSV to file...")
                 with open(args.out_file, 'w', encoding='utf-8', newline='') as csv_file:
-                    csv_columns = ["Id", "Name", "Title", "ServiceTag", "Status", "EventSource", "ServiceContract",
-                                   "DummyCase", "UpdatedDate", "CreatedDate"]
+                    # This code takes the list of dictionaries called warranty info, extracts the first dictionary in
+                    # the list, which we assume will have keys identical to the other dictionaries in the list,
+                    # creates an iterable from its keys, and then runs it through a lambda function which will remove
+                    # any elements that have the string @odata in them. It will show add all other elements to the CSV
+                    # file. In this way we do not need to manually enumerate the CSV header elements.
+                    csv_columns = list(filter(lambda elem: '@odata' not in elem, warranty_info[0].keys()))
                     writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
                     writer.writeheader()
-                    for case in cases:
-                        writer.writerow(case)
+                    for warranty in warranty_info:
+                        writer.writerow(warranty)
             else:
-                pprint(cases)
+                pprint(warranty_info)
         else:
             print("There was a problem retrieving the SupportAssist data from OME! Exiting.")
             sys.exit(0)
