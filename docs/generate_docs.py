@@ -47,7 +47,8 @@ def _get_powershell_example(script_to_process: str):
     except IndexError:
         print("Received an index error while processing " + script_to_process + ". This typically means the help "
               "section of the PowerShell is not formatted correctly. Try running 'Get-Help " + script_to_process +
-              " -Examples' and verify that the examples output correctly.")
+              " -Examples' and verify that the examples output correctly. It may also mean that the name in "
+              "categories does not match the actual filename.")
         sys.exit(0)
     output = output.splitlines()
 

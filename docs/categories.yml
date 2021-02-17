@@ -90,6 +90,9 @@ monitor:
   get_supportassist_cases:
     - get_supportassist_cases.py
     - Get-SupportassistCases.ps1
+  get_warranty_information:
+    - get_warranty_information.py
+    - Get-WarrantyInformation.ps1
   invoke_report_execution:
     - invoke_report_execution.py
     - Invoke-ReportExecution.ps1
