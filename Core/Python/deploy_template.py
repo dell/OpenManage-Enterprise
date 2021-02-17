@@ -328,7 +328,7 @@ def track_job_to_completion(ome_ip_address: str,
                 print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
         except AttributeError:
             print("There was a problem getting the job info during the wait. Full error details:")
-            pprint(job_resp.json())
+            pprint(job_resp)
             return False
 
     if job_incomplete:
