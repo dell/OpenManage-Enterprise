@@ -328,7 +328,7 @@ def track_job_to_completion(ome_ip_address: str,
                 print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
         except AttributeError:
             print("There was a problem getting the job info during the wait. Full error details:")
-            pprint(job_resp.json())
+            pprint(job_resp)
             return False
 
     if job_incomplete:
@@ -529,6 +529,7 @@ if __name__ == '__main__':
             print("Power state changed successfully!")
         else:
             print("Error: There was a problem changing device power state. See the output above for details.")
+            sys.exit(0)
 
         if group_id:
             group_devices = get_data(headers, group_url + "(%s)/Devices" % group_id)
