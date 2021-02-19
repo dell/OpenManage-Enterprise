@@ -26,28 +26,28 @@ This script expects input in JSON format with two entries. The first should be a
 targets identifying the OME instances to which you want to push VLANs and the second is a single dictionary defining
 the source instance. Example:
 
-{
-    "target": [
-        {
-            "ip": "100.97.173.67",
-            "port": "443",
-            "user_name": "admin",
-            "password": "your_password"
-        },
-        {
-            "ip": "100.97.173.61",
+    {
+        "target": [
+            {
+                "ip": "100.97.173.67",
+                "port": "443",
+                "user_name": "admin",
+                "password": "your_password"
+            },
+            {
+                "ip": "100.97.173.61",
+                "port": "443",
+                "user_name": "admin",
+                "password": "your_password"
+            }
+        ],
+        "source": {
+            "ip": "100.97.173.76",
             "port": "443",
             "user_name": "admin",
             "password": "your_password"
         }
-    ],
-    "source": {
-        "ip": "100.97.173.76",
-        "port": "443",
-        "user_name": "admin",
-        "password": "your_password"
     }
-}
 
 #### Python Example
     python copy_vlans.py --inputs <JSON_FILE_NAME>
