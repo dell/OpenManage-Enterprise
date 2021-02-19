@@ -25,11 +25,11 @@ names, service tags, or device ids as arguments. It can optionally write the out
 For authentication X-Auth is used over Basic Authentication. Note that the credentials entered are not stored to disk.
 
 #### Python Example
-'''
-python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --idrac-ips 192.168.1.45 --state {state} --csv-file test.csv
-python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --device-names 格蘭特,192.168.1.63 --state {state}
-'''
-where {state} can be "POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL", "MASTER_BUS_RESET"
+
+    python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --idrac-ips 192.168.1.45 --state {state} --csv-file test.csv
+    python set_power_state.py --ip 192.168.1.93 --password somepass --groupname Test --device-names 格蘭特,192.168.1.63 --state {state}
+
+    where {state} can be "POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL", "MASTER_BUS_RESET"
 """
 
 import argparse
