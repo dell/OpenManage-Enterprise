@@ -442,23 +442,30 @@ if __name__ == '__main__':
     parser.add_argument("--deviceType", required=True,
                         choices=('server', 'chassis'),
                         help="Device Type  to discover devices")
-    MUTEX_GROUP = parser.add_mutually_exclusive_group(required=True)
-    MUTEX_GROUP.add_argument("--targetIpAddresses",
+    mutex_group = parser.add_mutually_exclusive_group(required=True)
+    mutex_group.add_argument("--targetIpAddresses",
                              help="Array of Ip address to discover devices ")
-    MUTEX_GROUP.add_argument("--targetIpAddrCsvFile",
+    mutex_group.add_argument("--targetIpAddrCsvFile",
                              help="Path to Csv file that contains IP address to discover devices")
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    if args.password:
+
+    if not args.password:
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
         password = args.password
-    else:
-        password = getpass("Password for OME Appliance: ")
+
     discover_user_name = args.targetUserName
-    if args.targetPassword:
-        discover_password = args.targetPassword
-    else:
-        discover_password: getpass("Password to discover devices: ")
+    discover_password = args.targetPassword
+
     ip_array = args.targetIpAddresses
     csv_file_path = args.targetIpAddrCsvFile
     device_type = args.deviceType

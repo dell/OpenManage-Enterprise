@@ -33,6 +33,7 @@ Note that the credentials entered are not stored to disk.
 """
 import argparse
 import json
+import sys
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
@@ -117,8 +118,18 @@ if __name__ == '__main__':
     parser.add_argument("--field", "-f", required=True,
                         help="Field to filter by (group name or description)")
     args = parser.parse_args()
-    if not args.password:
-        args.password = getpass()
 
-    get_group_details(args.ip, args.user, args.password,
+    if not args.password:
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
+
+    get_group_details(args.ip, args.user, password,
                       str(args.filterby), str(args.field))

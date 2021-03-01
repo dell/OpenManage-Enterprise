@@ -57,6 +57,7 @@ import copy
 import json
 import os
 import time
+import sys
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
@@ -343,54 +344,63 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ip_address = args.ip
     user_name = args.user
-    if args.password:
-        password = args.password
+
+    if not args.password:
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
     else:
-        password = getpass()
-    DUP_FILE = args.dupfile
-    PARAM_MAP = {}
-    TARGET_DATA = []
+        password = args.password
+
+    dup_file = args.dupfile
+    param_map = {}
+    target_data = []
     try:
         auth_success, headers = authenticate_with_ome(ip_address, user_name,
                                                       password)
         if auth_success:
             if args.groupid:
-                GROUP_ID = args.groupid
-                PARAM_MAP['group_id'] = GROUP_ID
-                PARAM_MAP['device_id'] = None
-                GROUP_LIST = get_group_list(ip_address, headers)
-                if GROUP_LIST:
-                    if GROUP_ID in GROUP_LIST:
+                group_id = args.groupid
+                param_map['group_id'] = group_id
+                param_map['device_id'] = None
+                group_list = get_group_list(ip_address, headers)
+                if group_list:
+                    if group_id in group_list:
                         pass
                     else:
-                        raise ValueError("Group %s not found on %s ... Exiting" % (GROUP_ID, ip_address))
+                        raise ValueError("Group %s not found on %s ... Exiting" % (group_id, ip_address))
 
             else:
-                DEVICE_ID = args.deviceid
-                PARAM_MAP['device_id'] = DEVICE_ID
-                PARAM_MAP['group_id'] = None
-                DEVICE_LIST = get_device_list(ip_address, headers)
-                if DEVICE_LIST:
-                    if DEVICE_ID in DEVICE_LIST:
+                device_id = args.deviceid
+                param_map['device_id'] = device_id
+                param_map['group_id'] = None
+                device_list = get_device_list(ip_address, headers)
+                if device_list:
+                    if device_id in device_list:
                         pass
                     else:
-                        raise ValueError("Device %s not found on %s ... Exiting" % (DEVICE_ID, ip_address))
+                        raise ValueError("Device %s not found on %s ... Exiting" % (device_id, ip_address))
 
-            UPLOAD_SUCCESS, FILE_TOKEN = upload_dup_file(ip_address, headers,
-                                                         DUP_FILE)
-            if UPLOAD_SUCCESS:
-                REPORT_PAYLOAD = get_dup_applicability_payload(FILE_TOKEN, PARAM_MAP)
-                if REPORT_PAYLOAD:
+            upload_success, file_token = upload_dup_file(ip_address, headers,
+                                                         dup_file)
+            if upload_success:
+                report_payload = get_dup_applicability_payload(file_token, param_map)
+                if report_payload:
                     print("Determining which components the DUP file applies to ... ")
-                    TARGET_DATA = get_applicable_components(ip_address,
+                    target_data = get_applicable_components(ip_address,
                                                             headers,
-                                                            REPORT_PAYLOAD)
-                    if TARGET_DATA:
+                                                            report_payload)
+                    if target_data:
                         print("Forming job payload for update ... ")
-                        JOB_PAYLOAD = form_job_payload_for_update(TARGET_DATA)
+                        job_payload = form_job_payload_for_update(target_data)
                         job_id = spawn_update_job(ip_address,
                                                   headers,
-                                                  JOB_PAYLOAD)
+                                                  job_payload)
                         if job_id != -1:
                             track_job_to_completion(ip_address, headers,
                                                     job_id)
