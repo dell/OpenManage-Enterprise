@@ -202,11 +202,21 @@ if __name__ == '__main__':
     parser.add_argument("--outpath", "-op", required=False, default="",
                         help="Path to output file")
     args = parser.parse_args()
+
     if not args.password:
-        args.password = getpass()
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
 
     pool = urllib3.HTTPSConnectionPool(args.ip, port=443,
                                        cert_reqs='CERT_NONE', assert_hostname=False)
 
-    GetDeviceList({"ip": args.ip, "user": args.user, "password": args.password},
+    GetDeviceList({"ip": args.ip, "user": args.user, "password": password},
                   {"format": args.outformat, "path": args.outpath})

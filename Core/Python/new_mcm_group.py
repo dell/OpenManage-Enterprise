@@ -50,6 +50,7 @@ is set as the lead in the created MCM group
 import argparse
 import random
 import time
+import sys
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
@@ -287,15 +288,25 @@ if __name__ == '__main__':
     parser.add_argument("--password", "-p", required=False, help="Password for MSM")
     parser.add_argument("--groupname", "-g", required=True, help="A valid name for the group")
     args = parser.parse_args()
+
     if not args.password:
-        args.password = getpass()
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
 
     base_url = 'https://{0}/api'.format(args.ip)
 
     session_manager = SessionManager()
     session_manager.set_base_url(base_url)
     try:
-        if authenticate(session_manager, args.user, args.password):
+        if authenticate(session_manager, args.user, password):
             job_id = create_mcm_group(session_manager, args.groupname)
             if job_id:
                 print('Polling group creation ...')

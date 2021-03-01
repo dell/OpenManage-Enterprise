@@ -429,8 +429,18 @@ if __name__ == '__main__':
                         choices=("POWER_ON", "POWER_OFF_GRACEFUL", "POWER_CYCLE", "POWER_OFF_NON_GRACEFUL",
                                  "MASTER_BUS_RESET"), help="Type of power operation you would like to perform.")
     args = parser.parse_args()
+
     if not args.password:
-        args.password = getpass()
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
 
     POWER_CONTROL_STATE_MAP = {
         "Power On": "2",
@@ -443,7 +453,7 @@ if __name__ == '__main__':
     POWER_STATE_MAP = {17: "Powered On", 18: "Powered Off", 20: "Powering On", 21: "Powering Off"}
 
     try:
-        headers = authenticate(args.ip, args.user, args.password)
+        headers = authenticate(args.ip, args.user, password)
 
         if not headers:
             sys.exit(0)

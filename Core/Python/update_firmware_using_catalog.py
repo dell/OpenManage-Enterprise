@@ -974,10 +974,19 @@ if __name__ == '__main__':
 
     ip_address = args.ip
     user_name = args.user
-    if args.password:
-        password = args.password
+
+    if not args.password:
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
     else:
-        password = getpass("Password for OME Appliance: ")
+        password = args.password
+
     update_actions = set()
     for action in args.updateactions:
         if action == "flash-all":

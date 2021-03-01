@@ -181,10 +181,19 @@ if __name__ == '__main__':
     base_uri = 'https://%s/api/SupportAssistService/Cases?sort=id' % args.ip
 
     if not args.password:
-        args.password = getpass()
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
 
     try:
-        headers = authenticate(args.ip, args.user, args.password)
+        headers = authenticate(args.ip, args.user, password)
 
         if not headers:
             sys.exit(0)

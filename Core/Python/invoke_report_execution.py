@@ -56,6 +56,7 @@ import csv
 import json
 import os
 import time
+import sys
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
@@ -226,17 +227,27 @@ if __name__ == '__main__':
                         help="Optional param - redirect the output to file")
 
     args = parser.parse_args()
+
     if not args.password:
-        args.password = getpass()
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
 
     try:
-        REPORT_EXEC = OMEReportExecutor(args.ip, args.user,
-                                        args.password,
+        report_exec = OMEReportExecutor(args.ip, args.user,
+                                        password,
                                         args.reportid,
                                         args.groupid,
                                         args.outputfile)
-        AUTH_STATUS, SESS_headers = REPORT_EXEC.authenticate_with_ome()
-        if AUTH_STATUS:
-            REPORT_EXEC.execute_report(SESS_headers)
+        auth_status, session_headers = report_exec.authenticate_with_ome()
+        if auth_status:
+            report_exec.execute_report(session_headers)
     except Exception as error:
         print("Unexpected error:", str(error))

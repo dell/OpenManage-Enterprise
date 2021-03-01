@@ -46,6 +46,7 @@ import sys
 import traceback
 from argparse import RawTextHelpFormatter
 from os import path
+from getpass import getpass
 
 import requests
 import urllib3
@@ -152,34 +153,48 @@ if __name__ == '__main__':
 #### Python Example
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1""")
-    ARGS = parser.parse_args()
-    base_uri = 'https://%s' % (ARGS.ip)
-    auth_token = get_session(ARGS.ip, ARGS.user, ARGS.password)
+    args = parser.parse_args()
+    base_uri = 'https://%s' % args.ip
+
+    if not args.password:
+        if not sys.stdin.isatty():
+            # notify user that they have a bad terminal
+            # perhaps if os.name == 'nt': , prompt them to use winpty?
+            print("Your terminal is not compatible with Python's getpass module. You will need to provide the"
+                  " --password argument instead. See https://stackoverflow.com/a/58277159/4427375")
+            sys.exit(0)
+        else:
+            password = getpass()
+    else:
+        password = args.password
+
+    auth_token = get_session(args.ip, args.user, password)
     headers = {'content-type': 'application/json'}
-    if auth_token.get('token') != None:
+    if auth_token.get('token') is not None:
         headers['X-Auth-Token'] = auth_token['token']
     else:
-        print("Unable to create a session with appliance %s" % (base_uri))
+        print("Unable to create a session with appliance %s" % base_uri)
         quit()
 
     try:
-        if ARGS.name != None and ARGS.vlan_minimum != None and ARGS.vlan_maximum != None and ARGS.vlan_type != None:
-            create_network(base_uri, headers, ARGS.name, ARGS.description, ARGS.vlan_minimum, ARGS.vlan_maximum,
-                           ARGS.vlan_type)
-        elif ARGS.in_file != None and path.exists(ARGS.in_file):
-            with open(ARGS.in_file) as f:
+        if args.name is not None and args.vlan_minimum is not None and args.vlan_maximum is not None and \
+                args.vlan_type is not None:
+            create_network(base_uri, headers, args.name, args.description, args.vlan_minimum, args.vlan_maximum,
+                           args.vlan_type)
+        elif args.in_file is not None and path.exists(args.in_file):
+            with open(args.in_file) as f:
                 records = csv.DictReader(f)
                 for row in records:
-                    print("Creating network from data: %s" % (row))
+                    print("Creating network from data: %s" % row)
                     try:
                         create_network(base_uri, headers, row["Name"], row["Description"], row["VlanMinimum"],
                                        row["VlanMaximum"], row["NetworkType"])
-                    except(KeyError):
+                    except KeyError:
                         print("Unexpected error:", sys.exc_info())
-                        print(
-                            "KeyError: Missing or improperly named columns. File must contain the following headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
+                        print("KeyError: Missing or improperly named columns. File must contain the following "
+                              "headers Name,Description,VlanMaximum,VlanMinimum,NetworkType")
     except Exception as e:
         print(traceback.format_exc())
     finally:
         # TODO - auth_token['id] could be undefined in the event of a failure. This should be updated
-        delete_session(ARGS.ip, headers, auth_token['id'])
+        delete_session(args.ip, headers, auth_token['id'])
