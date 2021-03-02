@@ -66,7 +66,7 @@ with open('categories.yml') as category_file:
     categories_dictionary = yaml.load(category_file, Loader=yaml.SafeLoader)
 
 python_file_list = []
-module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'other': {}}
+module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'supportassistenterprise': {}, 'other': {}}
 
 for entry in scandir(categories_dictionary['python_code_path']):
     if entry.path.endswith(".py"):
@@ -77,7 +77,7 @@ script_tracker = {}  # Used to track if a key has Python scripts, PowerShell scr
 for module_path in python_file_list:
 
     print("Processing " + module_path)
-    with open(module_path) as fd:
+    with open(module_path, encoding='utf-8') as fd:
         module_contents = fd.read()
     module = ast.parse(module_contents)
     docstring = ast.get_docstring(module)
@@ -95,6 +95,8 @@ for module_path in python_file_list:
         category = 'monitor'
     elif key in categories_dictionary['maintain']:
         category = 'maintain'
+    elif key in categories_dictionary['supportassistenterprise']:
+        category = 'supportassistenterprise'
     else:
         category = 'other'
         logging.error(key + " is not in categories! It will not be displayed in the documentation. "
@@ -102,8 +104,8 @@ for module_path in python_file_list:
         sys.exit(0)
 
     # Call PowerShell's help and then extract examples from the help page
-    powershell_example = None
     script_tracker[key] = {}
+    powershell_example = None
     script_tracker[key]['has_powershell'] = False
     script_tracker[key]['has_python'] = False
     for script in categories_dictionary[category][key]:
@@ -140,6 +142,7 @@ for module_path in python_file_list:
 
 # Handle cases where a PowerShell script exists, but a Python script does not
 # TODO - This doesn't check to see if there are PowerShell files on the file system that aren't in categories
+# TODO - This has to be done for plugins. See https://github.com/dell/OpenManage-Enterprise/issues/210
 for category, scripts in categories_dictionary.items():
     if category == 'deploy' or category == 'update' or category == 'monitor' or category == 'maintain':
         for key in scripts:
@@ -186,7 +189,8 @@ for category, scripts in categories_dictionary.items():
                         }
                         script_tracker[key]['has_powershell'] = True
                     elif script.endswith('py'):
-                        logging.error("We shouldn't be here. Is there something strange about this script?")
+                        logging.error("We shouldn't be here. Is there something strange about this script? This might"
+                                      " mean the script in question is in categories but no longer exists.")
                         sys.exit(0)
                     else:
                         logging.error(key + " has a script listed that does not end with either"
@@ -205,7 +209,7 @@ TEMPLATE_FILE = "API.md.j2"
 template = templateEnv.get_template(TEMPLATE_FILE)
 outputText = template.render(module_data=module_data)  # this is where to put args to the template renderer
 
-with open("API.md", "w") as f:
+with open("API.md", "w", encoding='utf-8') as f:
     f.write(outputText)
 
 logging.info("API.md generated!")

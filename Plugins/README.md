@@ -1,17 +1,10 @@
 ## OME Plugin Samples / Cookbooks
 
-Example cookbooks for OME Plugins
+Example code for interfacing with OME plugins.
 
 ## Plugins
 
 * PMP - Power Manager Plugin 
-
-## Authors
-
-
 ## License
 
-Copyright Dell EMC
-
-
-## Acknowledgments
+Copyright Dell EMC 2021

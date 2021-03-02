@@ -30,11 +30,8 @@ limitations under the License.
    Credentials used to talk to the OME Appliance
 
  .EXAMPLE
-   $cred = Get-Credential
-   .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+   Not available
 
-   In this instance you will be prompted for credentials to use to
-   connect to the appliance
 #>
 [CmdletBinding(DefaultParameterSetName = 'Group_Name')]
 param(

@@ -267,23 +267,65 @@ if ($PSBoundParameters.ContainsKey('DeviceNames')) {
         }
     }
 }
+
+# Eliminate any duplicate IDs in the list
+$Targets = @($Targets | Get-Unique)
+
+if ($Targets.length -lt 1) {
+    Write-Error "No IDs found. Did you provide an argument?"
+    Exit
+}
+```
+
+You can combine those with the parameters:
+
+```powershell
+[Parameter(Mandatory = $false)]
+[Collections.Generic.List[int]] $DeviceIds,
+
+[Parameter(Mandatory = $false)]
+[Collections.Generic.List[string]] $ServiceTags,
+
+[Parameter(Mandatory = $false)]
+[Collections.Generic.List[System.Net.IPAddress]] $IdracIps,
+
+[Parameter(Mandatory = $false)]
+[Collections.Generic.List[string]] $DeviceNames,
 ```
 
 ### Resolve Group Name to ID
 
 ```powershell
-if ($PSBoundParameters.ContainsKey('GroupName')) {
+function GetGroupIdByName {
+  <#
+  .SYNOPSIS
+    Resolves the name of a group to an ID
+
+  .PARAMETER GroupName
+    The name of the group to be resolved
+
+  .OUTPUTS
+    The ID of the group or -1 if it couldn't be found
+  #>
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory)]
+    [string]
+    $GroupName
+  )
+
   Write-Host "Resolving group name $($GroupName) to a group ID..."
 
   $GroupData = Get-Data "https://$($IpAddress)/api/GroupService/Groups" "Name eq '$($GroupName)'"
 
-  if ($null -eq $GroupData) {
-      Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
-      Exit
+  if ($GroupData.count -lt 1) {
+    Write-Error "We were unable to retrieve the GroupId for group name $($GroupName). Is the name correct?"
+    return -1
   }
 
   Write-Host "$($GroupName)'s ID is $($GroupData.'Id')"
-  $GroupId = $GroupData.'Id'
+  return $GroupData.'Id'
+  
 }
 ```
 
@@ -295,89 +337,89 @@ Track a job and wait for it to complete before continuing.
 
 ```powershell
 function Invoke-TrackJobToCompletion {
-    <#
-    .SYNOPSIS
-    Tracks a job to either completion or a failure within the job.
+  <#
+  .SYNOPSIS
+  Tracks a job to either completion or a failure within the job.
 
-    .PARAMETER OmeIpAddress
-    The IP address of the OME server
+  .PARAMETER OmeIpAddress
+  The IP address of the OME server
 
-    .PARAMETER JobId
-    The ID of the job which you would like to track
+  .PARAMETER JobId
+  The ID of the job which you would like to track
 
-    .PARAMETER MaxRetries
-    (Optional) The maximum number of times the function should contact the server to see if the job has completed
+  .PARAMETER MaxRetries
+  (Optional) The maximum number of times the function should contact the server to see if the job has completed
 
-    .PARAMETER SleepInterval
-    (Optional) The frequency with which the function should check the server for job completion
+  .PARAMETER SleepInterval
+  (Optional) The frequency with which the function should check the server for job completion
 
-    .OUTPUTS
-    True if the job completed successfully or completed with errors. Returns false if the job failed.
+  .OUTPUTS
+  True if the job completed successfully or completed with errors. Returns false if the job failed.
 
-    #>
+  #>
 
-    [CmdletBinding()]
-    param (
+  [CmdletBinding()]
+  param (
 
-        [Parameter(Mandatory)]
-        [System.Net.IPAddress]
-        $OmeIpAddress,
+      [Parameter(Mandatory)]
+      [System.Net.IPAddress]
+      $OmeIpAddress,
 
-        [Parameter(Mandatory)]
-        [int]
-        $JobId,
+      [Parameter(Mandatory)]
+      [int]
+      $JobId,
 
-        [Parameter(Mandatory = $false)]
-        [int]
-        $MaxRetries = 20,
+      [Parameter(Mandatory = $false)]
+      [int]
+      $MaxRetries = 20,
 
-        [Parameter(Mandatory = $false)]
-        [int]
-        $SleepInterval = 60
-    )
+      [Parameter(Mandatory = $false)]
+      [int]
+      $SleepInterval = 60
+  )
 
-    $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
-    $Ctr = 0
-    do {
-        $Ctr++
-        Start-Sleep -Seconds $SleepInterval
-        $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
-        $JobData = Get-Data $JOBSVCURL
+  $FAILEDJOBSTATUSES = @('Failed', 'Warning', 'Aborted', 'Paused', 'Stopped', 'Canceled')
+  $Ctr = 0
+  do {
+      $Ctr++
+      Start-Sleep -Seconds $SleepInterval
+      $JOBSVCURL = "https://$($IpAddress)/api/JobService/Jobs($($JobId))"
+      $JobData = Get-Data $JOBSVCURL
 
-        if ($null -eq $JobData) {
-            Write-Error "Something went wrong tracking the job data. 
-            Try checking jobs in OME to see if the job is running."
-            return $false
-        }
+      if ($null -eq $JobData) {
+          Write-Error "Something went wrong tracking the job data. 
+          Try checking jobs in OME to see if the job is running."
+          return $false
+      }
 
-        $JobStatus = $JobData.LastRunStatus.Name
-        Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JobStatus)"
-        if ($JobStatus -eq 'Completed') {
-            ## Completed successfully
-            Write-Host "Job completed successfully!"
-            break
-        }
-        elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
-            Write-Warning "Job failed"
-            $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
-            $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
-            $HistoryId = $ExecRespInfo.value[0].Id
-            $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
-                                            -ContentType $Type -Credential $Credentials -SkipCertificateCheck
-            Write-Host "------------------- ERROR -------------------"
-    Write-Host $HistoryResp.value
-    Write-Host "------------------- ERROR -------------------"
-            return $false
-        }
-        else { continue }
-    } until ($Ctr -ge $MaxRetries)
+      $JobStatus = $JobData.LastRunStatus.Name
+      Write-Host "Iteration $($Ctr): Status of $($JobId) is $($JobStatus)"
+      if ($JobStatus -eq 'Completed') {
+          ## Completed successfully
+          Write-Host "Job completed successfully!"
+          break
+      }
+      elseif ($FAILEDJOBSTATUSES -contains $JobStatus) {
+          Write-Warning "Job failed"
+          $JOBEXECURL = "$($JOBSVCURL)/ExecutionHistories"
+          $ExecRespInfo = Invoke-RestMethod -Uri $JOBEXECURL -Method Get -Credential $Credentials -SkipCertificateCheck
+          $HistoryId = $ExecRespInfo.value[0].Id
+          $HistoryResp = Invoke-RestMethod -Uri "$($JOBEXECURL)($($HistoryId))/ExecutionHistoryDetails" -Method Get `
+                                          -ContentType $Type -Credential $Credentials -SkipCertificateCheck
+          Write-Host "------------------- ERROR -------------------"
+  Write-Host $HistoryResp.value
+  Write-Host "------------------- ERROR -------------------"
+          return $false
+      }
+      else { continue }
+  } until ($Ctr -ge $MaxRetries)
 
-    if ($Ctr -ge $MaxRetries) {
-        Write-Warning "Job exceeded max retries! Check OME for details on what has hung."
-        return $false
-    }
+  if ($Ctr -ge $MaxRetries) {
+      Write-Warning "Job exceeded max retries! Check OME for details on what has hung."
+      return $false
+  }
 
-    return $true
+  return $true
 }
 ```
 
@@ -426,36 +468,36 @@ See [this StackOverflow link](https://stackoverflow.com/questions/11173795/power
 
 ```powershell
 function Read-Confirmation {
-    <#
-    .SYNOPSIS
-      Prompts a user with a yes or no question
+  <#
+  .SYNOPSIS
+    Prompts a user with a yes or no question
 
-    .DESCRIPTION
-      Prompts a user with a yes or no question. The question text should include something telling the user
-      to type y/Y/Yes/yes or N/n/No/no
+  .DESCRIPTION
+    Prompts a user with a yes or no question. The question text should include something telling the user
+    to type y/Y/Yes/yes or N/n/No/no
 
-    .PARAMETER QuestionText
-      The text which you want to display to the user
+  .PARAMETER QuestionText
+    The text which you want to display to the user
 
-    .OUTPUTS
-      Returns true if the user enters yes and false if the user enters no
-    #>
-    [CmdletBinding()]
-    param (
-  
-        [Parameter(Mandatory)]
-        [string]
-        $QuestionText
-    )
-    do {
-        $Confirmation = (Read-Host $QuestionText).ToUpper()
-    } while ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y' -and $Confirmation -ne 'N' -and $Confirmation -ne 'NO')
+  .OUTPUTS
+    Returns true if the user enters yes and false if the user enters no
+  #>
+  [CmdletBinding()]
+  param (
 
-    if ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y') {
-        return $false
-    }
+      [Parameter(Mandatory)]
+      [string]
+      $QuestionText
+  )
+  do {
+      $Confirmation = (Read-Host $QuestionText).ToUpper()
+  } while ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y' -and $Confirmation -ne 'N' -and $Confirmation -ne 'NO')
 
-    return $true
+  if ($Confirmation -ne 'YES' -and $Confirmation -ne 'Y') {
+      return $false
+  }
+
+  return $true
 }
 ```
 
@@ -553,7 +595,7 @@ function ConvertPSObjectToHashtable
       is converted using ConvertFromJson that requires some extra handling.
 
       Note: This was shamelessly stolen from @Dave Wyatt's answere here:
-      https://stackoverflow.com/questions/22002748/hashtables-from-convertfrom-json-have-different-type-from-powershells-built-in-h
+      https://stackoverflow.com/a/34383464/4427375
 
     .PARAMETER InputObject
       The PSObject you would like to convert.
@@ -561,38 +603,38 @@ function ConvertPSObjectToHashtable
     .OUTPUTS
       A HashTable equivalent of the input PSObject.
   #>
-    param (
-        [Parameter(ValueFromPipeline)]
-        $InputObject
-    )
+  param (
+      [Parameter(ValueFromPipeline)]
+      $InputObject
+  )
 
-    process
-    {
-        if ($null -eq $InputObject) { return $null }
+  process
+  {
+      if ($null -eq $InputObject) { return $null }
 
-        if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string])
-        {
-            $Collection = @(
-                foreach ($object in $InputObject) { ConvertPSObjectToHashtable $object }
-            )
+      if ($InputObject -is [System.Collections.IEnumerable] -and $InputObject -isnot [string])
+      {
+          $Collection = @(
+              foreach ($object in $InputObject) { ConvertPSObjectToHashtable $object }
+          )
 
-            Write-Output -NoEnumerate $Collection
-        }
-        elseif ($InputObject -is [psobject])
-        {
-            $Hash = @{}
+          Write-Output -NoEnumerate $Collection
+      }
+      elseif ($InputObject -is [psobject])
+      {
+          $Hash = @{}
 
-            foreach ($Property in $InputObject.PSObject.Properties)
-            {
-                $Hash[$Property.Name] = ConvertPSObjectToHashtable $Property.Value
-            }
+          foreach ($Property in $InputObject.PSObject.Properties)
+          {
+              $Hash[$Property.Name] = ConvertPSObjectToHashtable $Property.Value
+          }
 
-            return $Hash
-        }
-        else
-        {
-            return $InputObject
-        }
-    }
+          return $Hash
+      }
+      else
+      {
+          return $InputObject
+      }
+  }
 }
 ```

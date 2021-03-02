@@ -5,9 +5,13 @@
 
 ## OME/OME-M and Plugin API Samples / Cookbooks
 
-This repository hosts cookbooks for OME/OME-M and associated plugins. Script examples specific to OME/OME-M are in the Core directory. Plugin script examples are in the "Plugin" folder and categorized further by plugin name.
+This repository hosts complete examples of how to use the OME/OME-M API. We designed these scripts to standalone but they are also meant to be used in the scripts of others.
 
-The Core directory is further subdivided into Python and PowerShell. We do our best to maintain functional equivalance between the two, but sometimes they differ. These differences are typically noted in [the docs](docs/API.md).
+Scripts are subdivided into Python and PowerShell. We do our best to maintain functional equivalance between the two, but sometimes they differ. These differences are typically noted in [the docs](docs/API.md).
+
+## Complete List of All Scripts
+
+See [the docs](docs/API.md). Scripts are listed by their functional type in the case of OME or by plugin if they belong to a plugin.
 
 ## PowerShell Scripts Require PS7
 

@@ -2,7 +2,7 @@
 
 This repository is composed of two principal portions - OpenManage Enterprise (OME) API usage examples and plugins.
 
-API usage examples are stored in Core/PowerShell and Core/Python for PowerShell and Python examples respectively.
+API usage examples are stored in PowerShell and Python for PowerShell and Python examples respectively.
 Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
 shown below. 
 
@@ -35,6 +35,12 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
 {% endfor %}
 </ul>
+<li><a href="#supportassist-enterprise-ome-plugin-scripts">SupportAssist Enterprise Plugin Scripts</a></li>
+<ul>
+{% for module_key,module_value in module_data['supportassistenterprise'].items() %}
+<li><a href="{{ module_value['anchor_link'] }}">{{ module_value['readable_name'] }}</a></li>
+{% endfor %}
+</ul>
 </ul>
 </div>
 
@@ -46,7 +52,7 @@ Deploy scripts include those things for discovery and generating the initial inv
 
 #### Available Scripts
 {% for file in module_value['available_scripts'] %}
-- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+- [{{file}}](../{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
 {% endfor %}
 
 {{ module_value['docstring'] }}
@@ -67,7 +73,7 @@ Update scripts include those things for BIOS, firmware, and driver updates.
 
 #### Available Scripts
 {% for file in module_value['available_scripts'] %}
-- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+- [{{file}}](../{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
 {% endfor %}
 
 {{module_value['docstring']}}
@@ -88,7 +94,7 @@ Monitor scripts include those things for checking alerts, health, performance, p
 
 #### Available Scripts
 {% for file in module_value['available_scripts'] %}
-- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+- [{{file}}](../{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
 {% endfor %}
 
 {{module_value['docstring']}}
@@ -109,7 +115,33 @@ Maintenance scripts include those things for reprovisioning, remediation, and ge
 
 #### Available Scripts
 {% for file in module_value['available_scripts'] %}
-- [{{file}}](../Core/{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+- [{{file}}](../{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
+{% endfor %}
+
+{{module_value['docstring']}}
+
+{% if module_value['powershell_example'] %}
+#### PowerShell Example
+```
+{{ module_value['powershell_example'] }}
+```
+{% endif %}
+{% endfor %}
+
+## SupportAssist Enterprise OME Plugin Scripts
+[SupportAssist Enterprise](https://www.delltechnologies.com/en-us/services/support-deployment-technologies/support-assist-enterprise.htm#accordion0) is a product for managing the lifecycle of your servers and any cases you open against them. Some features it includes:
+- Configurable to automatically open cases when issues arise
+- Case tracking from beginning to end
+- Automatic creation of SupportAssist packages for cases so that you no longer have to manually retrieve logs on support's behalf.
+- Automation of parts dispatch information
+- SupportAssist site health monitoring
+{% for module_key,module_value in module_data['supportassistenterprise'].items() %}
+---
+### {{ module_value['readable_name'] }}
+
+#### Available Scripts
+{% for file in module_value['available_scripts'] %}
+- [{{file}}](../{{ 'Python' if '.py' in file else 'PowerShell' }}/{{ file }})
 {% endfor %}
 
 {{module_value['docstring']}}

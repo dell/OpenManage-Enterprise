@@ -1,15 +1,15 @@
 # This file defines the categories in which each script will be placed
 # This is used as part of the automated documenatation generation process
 
-python_code_path: '../Core/Python'
-powershell_path: '../Core/PowerShell'
+python_code_path: '../Python'
+powershell_path: '../PowerShell'
 deploy:
   add_device_to_static_group:
     - add_device_to_static_group.py
     - Add-DeviceToStaticGroup.ps1
-  add_members:
-    - add_members.py
-    - Add-Members.ps1
+  add_members_to_mcm_group:
+    - Add-MembersToMcmGroup.ps1
+    - add_members_to_mcm_group.py
   copy_vlans:
     - copy_vlans.py
     - Copy-Vlans.ps1
@@ -87,9 +87,6 @@ monitor:
   get_report_list:
     - get_report_list.py
     - Get-ReportList.ps1
-  get_supportassist_cases:
-    - get_supportassist_cases.py
-    - Get-SupportassistCases.ps1
   get_warranty_information:
     - get_warranty_information.py
     - Get-WarrantyInformation.ps1
@@ -102,3 +99,10 @@ maintain:
     - Invoke-RetireLead.ps1
   set_scale_vlan_profile:
     - Set-ScaleVlanProfile.ps1
+supportassistenterprise:
+  get_supportassist_cases:
+    - get_supportassist_cases.py
+    - Get-SupportassistCases.ps1
+  invoke_manage_supportassist_groups:
+    - invoke_manage_supportassist_groups.py
+    - Invoke-ManageSupportAssistGroups.ps1

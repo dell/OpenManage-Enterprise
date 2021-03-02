@@ -526,7 +526,7 @@ Try {
     if ('' -eq $ServerIps -and $null -eq $ServerCsv `
             -and '' -eq $ChassisIps -and $null -eq $ChassisCsv `
             -and '' -eq $NetworkDeviceIps -and $null -eq $NetworkDeviceCsv) {
-        Write-Error "You must provide an IP source for discovery!"
+        Write-Error "You must provide an IP source for discovery! (server IPs, Chassis IPs, network device)"
         Exit
     }
 

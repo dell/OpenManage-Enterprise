@@ -41,13 +41,13 @@ import requests
 import urllib3
 
 
-def get_group_list(ome_ip_address, user_name, password):
+def get_group_list(ome_ip_address, user_name, ome_password):
     """ Authenticate with OME and enumerate groups """
     try:
         session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
         headers = {'content-type': 'application/json'}
         user_details = {'UserName': user_name,
-                        'Password': password,
+                        'Password': ome_password,
                         'SessionType': 'API'}
         group_data = None
         next_link_url = 'https://%s/api/GroupService/Groups' % ome_ip_address

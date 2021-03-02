@@ -22,7 +22,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
   - You can find approved PowerShell verbs [here](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
 - If your code is addressing an issue use the `#<ticket_number>` syntax inside of the commit message to reference the ticket.
 - Before writing functions for common functionality like getting a device ID, accessing a REST resource, etc check out [Library Code](#library-code). Before accepting pull requests, if you rewrite a function already listed here we will probably ask you to refactor to use the library code.
-- Whenever possible use odata filters instead of performing an exhaustive search of a dictionary. The [Get-Data](docs/powershell_library_code.md#Interact_with_an_API_Resource) for PowerShell and the [get_data](docs/python_library_code.md#Interact_with_an_API_Resource) provide a filter argument you can use for data retrieval. For a list of odata examples see [get_alerts.py](../Core/Python/get_alerts.py) or [Get-Alerts.ps1](../Core/PowerShell/Get-Alerts.ps1) odata does not supported filtering on nested values so sometimes the `bad` method is unavoidable, but otherwise a filter can be used. This is particularly important to make our scripts scale efficiently for large deployments with tens of thousands of servers. Below are some common odata filters.
+- Whenever possible use odata filters instead of performing an exhaustive search of a dictionary. The [Get-Data](docs/powershell_library_code.md#Interact_with_an_API_Resource) for PowerShell and the [get_data](docs/python_library_code.md#Interact_with_an_API_Resource) provide a filter argument you can use for data retrieval. For a list of odata examples see [get_alerts.py](../Python/get_alerts.py) or [Get-Alerts.ps1](../PowerShell/Get-Alerts.ps1) odata does not supported filtering on nested values so sometimes the `bad` method is unavoidable, but otherwise a filter can be used. This is particularly important to make our scripts scale efficiently for large deployments with tens of thousands of servers. Below are some common odata filters.
   - Getting a group ID from its name: `https://<ome_ip>/api/GroupService/Groups?$filter=Name eq '<group_name>'`
   - Get a device ID from its name `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceName eq '<device_name>'`
   - Get a device ID from its service tag `https://%<ome_ip>/api/DeviceService/Devices?$filter=DeviceServiceTag eq '<service_tag>'`
@@ -52,7 +52,7 @@ We are working to standardize the repository. Any help would be welcomed with [u
 - All status messages should use `Write-Host` so that piping between scripts functions correctly. Ex: "Starting up the engines..."
 - Function names must use [approved PowerShell verbs](https://docs.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7)
 - Variable names should use CamelCaseLikeThis for regular variable names and ALLCAPS for constants. 
-- We suggest for development you use [Visual Studio Code](https://code.visualstudio.com/download). It provides a `Format Document` function which automatically updates your PowerShell code to follow best practices. If you would rather use something else you can use [Get-FirmwareBaselines.ps1](Core/PowerShell/Get-FirmwareBaselines.ps1) as a reference for our preferred PowerShell coding practices.
+- We suggest for development you use [Visual Studio Code](https://code.visualstudio.com/download). It provides a `Format Document` function which automatically updates your PowerShell code to follow best practices. If you would rather use something else you can use [Get-FirmwareBaselines.ps1](PowerShell/Get-FirmwareBaselines.ps1) as a reference for our preferred PowerShell coding practices.
 - If for whatever reason the [Get-Data](docs/powershell_library_code.md#Interact-with-an-API-Resource) function does not suit your needs, use the `Invoke-RestMethod` function unless you have a specific reason to use `Invoke-WebRequest`. If you have not setup certificates, you will probably need to include the argument `-SkipCertificateCheck` otherwise you will get the error `Exception occured - The SSL connection could not be established, see inner exception.`
 - Provide documentation for all functions. For example:
 
@@ -210,7 +210,7 @@ There is a great tutorial on writing good Python code [here](https://realpython.
 
 - Must be tested and run against Python 3
 - Adhere to PEP8 and PEP484. The easist way to adhere to PEP8 is to use PyLint. PyCharm provides [pylint as a plugin](https://plugins.jetbrains.com/plugin/11084-pylint) as does [vscode](https://code.visualstudio.com/docs/python/linting#_pylint). Alternatively it can be run from the command line.
-- Use type definitions in your function definitions. See [Invoke-RefreshInventory.ps1](Core/PowerShell/Invoke-RefreshInventory.ps1) for examples. Ex:
+- Use type definitions in your function definitions. See [Invoke-RefreshInventory.ps1](PowerShell/Invoke-RefreshInventory.ps1) for examples. Ex:
 
 #### Bad
 
@@ -305,7 +305,7 @@ There is a great tutorial on writing good Python code [here](https://realpython.
   - Methods should follow the pattern `description_of_method`
   - Constants should follow the pattern `A_CONSTANT`
 - If you need to print complex data use `pprint`
-- If you need an example to use as a template see [invoke_discover_device.py](Core/Python/invoke_discover_device.py)
+- If you need an example to use as a template see [invoke_discover_device.py](Python/invoke_discover_device.py)
 - Modules should leverage the getpass module so that the user can chose not to provide a password on the command line. Ex:
 
         if args.password:
