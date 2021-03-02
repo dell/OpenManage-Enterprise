@@ -229,7 +229,8 @@ def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool
 
     if input_filepath:
         try:
-            open(output_filepath, 'r')
+            open(input_filepath, 'r')
+            return True
         except OSError:
             print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
                   " issue." % input_filepath)

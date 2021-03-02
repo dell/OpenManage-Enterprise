@@ -2,7 +2,7 @@
 
 This repository is composed of two principal portions - OpenManage Enterprise (OME) API usage examples and plugins.
 
-API usage examples are stored in Core/PowerShell and Core/Python for PowerShell and Python examples respectively.
+API usage examples are stored in PowerShell and Python for PowerShell and Python examples respectively.
 Parity is generally maintained between PowerShell and Python examples. Available scripts are listed for each functionality
 shown below. 
 
@@ -16,7 +16,7 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#add-device-to-static-group">Add Device To Static Group</a></li>
 
-<li><a href="#add-members">Add Members</a></li>
+<li><a href="#add-members-to-mcm-group">Add Members To Mcm Group</a></li>
 
 <li><a href="#copy-vlans">Copy Vlans</a></li>
 
@@ -80,8 +80,6 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-report-list">Get Report List</a></li>
 
-<li><a href="#get-supportassist-cases">Get Supportassist Cases</a></li>
-
 <li><a href="#get-warranty-information">Get Warranty Information</a></li>
 
 <li><a href="#invoke-report-execution">Invoke Report Execution</a></li>
@@ -95,6 +93,14 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 <li><a href="#set-scale-vlan-profile">Set Scale Vlan Profile</a></li>
 
 </ul>
+<li><a href="#supportassist-enterprise-ome-plugin-scripts">SupportAssist Enterprise Plugin Scripts</a></li>
+<ul>
+
+<li><a href="#get-supportassist-cases">Get Supportassist Cases</a></li>
+
+<li><a href="#invoke-manage-supportassist-groups">Invoke Manage Supportassist Groups</a></li>
+
+</ul>
 </ul>
 </div>
 
@@ -106,9 +112,9 @@ Deploy scripts include those things for discovery and generating the initial inv
 
 #### Available Scripts
 
-- [add_device_to_static_group.py](../Core/Python/add_device_to_static_group.py)
+- [add_device_to_static_group.py](../Python/add_device_to_static_group.py)
 
-- [Add-DeviceToStaticGroup.ps1](../Core/PowerShell/Add-DeviceToStaticGroup.ps1)
+- [Add-DeviceToStaticGroup.ps1](../PowerShell/Add-DeviceToStaticGroup.ps1)
 
 
 #### Synopsis
@@ -137,13 +143,13 @@ PS C:\>$creds = Get-Credentials
 
 
 ---
-### Add Members
+### Add Members To Mcm Group
 
 #### Available Scripts
 
-- [add_members.py](../Core/Python/add_members.py)
+- [Add-MembersToMcmGroup.ps1](../PowerShell/Add-MembersToMcmGroup.ps1)
 
-- [Add-Members.ps1](../Core/PowerShell/Add-Members.ps1)
+- [add_members_to_mcm_group.py](../Python/add_members_to_mcm_group.py)
 
 
 #### Synopsis
@@ -177,10 +183,7 @@ with POST on /ManagementDomainService/Actions/ManagementDomainService.AssignBack
 
 #### PowerShell Example
 ```
-PS C:\>$cred = Get-Credential
-    .\Create-McmGroup.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
-    In this instance you will be prompted for credentials to use to
-    connect to the appliance
+PS C:\>Not available
 
 ```
 
@@ -190,9 +193,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [copy_vlans.py](../Core/Python/copy_vlans.py)
+- [copy_vlans.py](../Python/copy_vlans.py)
 
-- [Copy-Vlans.ps1](../Core/PowerShell/Copy-Vlans.ps1)
+- [Copy-Vlans.ps1](../PowerShell/Copy-Vlans.ps1)
 
 
 #### Synopsis
@@ -242,9 +245,9 @@ PS C:\>.\Copy-Vlans.ps1' -inputs test.json
 
 #### Available Scripts
 
-- [deploy_template.py](../Core/Python/deploy_template.py)
+- [deploy_template.py](../Python/deploy_template.py)
 
-- [Deploy-Template.ps1](../Core/PowerShell/Deploy-Template.ps1)
+- [Deploy-Template.ps1](../PowerShell/Deploy-Template.ps1)
 
 
 #### Synopsis
@@ -297,9 +300,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [edit_discovery_job.py](../Core/Python/edit_discovery_job.py)
+- [edit_discovery_job.py](../Python/edit_discovery_job.py)
 
-- [Edit-DiscoveryJob.ps1](../Core/PowerShell/Edit-DiscoveryJob.ps1)
+- [Edit-DiscoveryJob.ps1](../PowerShell/Edit-DiscoveryJob.ps1)
 
 
 #### Synopsis
@@ -336,9 +339,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [invoke_discover_device.py](../Core/Python/invoke_discover_device.py)
+- [invoke_discover_device.py](../Python/invoke_discover_device.py)
 
-- [Invoke-DiscoverDevice.ps1](../Core/PowerShell/Invoke-DiscoverDevice.ps1)
+- [Invoke-DiscoverDevice.ps1](../PowerShell/Invoke-DiscoverDevice.ps1)
 
 
 #### Synopsis
@@ -391,7 +394,7 @@ PS C:\>$creds = Get-Credential # Your OME credentials
 
 #### Available Scripts
 
-- [invoke_manage_query_groups.py](../Core/Python/invoke_manage_query_groups.py)
+- [invoke_manage_query_groups.py](../Python/invoke_manage_query_groups.py)
 
 
 #### Synopsis
@@ -448,9 +451,9 @@ Deletes a group with the name "Some Group"
 
 #### Available Scripts
 
-- [new_mcm_group.py](../Core/Python/new_mcm_group.py)
+- [new_mcm_group.py](../Python/new_mcm_group.py)
 
-- [New-McmGroup.ps1](../Core/PowerShell/New-McmGroup.ps1)
+- [New-McmGroup.ps1](../PowerShell/New-McmGroup.ps1)
 
 
 #### Synopsis
@@ -502,9 +505,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [new_network.py](../Core/Python/new_network.py)
+- [new_network.py](../Python/new_network.py)
 
-- [New-Network.ps1](../Core/PowerShell/New-Network.ps1)
+- [New-Network.ps1](../PowerShell/New-Network.ps1)
 
 
 #### Synopsis
@@ -554,7 +557,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [New-OmeUser.ps1](../Core/PowerShell/New-OmeUser.ps1)
+- [New-OmeUser.ps1](../PowerShell/New-OmeUser.ps1)
 
 
 #### Synopsis
@@ -585,9 +588,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [new_static_group.py](../Core/Python/new_static_group.py)
+- [new_static_group.py](../Python/new_static_group.py)
 
-- [New-StaticGroup.ps1](../Core/PowerShell/New-StaticGroup.ps1)
+- [New-StaticGroup.ps1](../PowerShell/New-StaticGroup.ps1)
 
 
 #### Synopsis
@@ -621,7 +624,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [new_template.py](../Core/Python/new_template.py)
+- [new_template.py](../Python/new_template.py)
 
 
 #### Synopsis
@@ -644,9 +647,9 @@ Note that the credentials entered are not stored to disk.
 
 #### Available Scripts
 
-- [set_power_state.py](../Core/Python/set_power_state.py)
+- [set_power_state.py](../Python/set_power_state.py)
 
-- [Set-PowerState.ps1](../Core/PowerShell/Set-PowerState.ps1)
+- [Set-PowerState.ps1](../PowerShell/Set-PowerState.ps1)
 
 
 #### Synopsis
@@ -683,9 +686,9 @@ Update scripts include those things for BIOS, firmware, and driver updates.
 
 #### Available Scripts
 
-- [invoke_refresh_inventory.py](../Core/Python/invoke_refresh_inventory.py)
+- [invoke_refresh_inventory.py](../Python/invoke_refresh_inventory.py)
 
-- [Invoke-RefreshInventory.ps1](../Core/PowerShell/Invoke-RefreshInventory.ps1)
+- [Invoke-RefreshInventory.ps1](../PowerShell/Invoke-RefreshInventory.ps1)
 
 
 #### Synopsis
@@ -712,9 +715,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [update_firmware_using_catalog.py](../Core/Python/update_firmware_using_catalog.py)
+- [update_firmware_using_catalog.py](../Python/update_firmware_using_catalog.py)
 
-- [Update-FirmwareUsingCatalog.ps1](../Core/PowerShell/Update-FirmwareUsingCatalog.ps1)
+- [Update-FirmwareUsingCatalog.ps1](../PowerShell/Update-FirmwareUsingCatalog.ps1)
 
 
 #### Synopsis
@@ -754,9 +757,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [update_installed_firmware_with_dup.py](../Core/Python/update_installed_firmware_with_dup.py)
+- [update_installed_firmware_with_dup.py](../Python/update_installed_firmware_with_dup.py)
 
-- [Update-InstalledFirmwareWithDup.ps1](../Core/PowerShell/Update-InstalledFirmwareWithDup.ps1)
+- [Update-InstalledFirmwareWithDup.ps1](../PowerShell/Update-InstalledFirmwareWithDup.ps1)
 
 
 #### Synopsis
@@ -819,9 +822,9 @@ Monitor scripts include those things for checking alerts, health, performance, p
 
 #### Available Scripts
 
-- [get_alerts.py](../Core/Python/get_alerts.py)
+- [get_alerts.py](../Python/get_alerts.py)
 
-- [Get-Alerts.ps1](../Core/PowerShell/Get-Alerts.ps1)
+- [Get-Alerts.ps1](../PowerShell/Get-Alerts.ps1)
 
 
 #### Synopsis
@@ -875,9 +878,9 @@ PS C:\>$creds = Get-Credential
 
 #### Available Scripts
 
-- [get_audit_logs.py](../Core/Python/get_audit_logs.py)
+- [get_audit_logs.py](../Python/get_audit_logs.py)
 
-- [Get-AuditLogs.ps1](../Core/PowerShell/Get-AuditLogs.ps1)
+- [Get-AuditLogs.ps1](../PowerShell/Get-AuditLogs.ps1)
 
 
 #### Synopsis
@@ -906,9 +909,9 @@ PS C:\>$cred1 = Get-Credentials
 
 #### Available Scripts
 
-- [get_chassis_inventory.py](../Core/Python/get_chassis_inventory.py)
+- [get_chassis_inventory.py](../Python/get_chassis_inventory.py)
 
-- [Get-ChassisInventory.ps1](../Core/PowerShell/Get-ChassisInventory.ps1)
+- [Get-ChassisInventory.ps1](../PowerShell/Get-ChassisInventory.ps1)
 
 
 #### Synopsis
@@ -940,9 +943,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_device_inventory.py](../Core/Python/get_device_inventory.py)
+- [get_device_inventory.py](../Python/get_device_inventory.py)
 
-- [Get-DeviceInventory.ps1](../Core/PowerShell/Get-DeviceInventory.ps1)
+- [Get-DeviceInventory.ps1](../PowerShell/Get-DeviceInventory.ps1)
 
 
 #### Synopsis
@@ -981,9 +984,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_device_list.py](../Core/Python/get_device_list.py)
+- [get_device_list.py](../Python/get_device_list.py)
 
-- [Get-DeviceList.ps1](../Core/PowerShell/Get-DeviceList.ps1)
+- [Get-DeviceList.ps1](../PowerShell/Get-DeviceList.ps1)
 
 
 #### Synopsis
@@ -1014,9 +1017,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_firmware_baselines.py](../Core/Python/get_firmware_baselines.py)
+- [get_firmware_baselines.py](../Python/get_firmware_baselines.py)
 
-- [Get-FirmwareBaselines.ps1](../Core/PowerShell/Get-FirmwareBaselines.ps1)
+- [Get-FirmwareBaselines.ps1](../PowerShell/Get-FirmwareBaselines.ps1)
 
 
 #### Synopsis
@@ -1045,9 +1048,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_group_details.py](../Core/Python/get_group_details.py)
+- [get_group_details.py](../Python/get_group_details.py)
 
-- [Get-GroupDetails.ps1](../Core/PowerShell/Get-GroupDetails.ps1)
+- [Get-GroupDetails.ps1](../PowerShell/Get-GroupDetails.ps1)
 
 
 #### Synopsis
@@ -1083,9 +1086,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_group_details_by_filter.py](../Core/Python/get_group_details_by_filter.py)
+- [get_group_details_by_filter.py](../Python/get_group_details_by_filter.py)
 
-- [Get-GroupDetailsByFilter.ps1](../Core/PowerShell/Get-GroupDetailsByFilter.ps1)
+- [Get-GroupDetailsByFilter.ps1](../PowerShell/Get-GroupDetailsByFilter.ps1)
 
 
 #### Synopsis
@@ -1123,9 +1126,9 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_group_list.py](../Core/Python/get_group_list.py)
+- [get_group_list.py](../Python/get_group_list.py)
 
-- [Get-GroupList.ps1](../Core/PowerShell/Get-GroupList.ps1)
+- [Get-GroupList.ps1](../PowerShell/Get-GroupList.ps1)
 
 
 #### Synopsis
@@ -1158,7 +1161,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [Get-IdentityPoolUsage.ps1](../Core/PowerShell/Get-IdentityPoolUsage.ps1)
+- [Get-IdentityPoolUsage.ps1](../PowerShell/Get-IdentityPoolUsage.ps1)
 
 
 #### Synopsis
@@ -1196,7 +1199,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [Get-OmeUsers.ps1](../Core/PowerShell/Get-OmeUsers.ps1)
+- [Get-OmeUsers.ps1](../PowerShell/Get-OmeUsers.ps1)
 
 
 #### Synopsis
@@ -1219,7 +1222,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [get_ome_vlans.py](../Core/Python/get_ome_vlans.py)
+- [get_ome_vlans.py](../Python/get_ome_vlans.py)
 
 
 #### Synopsis
@@ -1242,9 +1245,9 @@ Note that the credentials entered are not stored to disk.
 
 #### Available Scripts
 
-- [get_report_list.py](../Core/Python/get_report_list.py)
+- [get_report_list.py](../Python/get_report_list.py)
 
-- [Get-ReportList.ps1](../Core/PowerShell/Get-ReportList.ps1)
+- [Get-ReportList.ps1](../PowerShell/Get-ReportList.ps1)
 
 
 #### Synopsis
@@ -1274,43 +1277,13 @@ PS C:\>$cred = Get-Credential
 
 
 ---
-### Get Supportassist Cases
-
-#### Available Scripts
-
-- [get_supportassist_cases.py](../Core/Python/get_supportassist_cases.py)
-
-- [Get-SupportassistCases.ps1](../Core/PowerShell/Get-SupportassistCases.ps1)
-
-
-#### Synopsis
-Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
-
-#### Description
-The --out-file argument is optional. If specified the output will go to a CSV file. Otherwise it prints to screen.
-
-For authentication X-Auth is used over Basic Authentication
-Note that the credentials entered are not stored to disk.
-
-#### Example
-    python get_supportassist_cases.py --ip <xx> --user <username> --password <pwd> --out-file <some csv file>
-
-
-#### PowerShell Example
-```
-PS C:\>.\Get-SupportassistCases.ps1' -credentials $creds -outfile test.csv -ipaddress 192.168.1.93
-
-```
-
-
----
 ### Get Warranty Information
 
 #### Available Scripts
 
-- [get_warranty_information.py](../Core/Python/get_warranty_information.py)
+- [get_warranty_information.py](../Python/get_warranty_information.py)
 
-- [Get-WarrantyInformation.ps1](../Core/PowerShell/Get-WarrantyInformation.ps1)
+- [Get-WarrantyInformation.ps1](../PowerShell/Get-WarrantyInformation.ps1)
 
 
 #### Synopsis
@@ -1339,9 +1312,9 @@ PS C:\>.\Get-WarrantyInformation.ps1' -IpAddress 192.168.1.93 -credentials $cred
 
 #### Available Scripts
 
-- [invoke_report_execution.py](../Core/Python/invoke_report_execution.py)
+- [invoke_report_execution.py](../Python/invoke_report_execution.py)
 
-- [Invoke-ReportExecution.ps1](../Core/PowerShell/Invoke-ReportExecution.ps1)
+- [Invoke-ReportExecution.ps1](../PowerShell/Invoke-ReportExecution.ps1)
 
 
 #### Synopsis
@@ -1401,9 +1374,9 @@ Maintenance scripts include those things for reprovisioning, remediation, and ge
 
 #### Available Scripts
 
-- [invoke_retire_lead.py](../Core/Python/invoke_retire_lead.py)
+- [invoke_retire_lead.py](../Python/invoke_retire_lead.py)
 
-- [Invoke-RetireLead.ps1](../Core/PowerShell/Invoke-RetireLead.ps1)
+- [Invoke-RetireLead.ps1](../PowerShell/Invoke-RetireLead.ps1)
 
 
 #### Synopsis
@@ -1444,7 +1417,7 @@ PS C:\>$cred = Get-Credential
 
 #### Available Scripts
 
-- [Set-ScaleVlanProfile.ps1](../Core/PowerShell/Set-ScaleVlanProfile.ps1)
+- [Set-ScaleVlanProfile.ps1](../PowerShell/Set-ScaleVlanProfile.ps1)
 
 
 #### Synopsis
@@ -1460,6 +1433,216 @@ property can be changed to the input value (Enabled / Disabled)
 ```
 PS C:\>$credentials = Get-Credentials
     Set-ScaleVlanProfile.ps1 -IpAddress 100.200.100.101 -Credentials $cred -ProfileState Enabled
+
+```
+
+
+
+## SupportAssist Enterprise OME Plugin Scripts
+[SupportAssist Enterprise](https://www.delltechnologies.com/en-us/services/support-deployment-technologies/support-assist-enterprise.htm#accordion0) is a product for managing the lifecycle of your servers and any cases you open against them. Some features it includes:
+- Configurable to automatically open cases when issues arise
+- Case tracking from beginning to end
+- Automatic creation of SupportAssist packages for cases so that you no longer have to manually retrieve logs on support's behalf.
+- Automation of parts dispatch information
+- SupportAssist site health monitoring
+
+---
+### Get Supportassist Cases
+
+#### Available Scripts
+
+- [get_supportassist_cases.py](../Python/get_supportassist_cases.py)
+
+- [Get-SupportassistCases.ps1](../PowerShell/Get-SupportassistCases.ps1)
+
+
+#### Synopsis
+Retrieves the case data from the SupportAssist Enterprise (SAE) Plugin on OME
+
+#### Description
+The --out-file argument is optional. If specified the output will go to a CSV file. Otherwise it prints to screen.
+
+For authentication X-Auth is used over Basic Authentication
+Note that the credentials entered are not stored to disk.
+
+#### Example
+    python get_supportassist_cases.py --ip <xx> --user <username> --password <pwd> --out-file <some csv file>
+
+
+#### PowerShell Example
+```
+PS C:\>.\Get-SupportassistCases.ps1' -credentials $creds -outfile test.csv -ipaddress 192.168.1.93
+
+```
+
+
+---
+### Invoke Manage Supportassist Groups
+
+#### Available Scripts
+
+- [invoke_manage_supportassist_groups.py](../Python/invoke_manage_supportassist_groups.py)
+
+- [Invoke-ManageSupportAssistGroups.ps1](../PowerShell/Invoke-ManageSupportAssistGroups.ps1)
+
+
+#### Synopsis
+Performs management tasks of OME SupportAssist Enterprise (SAE) groups including creating new groups, adding devices,
+removing devices, and deleting groups.
+
+#### Description
+
+**Python Version**
+
+Creation of groups is managed from a YML file with the argument --add-group. You can create the YML file automatically
+ using the --generate-yaml <FILENAME> argument following by --add-group <FILENAME>. You can also manually complete the
+yaml file by copying and pasting the below into <YOURFILE>.yml:
+
+    ---
+    Id: 0
+    Name: "Your Group"
+    Description: "This is a test group for supportassist enterprise"
+    ContactOptIn: True
+    DispatchOptIn: True
+    MyAccountId: 
+    CustomerDetails:
+      PrimaryContact:
+        FirstName: "Gelante"
+        LastName: "Woxihuanxueyuyan"
+        Email: "gelante@dell.com"
+        Phone: "8888888888"
+        AlternatePhone:
+        TimeFrame: "10:00 AM-4:00 PM" # The spacing and caps do matter.
+        TimeZone: "TZ_ID_71"  # This is an ID for the timezone from OME. You have to use the /api/ApplicationService/Network/TimeZones API endpoint to get it.
+        ContactMethod: "phone"
+      SecondaryContact:
+        FirstName: "Anjila"
+        LastName: "Zheshiwotaitai"
+        Email: "gelante@daier.com"
+        Phone: "9999999999"
+        AlternatePhone:
+        TimeFrame: "10:00 AM-4:00 PM"
+        TimeZone: "TZ_ID_71"
+        ContactMethod: "phone"
+      ShippingDetails:
+        PrimaryContact:
+          FirstName: "Wojiarbob"
+          LastName: "Nolose"
+          Email: "gengduojiademingze@judadaier.com"
+          Phone: "1111111111"
+          AlternatePhone:
+        SecondaryContact:
+          FirstName: "Wotaoyan"
+          LastName: "Woxuyaozuodepeixun"
+          Email: "wobuguanxipeixun@gmail.com"
+          Phone: "9999999999"
+          AlternatePhone:
+        Country: "US"
+        State: "Ohio"
+        City: "Centerville"
+        Zip: "44444"
+        Cnpj:
+        Ie:
+        AddressLine1: 109 Español Way
+        AddressLine2: San Antonio TX
+        AddressLine3: 78211
+        AddressLine4:
+        PreferredContactTimeZone: "TZ_ID_71"
+        PreferredContactTimeFrame: "10:00 AM-4:00 PM"
+        TechnicianRequired: False
+        DispatchNotes: "我现在写程序但是我需要做培训。我偏好写程序."
+
+You will need to replace all the fields with your information. This is the same as the file generated by
+--generate-yaml except you will have to account for making sure it is valid yourself. This is ultimately converted to
+ JSON so you could also write your own input mechanism.
+
+**PowerShell Version**
+
+Creation of groups is managed from a JSON file with the argument -AddGroup. You can create the JSON file automatically using the
+-GenerateJson <FILENAME> argument following by -AddGroup <FILENAME>. You can also manually complete the JSON file by copying
+and pasting the below into <YOURFILE>.json:
+
+    {
+      "MyAccountId": 9999999,
+      "Description": "Test group from me",
+      "Name": "Test Group 2",
+      "DispatchOptIn": true,
+      "CustomerDetails": {
+        "ShippingDetails": {
+          "AddressLine1": "109 Gelante Way",
+          "TechnicianRequired": true,
+          "PrimaryContact": {
+            "LastName": "Curell",
+            "Phone": "1111111111",
+            "AlternatePhone": "",
+            "FirstName": "Grant",
+            "Email": "grant_curell@meiguo.com"
+          },
+          "AddressLine4": "",
+          "City": "Dayton",
+          "Country": "US",
+          "DispatchNotes": "No",
+          "State": "Ohio",
+          "SecondaryContact": {
+            "LastName": "Curell",
+            "Phone": "9999999999",
+            "AlternatePhone": "",
+            "FirstName": "Angela",
+            "Email": "grantcurell@wojia.com"
+          },
+          "Cnpj": null,
+          "AddressLine3": "78210",
+          "PreferredContactTimeFrame": "10:00 AM-4:00 PM",
+          "Zip": "45459",
+          "Ie": null,
+          "PreferredContactTimeZone": "TZ_ID_65",
+          "AddressLine2": "San Antonio TX"
+        },
+        "PrimaryContact": {
+          "LastName": "Curell",
+          "TimeZone": "TZ_ID_10",
+          "AlternatePhone": "",
+          "ContactMethod": "phone",
+          "TimeFrame": "10:00 AM-4:00 PM",
+          "FirstName": "Grant",
+          "Phone": "8888888888",
+          "Email": "daiershizuihaode@dell.com"
+        },
+        "SecondaryContact": {
+          "LastName": "Curell",
+          "TimeZone": "TZ_ID_71",
+          "AlternatePhone": "",
+          "ContactMethod": "phone",
+          "TimeFrame": "10:00 AM-4:00 PM",
+          "FirstName": "Angela",
+          "Phone": "9999999999",
+          "Email": "grantcurell@zheshiwotaitai.com"
+        }
+      },
+      "ContactOptIn": true
+    }
+
+You will need to replace all the fields with your information. This is the same as the file generated by -GenerateJSON except you will have to
+account for making sure it is valid yourself. This is ultimately converted to JSON so you could also write your own input mechanism.
+
+#### Python Example
+    python invoke_manage_supportassist_groups.py --ip 192.168.1.93 --user admin --password <password> --add-group "Gelante Group"
+    python invoke_manage_supportassist_groups.py --ip 192.168.1.93 --user admin --password <password> --add-devices "Test Group" --idrac-ips 192.168.1.63
+    python invoke_manage_supportassist_groups.py --ip 192.168.1.93 --user admin --password <password> --remove-devices "Test Group" --idrac-ips 192.168.1.63
+    python invoke_manage_supportassist_groups.py --ip 192.168.1.93 --user admin --password <password> --remove-group "Test Group 2"
+
+
+#### PowerShell Example
+```
+PS C:\>$creds = Get-Credential # Your OME credentials
+    $servcreds = Get-Credential # Your OME credentials
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -GenerateJson test.json
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -AddGroup test.json
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -AddDevices 'Test Group 2' 
+    -ServiceTag CEAOEU
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -RemoveDevices 'Test Group 2' 
+    -ServiceTag CEAOEU
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -RemoveGroup 'Test Group 2'
 
 ```
 

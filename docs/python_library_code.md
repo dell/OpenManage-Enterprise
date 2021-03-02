@@ -298,14 +298,29 @@ target_ids = list(dict.fromkeys(target_ids))
 ### Get Group ID by Name
 
 ```python
-group_url = "https://%s/api/GroupService/Groups" % args.ip
-groups = get_data(headers, group_url, "Name eq '%s'" % args.groupname)
+def get_group_id_by_name(authenticated_headers: dict, ome_ip_address: str, group_name: str) -> int:
+    """
+    Resolves the name of a group to an ID
+    
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        group_name: The name of the group to be resolved
 
-if len(groups) < 1:
-    print("Error: We were unable to find a group matching the name %s." % args.groupname)
-    sys.exit(0)
+    Returns: The ID of the group or -1 if it couldn't be found
 
-group_id = groups[0]['Id']
+    """
+    
+    print("Looking up ID for group " + group_name)
+    
+    ome_group_url = "https://%s/api/GroupService/Groups" % ome_ip_address
+    groups = get_data(authenticated_headers, ome_group_url, "Name eq '%s'" % group_name)
+
+    if len(groups) < 1:
+        print("Error: We were unable to find a group matching the name %s." % args.group_name)
+        return -1
+
+    return groups[0]['Id']
 ```
 
 ### Pattern for Getting a Group's ID and a List of Devices in the Group
@@ -535,7 +550,8 @@ def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool
 
     if input_filepath:
         try:
-            open(output_filepath, 'r')
+            open(input_filepath, 'r')
+            return True
         except OSError:
             print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
                   " issue." % input_filepath)
