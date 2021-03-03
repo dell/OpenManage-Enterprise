@@ -25,7 +25,8 @@
     - For authentication X-Auth is used over Basic Authentication
     - Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
+#### Python Example
+
     python get_power_manager_epr.py --ip <xx> --username <username> --password <pwd> --filterBy <filter_name> --filterValue <filter_value>
 
     Output:

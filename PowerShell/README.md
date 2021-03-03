@@ -1932,7 +1932,8 @@ This script exercises the OpenManage Enterprise REST API to get the list of Powe
     - For authentication X-Auth is used over Basic Authentication
     - Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
+#### Python Example
+
     python get_power_manager_epr.py --ip <xx> --username <username> --password <pwd> --filterBy <filter_name> --filterValue <filter_value>
 
     Output:
@@ -2195,7 +2196,7 @@ API workflow is below:
 4. Find the jobID of default inventory task from all jobs with GET on /JobService/Jobs
 5. Parse returned job id to /JobService/Actions/JobService.RunJobs and monitor it to completion, waiting every 10 seconds
 
-#### Example
+#### Python Example
     python invoke_refresh_power_manager_inventory.py --ip <ip addr> --user root --password <passwd> --groupname testgroup
 
 
