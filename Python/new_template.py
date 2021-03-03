@@ -34,8 +34,8 @@ Note that the credentials entered are not stored to disk.
 import argparse
 import json
 import sys
-from getpass import getpass
 from argparse import RawTextHelpFormatter
+from getpass import getpass
 from os import path
 from pprint import pprint
 

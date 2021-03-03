@@ -166,9 +166,9 @@ account for making sure it is valid yourself. This is ultimately converted to JS
 import argparse
 import json
 import sys
-from os.path import isfile
 from argparse import RawTextHelpFormatter
 from getpass import getpass
+from os.path import isfile
 from pprint import pprint
 from urllib.parse import urlparse
 
@@ -556,7 +556,8 @@ def create_group_creation_payload(authenticated_headers: dict, ome_ip_address: s
 
         # Shipping Details Primary Contact
         customer_details['ShippingDetails'] = {}
-        customer_details['ShippingDetails']['PrimaryContact'] = _prompt_for_contact_details('Shipping Primary Contact: ')
+        customer_details['ShippingDetails']['PrimaryContact'] = _prompt_for_contact_details(
+            'Shipping Primary Contact: ')
         customer_details['ShippingDetails']['SecondaryContact'] = _prompt_for_contact_details(
             'Shipping Secondary Contact: ')
 

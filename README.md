@@ -57,12 +57,18 @@ If you run into problems with a script you can post [on our issues](https://gith
 
 ## Authors
 
-* **Raajeev Kalyanaraman** - *Initial work*
+* **Raajeev Kalyanaraman**
 * **Vittal Reddy**
 * **Laxmi Joshi** 
 * **Trevor Squillario**
 * **Prasad Rao**
 * **Grant Curell**
+
+### Power Manager Plugin Authors
+
+* **Mahendran Panneerselvam**
+* **Ashish Singh**
+* **Rishi Mukherjee**
 
 ## Current Maintainer
 

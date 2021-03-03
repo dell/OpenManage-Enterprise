@@ -24,7 +24,7 @@ Copies all VLANs from one OME instance to another
 #### Description:
 This script expects input in JSON format with two entries. The first should be a json array of dictionaries called
 targets identifying the OME instances to which you want to push VLANs and the second is a single dictionary defining
-the source instance. Example:
+the source instance. For example:
 
     {
         "target": [

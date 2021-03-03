@@ -31,7 +31,7 @@ Note that the credentials entered are not stored to disk.
 *Must include header row with at least the rows in the example below
 *NetworkType must be an integer value. Use get_network.py --list-networktypes
 *For a single VLAN set VlanMinimum=VlanMaximum
-Example:
+For example:
 Name,Description,VlanMaximum,VlanMinimum,NetworkType
 VLAN 800,Description for VLAN 800,800,800,1
 
@@ -45,8 +45,8 @@ import json
 import sys
 import traceback
 from argparse import RawTextHelpFormatter
-from os import path
 from getpass import getpass
+from os import path
 
 import requests
 import urllib3

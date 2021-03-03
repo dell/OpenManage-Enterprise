@@ -35,9 +35,9 @@ import csv
 import json
 import sys
 from argparse import RawTextHelpFormatter
-from urllib.parse import urlparse
 from getpass import getpass
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

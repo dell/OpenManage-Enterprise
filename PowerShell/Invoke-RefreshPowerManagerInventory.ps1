@@ -1,41 +1,47 @@
-  
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
+
 Copyright (c) 2021 Dell EMC Corporation
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
       http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 #>
+
 <#
- .SYNOPSIS
-   Script to run default inventory task to determine power management capabilities of devices post OMEnt-Power Manager Installation
- .DESCRIPTION
-   This script fetches Job id of Default Inventory Task and rns the job, post which it iterates till job is completed.
- .PARAMETER IpAddress
-   This is the IP address of the OME Appliance
- .PARAMETER Credentials
-   Credentials used to talk to the OME Appliance
-  .PARAMETER JobNamePattern
+  .SYNOPSIS
+    Script to run default inventory task to determine power management capabilities of devices post OMEnt-Power Manager Installation
 
-   .EXAMPLE
+  .DESCRIPTION
+    This script fetches Job id of Default Inventory Task and rns the job, post which it iterates till job is completed.
 
-  .\Refresh_Inventory.ps1 
-   Enter the IPaddress when prompted
-   Enter the Credentials when prompted
+  .PARAMETER IpAddress 
+    This is the IP address of the OME Appliance
+  .PARAMETER Credentials
+    Credentials used to talk to the OME Appliance
+
+  .EXAMPLE
+    $creds = Get-Credentials
+    .\Invoke-RefreshPowerManagerInventory.ps1 -IpAddress 192.168.1.93 -Credentials $creds
 #>
+[CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [System.Net.IPAddress] $IpAddress,
 
     [Parameter(Mandatory)]
     [pscredential] $Credentials
+
 )
+
 function Set-CertPolicy() {
     ## Trust all certs - for sample usage only
     Try {
@@ -136,6 +142,8 @@ function Get-JobStatus($JobId) {
 
 
 Try {
+    Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
+
     Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $RunJobUrl = "https://$($IpAddress)/api/JobService/Actions/JobService.RunJobs"
@@ -165,6 +173,8 @@ Try {
     else {
         Write-Host "Session creation Failed...."
     }
+
+    Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
 }
 
 catch {

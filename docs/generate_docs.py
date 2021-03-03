@@ -24,7 +24,8 @@ import logging
 import re
 import subprocess
 import sys
-from os import scandir
+from shutil import copyfile
+from os import scandir, getcwd
 from os.path import abspath, basename, join
 from collections import OrderedDict
 
@@ -46,9 +47,11 @@ def _get_powershell_example(script_to_process: str):
                                                           "--------------------------")[1].strip()
     except IndexError:
         print("Received an index error while processing " + script_to_process + ". This typically means the help "
-              "section of the PowerShell is not formatted correctly. Try running 'Get-Help " + script_to_process +
+              "section of the PowerShell is not formatted correctly. Try running 'Get-Help .\\" + script_to_process +
               " -Examples' and verify that the examples output correctly. It may also mean that the name in "
-              "categories does not match the actual filename.")
+              "categories does not match the actual filename. It might also mean the spacing on your param argument"
+              " in PowerShell is off or that there is not a new line after the closing ')' on param. It must have a "
+              "new line or PS does not print the EXAMPLE header as expected.")
         sys.exit(0)
     output = output.splitlines()
 
@@ -66,7 +69,7 @@ with open('categories.yml') as category_file:
     categories_dictionary = yaml.load(category_file, Loader=yaml.SafeLoader)
 
 python_file_list = []
-module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'supportassistenterprise': {}, 'other': {}}
+module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'supportassistenterprise': {}, 'powermanager': {}, 'other': {}}
 
 for entry in scandir(categories_dictionary['python_code_path']):
     if entry.path.endswith(".py"):
@@ -97,6 +100,8 @@ for module_path in python_file_list:
         category = 'maintain'
     elif key in categories_dictionary['supportassistenterprise']:
         category = 'supportassistenterprise'
+    elif key in categories_dictionary['powermanager']:
+        category = 'powermanager'
     else:
         category = 'other'
         logging.error(key + " is not in categories! It will not be displayed in the documentation. "
@@ -142,7 +147,6 @@ for module_path in python_file_list:
 
 # Handle cases where a PowerShell script exists, but a Python script does not
 # TODO - This doesn't check to see if there are PowerShell files on the file system that aren't in categories
-# TODO - This has to be done for plugins. See https://github.com/dell/OpenManage-Enterprise/issues/210
 for category, scripts in categories_dictionary.items():
     if category == 'deploy' or category == 'update' or category == 'monitor' or category == 'maintain':
         for key in scripts:
@@ -211,5 +215,8 @@ outputText = template.render(module_data=module_data)  # this is where to put ar
 
 with open("API.md", "w", encoding='utf-8') as f:
     f.write(outputText)
+    current_directory = getcwd()
+    copyfile("API.md", join(current_directory, '../PowerShell/README.md'))
+    copyfile("API.md", join(current_directory, '../Python/README.md'))
 
 logging.info("API.md generated!")
