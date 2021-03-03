@@ -28,11 +28,10 @@
  Note that the credentials entered are not stored to disk.
 
 #### Python Example
-```bash
-python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
-    --password <passwd> --groupid 25315
-    --dupfile iDRAC-with-Lifecycle-Controller_Firmware_387FW_WN64_3.21.21.21_A00.EXE
-```
+
+    python update_installed_firmware_with_dup.py --ip <ip addr> --user admin
+        --password <passwd> --groupid 25315
+        --dupfile iDRAC-with-Lifecycle-Controller_Firmware_387FW_WN64_3.21.21.21_A00.EXE
 
 #### API workflow:
 
@@ -56,8 +55,8 @@ import argparse
 import copy
 import json
 import os
-import time
 import sys
+import time
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 

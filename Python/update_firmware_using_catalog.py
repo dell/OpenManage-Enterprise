@@ -41,8 +41,8 @@ import sys
 import time
 from argparse import RawTextHelpFormatter
 from getpass import getpass
-from urllib.parse import urlparse
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

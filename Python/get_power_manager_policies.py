@@ -1,6 +1,4 @@
 #
-# Python script using Power Manager API to get Power Manager Polcies.
-#
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
 #
 #
@@ -20,19 +18,19 @@
 #
 
 """
-SYNOPSIS:
+#### Synopsis
    Script to get Power Manager policies created for either Devices/Groups with optional filters
 
-DESCRIPTION:
+#### Description
    This script exercises the Power Manager REST API to get different Power Manager Polcies created on devices or groups.
     - For authentication X-Auth is used over Basic Authentication
     - Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_power_manager_policies.py --ip <xx> --username <username> --password <pwd> --filterBy <filter_name> --filterValue <filter_value>
-   
+#### Python Example
+    python get_power_manager_policies.py --ip <xx> --username <username> --password <pwd> --filterBy <filter_name> --filterValue <filter_value>
+
     Output:
-    
+
         ==================================
             Power Manager Policies
         ==================================
@@ -46,34 +44,45 @@ EXAMPLE:
     
 """
 
-#Import the modules required for this script
-import sys
+# Import the modules required for this script
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import requests
-import urllib3
-from columnar import columnar
+import sys
+from argparse import RawTextHelpFormatter
+
+# Import the modules required for this script
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+try:
+    import urllib3
+    import requests
+    from columnar import columnar
+except ModuleNotFoundError:
+    print("This program requires urllib3, requests, and columnar. To install them on most systems run "
+          "`pip install requests urllib3`")
+    sys.exit(0)
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-#Policy Type dictonary to display the output for better reading
+# Policy Type dictonary to display the output for better reading
 policy_type_dictionary = {
-    1:"STATIC",
-    2:"TEMPERATURE-TRIGGERED"}
+    1: "STATIC",
+    2: "TEMPERATURE-TRIGGERED"}
 
-#Policy Execution State dictonary to display the output for better reading
+# Policy Execution State dictonary to display the output for better reading
 policy_execution_state_dictionary = {
-    1:"NOSTATE",
-    2:"EXECUTING",
-    3:"SUCCESS",
-    4:"PARTIAL_SUCCESS",
-    5:"FAILED"}
+    1: "NOSTATE",
+    2: "EXECUTING",
+    3: "SUCCESS",
+    4: "PARTIAL_SUCCESS",
+    5: "FAILED"}
 
-#IsAssociatedToGroup dictonary to display the output for better reading
+# IsAssociatedToGroup dictonary to display the output for better reading
 IsAssociatedToGroup_dictionary = {
-    "True":"Group",
-    "False":"Device"}
+    "True": "Group",
+    "False": "Device"}
+
 
 def get_power_manager_policies(ip_address, user_name, password, filterBY, filterValue):
     """ Authenticate with OpenManage Enterprise, get power manager policies"""
@@ -81,34 +90,36 @@ def get_power_manager_policies(ip_address, user_name, password, filterBY, filter
         # Defining Session URL & its headers
         session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
-        
+
         # Define Payload for posting session API
         user_details = {'UserName': user_name,
                         'Password': password,
                         'SessionType': 'API'}
-        
+
         # Define the Policy URL basis the filter existance & type
         if filterBY and filterValue:
-            if filterBY  in ('Enabled','Type'):
-                policies_url = "https://%s/api/PowerService/Policies?$filter=%s eq %s" % (ip_address,filterBY,filterValue)
+            if filterBY in ('Enabled', 'Type'):
+                policies_url = "https://%s/api/PowerService/Policies?$filter=%s eq %s" % (
+                    ip_address, filterBY, filterValue)
             else:
-                policies_url = "https://%s/api/PowerService/Policies?$filter=contains(%s,'%s')" % (ip_address,filterBY,filterValue)
+                policies_url = "https://%s/api/PowerService/Policies?$filter=contains(%s,'%s')" % (
+                    ip_address, filterBY, filterValue)
         else:
             policies_url = "https://%s/api/PowerService/Policies" % ip_address
-        
-        
+
         # Defining OUTPUT format
-        output_column_headers = ['Policy_ID', 'Policy_Name', 'Policy_Type', 'Policy_Enabled', "Policy_Execution_State", "Is_Policy_on_Group/Device?", "Group/Device_Assigned_To", "Created_Time"]
+        output_column_headers = ['Policy_ID', 'Policy_Name', 'Policy_Type', 'Policy_Enabled', "Policy_Execution_State",
+                                 "Is_Policy_on_Group/Device?", "Group/Device_Assigned_To", "Created_Time"]
         output_column_data = []
-        
+
         # Create the session with OpenManage Enterprise
         session_info = requests.post(session_url, verify=False,
                                      data=json.dumps(user_details),
                                      headers=headers)
-        
-        #If session doesn't create, message the user with error
+
+        # If session doesn't create, message the user with error
         if session_info.status_code != 201 & session_info.status_code != 200:
-            
+
             session_json_data = session_info.json()
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
@@ -116,19 +127,20 @@ def get_power_manager_policies(ip_address, user_name, password, filterBY, filter
                     print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
+                    print(
+                        "Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
                 print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
-        
+
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            
-            #Get Power Manager Policies API call with OpenManage Enterprise
+
+            # Get Power Manager Policies API call with OpenManage Enterprise
             policies_response = requests.get(policies_url, headers=headers, verify=False)
             policies_json_data = policies_response.json()
-            
-            #If policies API doesn't respond or failed, message the user with error
+
+            # If policies API doesn't respond or failed, message the user with error
             if policies_response.status_code != 201 & policies_response.status_code != 200:
                 if 'error' in policies_json_data:
                     error_content = policies_json_data['error']
@@ -136,25 +148,31 @@ def get_power_manager_policies(ip_address, user_name, password, filterBY, filter
                         print("Unable to retrieve Power Manager policies from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager policies from %s. See below ExtendedInfo for more information" % ip_address)
+                        print(
+                            "Unable to retrieve Power Manager policies from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
                     print("Unable to retrieve Power Manager policies from %s" % ip_address)
             else:
                 policies_count = policies_json_data['@odata.count']
-                
-                #If the policies count is 0, then error out immediately
+
+                # If the policies count is 0, then error out immediately
                 if policies_count <= 0:
                     print("No Power Manager Policies created in %s" % ip_address)
                 else:
                     policies_content = json.loads(policies_response.content)
-                    
+
                     if policies_content:
                         # For every elements in the policies response, store the details in the table
                         for policies_elem in policies_content["value"]:
-                            policies_data = [policies_elem["PolicyId"], policies_elem["Name"], policy_type_dictionary[int(policies_elem["Type"])], policies_elem["Enabled"], policy_execution_state_dictionary[int(policies_elem["ExecutionState"])], IsAssociatedToGroup_dictionary[str(policies_elem["IsAssociatedToGroup"])], policies_elem["AssignedTo"], policies_elem["CreatedTime"]]
+                            policies_data = [policies_elem["PolicyId"], policies_elem["Name"],
+                                             policy_type_dictionary[int(policies_elem["Type"])],
+                                             policies_elem["Enabled"],
+                                             policy_execution_state_dictionary[int(policies_elem["ExecutionState"])],
+                                             IsAssociatedToGroup_dictionary[str(policies_elem["IsAssociatedToGroup"])],
+                                             policies_elem["AssignedTo"], policies_elem["CreatedTime"]]
                             output_column_data.append(policies_data)
-                        
+
                         table = columnar(output_column_data, output_column_headers, no_borders=True)
                         print("\n   ==================================")
                         print("      Power Manager Policies ")
@@ -169,7 +187,8 @@ def get_power_manager_policies(ip_address, user_name, password, filterBY, filter
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("--ip", "-i", required=True, help="OpenManage Enterprise  IP <- Mandatory")
-    parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
+    parser.add_argument("--username", "-u", required=False,
+                        help="Username for OpenManage Enterprise  <- Optional; default = admin", default="admin")
     parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise  <- Mandatory")
     parser.add_argument("--filterBy", "-b", required=False, help=''' Applicable Filters are:
         Name - Name of the policy
@@ -185,5 +204,17 @@ if __name__ == '__main__':
     ''', default=None)
 
     args = parser.parse_args()
-    
+
+    print("WARNING: THIS SCRIPT IS EXPERIMENTAL.")
+    print("The Power Manager scripts were originally internal Dell scripts we then published externally. If you see "
+          "this message and are using one of these scripts it would be very helpful if you open an issue on GitHub "
+          "at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not "
+          "dedicated any resources to optimizing them but are happy to do so if we know the community is using them. "
+          "Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.")
     get_power_manager_policies(args.ip, args.username, args.password, args.filterBy, args.filterValue)
+    print("WARNING: THIS SCRIPT IS EXPERIMENTAL.")
+    print("The Power Manager scripts were originally internal Dell scripts we then published externally. If you see "
+          "this message and are using one of these scripts it would be very helpful if you open an issue on GitHub "
+          "at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not "
+          "dedicated any resources to optimizing them but are happy to do so if we know the community is using them. "
+          "Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.")

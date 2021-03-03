@@ -34,11 +34,11 @@ import argparse
 import csv
 import json
 import sys
-from os.path import isfile
 from argparse import RawTextHelpFormatter
-from urllib.parse import urlparse
 from getpass import getpass
+from os.path import isfile
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

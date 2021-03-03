@@ -41,8 +41,8 @@ Note:
 import argparse
 import json
 import random
-import time
 import sys
+import time
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 

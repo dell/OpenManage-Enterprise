@@ -51,10 +51,10 @@ import json
 import os
 import sys
 import time
-from urllib.parse import urlparse
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3

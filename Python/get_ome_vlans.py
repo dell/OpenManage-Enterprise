@@ -38,9 +38,9 @@ import csv
 import json
 import sys
 from argparse import RawTextHelpFormatter
-from urllib.parse import urlparse
 from getpass import getpass
 from pprint import pprint
+from urllib.parse import urlparse
 
 try:
     import urllib3
@@ -160,7 +160,7 @@ def get_data(authenticated_headers: dict, url: str, odata_filter: str = None, ma
                 data += requested_data
         else:
             print("Unknown error occurred. Received HTTP response code: " + str(response.status_code) +
-                    " with error: " + response.text)
+                  " with error: " + response.text)
             raise Exception("Unknown error occurred. Received HTTP response code: " + str(response.status_code)
                             + " with error: " + response.text)
 

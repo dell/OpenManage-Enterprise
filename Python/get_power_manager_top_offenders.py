@@ -1,6 +1,4 @@
 #
-# Python script using OpenManage Enterprise API to get Power Manager top power & temperature offenders in OpenManage Enterprise.
-#
 # _author_ = Mahendran P <Mahendran_P@Dell.com>
 #
 #
@@ -20,76 +18,87 @@
 #
 
 """
-SYNOPSIS:
+#### Synopsis
    Script to get the list of top power and temperature offenders (Device or Group which violated the respective threshold)
 
-DESCRIPTION:
+#### Description
    This script exercises the OpenManage Enterprise REST API to get the list of top power and temperature offenders (Device or Group which violated the respective threshold)
     - For authentication, X-Auth is used over Basic Authentication
     - Note that the credentials entered are not stored to disk.
 
-EXAMPLE:
-   python get_power_manager_top_offenders.py --ip <xx> --username <username> --password <pwd>
-   
-    Output:
+#### Python Example
+    python get_power_manager_top_offenders.py --ip <xx> --username <username> --password <pwd>
+
 """
 
-#Import the modules required for this script
-import sys
+# Import the modules required for this script
 import argparse
-from argparse import RawTextHelpFormatter
 import json
-import requests
-import urllib3
-from columnar import columnar
+import sys
+from argparse import RawTextHelpFormatter
+
+# Import the modules required for this script
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+try:
+    import urllib3
+    import requests
+    from columnar import columnar
+except ModuleNotFoundError:
+    print("This program requires urllib3, requests, and columnar. To install them on most systems run "
+          "`pip install requests urllib3`")
+    sys.exit(0)
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-#Entity Type dictionary to display the output for better reading
+# Entity Type dictionary to display the output for better reading
 entity_type_dictionary = {
-    1:"Device",
-    2:"Group"}
+    1: "Device",
+    2: "Group"}
 
-#Threshold Type dictionary to display the output for better reading
+# Threshold Type dictionary to display the output for better reading
 threshold_type_dictionary = {
-    3:"Power",
-    7:"Temperature"}
+    3: "Power",
+    7: "Temperature"}
 
-#Violation State dictionary to display the output for better reading
+# Violation State dictionary to display the output for better reading
 violation_state_dictionary = {
-    1:"Unknown",
-    2:"Normal",
-    3:"Warning",
-    4:"Critical"}
+    1: "Unknown",
+    2: "Normal",
+    3: "Warning",
+    4: "Critical"}
+
 
 def get_power_manager_top_offenders(ip_address, user_name, password):
     """ Authenticate with OpenManage Enterprise, enumerate top power and temperature offenders"""
     try:
-        
+
         # Defining Session URL & its headers
         session_url = 'https://%s/api/SessionService/Sessions' % ip_address
         headers = {'content-type': 'application/json'}
-        
+
         # Define Payload for posting session API
         user_details = {'UserName': user_name,
                         'Password': password,
                         'SessionType': 'API'}
-        
+
         # Define the top offenders URL
         top_offenders_url = "https://%s/api/MetricService/TopOffenders" % ip_address
-        
+
         # Defining OUTPUT format    
-        output_column_headers = ['Entity_Id', 'Entity_Name', 'Entity_Type', 'Threshold_Type', 'Total_Violations', 'Violation_State']
+        output_column_headers = ['Entity_Id', 'Entity_Name', 'Entity_Type', 'Threshold_Type', 'Total_Violations',
+                                 'Violation_State']
         top_offenders_output_column_data = []
-        
+
         # Create the session with OpenManage Enterprise
         session_info = requests.post(session_url, verify=False,
                                      data=json.dumps(user_details),
                                      headers=headers)
-        
-        #If session doesn't create, message the user with error
+
+        # If session doesn't create, message the user with error
         if session_info.status_code != 201 & session_info.status_code != 200:
-            
+
             session_json_data = session_info.json()
             if 'error' in session_json_data:
                 error_content = session_json_data['error']
@@ -97,47 +106,54 @@ def get_power_manager_top_offenders(ip_address, user_name, password):
                     print("Unable to create a session with  %s" % ip_address)
                 else:
                     extended_error_content = error_content['@Message.ExtendedInfo']
-                    print("Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
+                    print(
+                        "Unable to create a session with  %s. See below ExtendedInfo for more information" % ip_address)
                     print(extended_error_content[0]['Message'])
             else:
                 print("Unable to create a session with  %s. Please try again later" % ip_address)
         else:
-        
+
             headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
-            
-            #Get Top offenders API call with OpenManage Enterprise
+
+            # Get Top offenders API call with OpenManage Enterprise
             top_offenders_response = requests.get(top_offenders_url, headers=headers, verify=False)
             top_offenders_json_data = top_offenders_response.json()
-            
-            #If Top offenders API doesn't respond or failed, message the user with error
+
+            # If Top offenders API doesn't respond or failed, message the user with error
             if top_offenders_response.status_code != 201 & top_offenders_response.status_code != 200:
                 if 'error' in top_offenders_json_data:
                     error_content = top_offenders_json_data['error']
                     if '@Message.ExtendedInfo' not in error_content:
-                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
+                        print(
+                            "Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
                     else:
                         extended_error_content = error_content['@Message.ExtendedInfo']
-                        print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s. See below ExtendedInfo for more information" % ip_address)
+                        print(
+                            "Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s. See below ExtendedInfo for more information" % ip_address)
                         print(extended_error_content[0]['Message'])
                 else:
-                    print("Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
+                    print(
+                        "Unable to retrieve Power Manager - Top Power & Termperature threshold offenders from %s" % ip_address)
             else:
-                
+
                 top_offenders_count = top_offenders_json_data['@odata.count']
-                
-                #If the Metrics Alerts count is 0, then error out immediately
+
+                # If the Metrics Alerts count is 0, then error out immediately
                 if top_offenders_count <= 0:
                     print("No Power Manager Top Power & Termperature threshold offenders found in %s" % ip_address)
                 else:
                     top_offenders_content = json.loads(top_offenders_response.content)
-                    
+
                     if top_offenders_content:
                         # For every elements in the top offenders response, store the details in the table
                         for top_offenders_elem in top_offenders_content["value"]:
-                            
-                            top_offenders_data = [top_offenders_elem["EntityId"], top_offenders_elem["EntityName"], entity_type_dictionary[int(top_offenders_elem["EntityType"])], threshold_type_dictionary[int(top_offenders_elem["ThresholdType"])], top_offenders_elem["TotalViolations"], violation_state_dictionary[int(top_offenders_elem["ViolationState"])]]
+                            top_offenders_data = [top_offenders_elem["EntityId"], top_offenders_elem["EntityName"],
+                                                  entity_type_dictionary[int(top_offenders_elem["EntityType"])],
+                                                  threshold_type_dictionary[int(top_offenders_elem["ThresholdType"])],
+                                                  top_offenders_elem["TotalViolations"],
+                                                  violation_state_dictionary[int(top_offenders_elem["ViolationState"])]]
                             top_offenders_output_column_data.append(top_offenders_data)
-                            
+
                         table = columnar(top_offenders_output_column_data, output_column_headers, no_borders=True)
                         print("\n   ======================================================================")
                         print("      Power Manager - Top Offenders of Power & Temperature threshold ")
@@ -155,5 +171,19 @@ if __name__ == '__main__':
     parser.add_argument("--username", "-u", required=False, help="Username for OpenManage Enterprise ", default="admin")
     parser.add_argument("--password", "-p", required=True, help="Password for OpenManage Enterprise ")
     args = parser.parse_args()
-    
+
+    print("WARNING: THIS SCRIPT IS EXPERIMENTAL.")
+    print("The Power Manager scripts were originally internal Dell scripts we then published externally. If you see "
+          "this message and are using one of these scripts it would be very helpful if you open an issue on GitHub "
+          "at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not "
+          "dedicated any resources to optimizing them but are happy to do so if we know the community is using them. "
+          "Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.")
+
     get_power_manager_top_offenders(args.ip, args.username, args.password)
+
+    print("WARNING: THIS SCRIPT IS EXPERIMENTAL.")
+    print("The Power Manager scripts were originally internal Dell scripts we then published externally. If you see "
+          "this message and are using one of these scripts it would be very helpful if you open an issue on GitHub "
+          "at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not "
+          "dedicated any resources to optimizing them but are happy to do so if we know the community is using them. "
+          "Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.")

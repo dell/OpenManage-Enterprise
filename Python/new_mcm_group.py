@@ -49,8 +49,8 @@ is set as the lead in the created MCM group
 
 import argparse
 import random
-import time
 import sys
+import time
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 

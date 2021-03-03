@@ -1,6 +1,6 @@
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
-Copyright (c) 2018 Dell EMC Corporation
+Copyright (c) 2021 Dell EMC Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,7 +14,7 @@ limitations under the License.
 
 <#
  .SYNOPSIS
-   Script to get the list of devices which are not capable of power policy capping with OMEnt-Power Manager
+   Script to get the list of devices which are not capable of power monitoring with OMEnt-Power Manager
  .DESCRIPTION
    This script exercises the OME REST API to get a list of devices which are 
    not capable of power monitoring with OMEnt-Power Manager
@@ -31,13 +31,13 @@ limitations under the License.
    
  .EXAMPLE
    $cred = Get-Credential
-   .\Find_non_Power_policy_capable_devices.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
+   .\Find-NonPmpCapableDevices.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred
  .EXAMPLE
-   .\Find_non_Power_policy_capable_devices.ps1 -IpAddress "10.xx.xx.xx"
+   .\Find-NonPmpCapableDevices.ps1 -IpAddress "10.xx.xx.xx"
    In this instance you will be prompted for credentials to use
  .EXAMPLE 
   To save the device Ids to a file(file_name.txt) give the command in following format 
-  .\Find_non_Power_policy_capable_devices.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred >file_name.txt
+  .\Find-NonPmpCapableDevices.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred >file_name.txt
 
 #>
 [CmdletBinding()]
@@ -83,6 +83,8 @@ Try {
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
 
+    Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
+
     $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
@@ -110,21 +112,16 @@ Try {
             for ($i = 0; $i -ne $Total ; $i++) {
             
                 $capability = $DeviceData[$i].DeviceCapabilities
-                <#if device type is chassis, check only for power capping bit 1105#>
-                if ($DeviceData[$i].'Type' -eq 2000) {
-                    if ($capability -notcontains 1105 ) {
-                        <#print Id of the devices which aren't power policy capping capable#>
-                        $DeviceData[$i].'Id' | Format-List
+                <#check for power monitoring capability bit 1006#>
+                if ($capability -notcontains 1006) {
+                    <#if device type is chassis, no need to check for capability since chassis is always power monitoring capable#>
+                    if ($DeviceData[$i].'Type' -eq 2000) {
+                        continue
                     }
+                    <#print Id of the devices which aren't power capable#>
+                    $DeviceData[$i].'Id'
                 }
-                else {
-                    <#if device type is server, check for both power monitoring bit 1006 and power capping bit 1105#>
-                    if ($capability -notcontains 1105 -or $capability -notcontains 1006 ) {
-                        <#print Id of the devices which aren't power policy capping capable#>
-                        $DeviceData[$i].'Id' | Format-List
-                    }
-                }
-            }
+            } 
         }
         else {
             Write-Error "Unable to get count of managed devices .. Exiting"
@@ -133,6 +130,8 @@ Try {
     else {
         Write-Error "Unable to create a session with appliance $($IpAddress)"
     }
+
+    Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
 }
 catch {
     Write-Error "Exception occured - $($_.Exception.Message)"
