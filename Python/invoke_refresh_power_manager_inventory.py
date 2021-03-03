@@ -35,7 +35,7 @@ API workflow is below:
 4. Find the jobID of default inventory task from all jobs with GET on /JobService/Jobs
 5. Parse returned job id to /JobService/Actions/JobService.RunJobs and monitor it to completion, waiting every 10 seconds
 
-#### Example
+#### Python Example
     python invoke_refresh_power_manager_inventory.py --ip <ip addr> --user root --password <passwd> --groupname testgroup
 
 """
