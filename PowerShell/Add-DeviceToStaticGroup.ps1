@@ -214,26 +214,20 @@ function Get-DeviceId {
 
     [CmdletBinding()]
     param (
-
         [Parameter(Mandatory)]
-        [System.Net.IPAddress]
-        $OmeIpAddress,
+        [System.Net.IPAddress]$OmeIpAddress,
 
         [Parameter(Mandatory = $false)]
-        [parameter(ParameterSetName = "ServiceTag")]
-        [string]
-        $ServiceTag,
+        [Parameter(ParameterSetName = "ServiceTag")]
+        [string]$ServiceTag,
 
         [Parameter(Mandatory = $false)]
         [parameter(ParameterSetName = "DeviceIdracIp")]
-
-        [System.Net.IPAddress]
-        $DeviceIdracIp,
+        [System.Net.IPAddress]$DeviceIdracIp,
 
         [Parameter(Mandatory = $false)]
         [parameter(ParameterSetName = "DeviceName")]
-        [System.Net.IPAddress]
-        $DeviceName
+        [string]$Devicename
     )
 
     $DeviceId = -1
@@ -324,7 +318,7 @@ try {
 
     if ($PSBoundParameters.ContainsKey('DeviceNames')) {
         foreach ($DeviceName in $DeviceNames -split ',') {
-            $Target = Get-DeviceId $IpAddress -DeviceName $DeviceName
+            $Target = Get-DeviceId -OmeIpAddress $IpAddress -DeviceName $DeviceName
             if ($Target -ne -1) {
                 $Targets += $Target
             }
