@@ -517,8 +517,23 @@ if __name__ == '__main__':
                   "device names.")
             sys.exit(0)
 
+        # Eliminate any duplicate IDs in the list
+        target_ids = list(dict.fromkeys(target_ids))
+
         if args.state == 'POWER_ON':
             power_state = POWER_CONTROL_STATE_MAP["Power On"]
+
+            # Remove any device targets which are already either powering on or powered on.
+            already_on_devices = get_data(headers, "https://%s/api/DeviceService/Devices" % args.ip,
+                                          "PowerState eq 17 or PowerState eq 20")
+            already_on_devices = [host['Id'] for host in already_on_devices]
+            target_ids = set(target_ids) - set(already_on_devices)
+
+            if not target_ids:
+                print("No valid targets. All servers submitted are already in the requested power state so no action "
+                      "is required.")
+                sys.exit(0)
+
             print("Powering on servers...")
         elif args.state == 'POWER_CYCLE':
             power_state = POWER_CONTROL_STATE_MAP["Power Cycle"]
@@ -534,6 +549,19 @@ if __name__ == '__main__':
             print("Performing a graceful shutdown on the servers...")
         else:
             power_state = -1
+
+        if args.state == 'POWER_OFF_NON_GRACEFUL' or args.state == 'POWER_OFF_GRACEFUL':
+
+            # Remove any device targets which are already powered off since no action is required
+            already_off_devices = get_data(headers, "https://%s/api/DeviceService/Devices" % args.ip,
+                                           "PowerState eq 18")
+            already_off_devices = [host['Id'] for host in already_off_devices]
+            target_ids = set(target_ids) - set(already_off_devices)
+
+            if not target_ids:
+                print("No valid targets. All servers submitted are already in the requested power state so no action "
+                      "is required.")
+                sys.exit(0)
 
         if power_control_servers(target_ids, headers, args.ip, power_state, group_id):
             print("Power state changed successfully!")
