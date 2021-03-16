@@ -24,7 +24,8 @@ import logging
 import re
 import subprocess
 import sys
-from os import scandir
+from shutil import copyfile
+from os import scandir, getcwd
 from os.path import abspath, basename, join
 from collections import OrderedDict
 
@@ -46,8 +47,11 @@ def _get_powershell_example(script_to_process: str):
                                                           "--------------------------")[1].strip()
     except IndexError:
         print("Received an index error while processing " + script_to_process + ". This typically means the help "
-              "section of the PowerShell is not formatted correctly. Try running 'Get-Help " + script_to_process +
-              " -Examples' and verify that the examples output correctly.")
+              "section of the PowerShell is not formatted correctly. Try running 'Get-Help .\\" + script_to_process +
+              " -Examples' and verify that the examples output correctly. It may also mean that the name in "
+              "categories does not match the actual filename. It might also mean the spacing on your param argument"
+              " in PowerShell is off or that there is not a new line after the closing ')' on param. It must have a "
+              "new line or PS does not print the EXAMPLE header as expected.")
         sys.exit(0)
     output = output.splitlines()
 
@@ -65,7 +69,7 @@ with open('categories.yml') as category_file:
     categories_dictionary = yaml.load(category_file, Loader=yaml.SafeLoader)
 
 python_file_list = []
-module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'other': {}}
+module_data = {'deploy': {}, 'update': {}, 'monitor': {}, 'maintain': {}, 'supportassistenterprise': {}, 'powermanager': {}, 'other': {}}
 
 for entry in scandir(categories_dictionary['python_code_path']):
     if entry.path.endswith(".py"):
@@ -76,7 +80,7 @@ script_tracker = {}  # Used to track if a key has Python scripts, PowerShell scr
 for module_path in python_file_list:
 
     print("Processing " + module_path)
-    with open(module_path) as fd:
+    with open(module_path, encoding='utf-8') as fd:
         module_contents = fd.read()
     module = ast.parse(module_contents)
     docstring = ast.get_docstring(module)
@@ -94,6 +98,10 @@ for module_path in python_file_list:
         category = 'monitor'
     elif key in categories_dictionary['maintain']:
         category = 'maintain'
+    elif key in categories_dictionary['supportassistenterprise']:
+        category = 'supportassistenterprise'
+    elif key in categories_dictionary['powermanager']:
+        category = 'powermanager'
     else:
         category = 'other'
         logging.error(key + " is not in categories! It will not be displayed in the documentation. "
@@ -101,8 +109,8 @@ for module_path in python_file_list:
         sys.exit(0)
 
     # Call PowerShell's help and then extract examples from the help page
-    powershell_example = None
     script_tracker[key] = {}
+    powershell_example = None
     script_tracker[key]['has_powershell'] = False
     script_tracker[key]['has_python'] = False
     for script in categories_dictionary[category][key]:
@@ -185,7 +193,8 @@ for category, scripts in categories_dictionary.items():
                         }
                         script_tracker[key]['has_powershell'] = True
                     elif script.endswith('py'):
-                        logging.error("We shouldn't be here. Is there something strange about this script?")
+                        logging.error("We shouldn't be here. Is there something strange about this script? This might"
+                                      " mean the script in question is in categories but no longer exists.")
                         sys.exit(0)
                     else:
                         logging.error(key + " has a script listed that does not end with either"
@@ -204,7 +213,10 @@ TEMPLATE_FILE = "API.md.j2"
 template = templateEnv.get_template(TEMPLATE_FILE)
 outputText = template.render(module_data=module_data)  # this is where to put args to the template renderer
 
-with open("API.md", "w") as f:
+with open("API.md", "w", encoding='utf-8') as f:
     f.write(outputText)
+    current_directory = getcwd()
+    copyfile("API.md", join(current_directory, '../PowerShell/README.md'))
+    copyfile("API.md", join(current_directory, '../Python/README.md'))
 
 logging.info("API.md generated!")

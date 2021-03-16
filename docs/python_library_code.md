@@ -12,6 +12,9 @@
   - [Track a Job to Completion](#track-a-job-to-completion)
   - [Printing a Dictionary to a CSV File](#printing-a-dictionary-to-a-csv-file)
   - [Prompt a User with a Yes/No Question](#prompt-a-user-with-a-yesno-question)
+  - [Check that a Filepath is Valid](#check-that-a-filepath-is-valid)
+  - [Filter a List of Dictionaries](#filter-a-list-of-dictionaries)
+  - [Create a List of Attributes from a List of Dictionaries](#create-a-list-of-attributes-from-a-list-of-dictionaries)
 
 ## Authenticating to an OME Instance
 
@@ -297,14 +300,29 @@ target_ids = list(dict.fromkeys(target_ids))
 ### Get Group ID by Name
 
 ```python
-group_url = "https://%s/api/GroupService/Groups" % args.ip
-groups = get_data(headers, group_url, "Name eq '%s'" % args.groupname)
+def get_group_id_by_name(authenticated_headers: dict, ome_ip_address: str, group_name: str) -> int:
+    """
+    Resolves the name of a group to an ID
+    
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        group_name: The name of the group to be resolved
 
-if len(groups) < 1:
-    print("Error: We were unable to find a group matching the name %s." % args.groupname)
-    sys.exit(0)
+    Returns: The ID of the group or -1 if it couldn't be found
 
-group_id = groups[0]['Id']
+    """
+    
+    print("Looking up ID for group " + group_name)
+    
+    ome_group_url = "https://%s/api/GroupService/Groups" % ome_ip_address
+    groups = get_data(authenticated_headers, ome_group_url, "Name eq '%s'" % group_name)
+
+    if len(groups) < 1:
+        print("Error: We were unable to find a group matching the name %s." % args.group_name)
+        return -1
+
+    return groups[0]['Id']
 ```
 
 ### Pattern for Getting a Group's ID and a List of Devices in the Group
@@ -383,41 +401,46 @@ def track_job_to_completion(ome_ip_address: str,
         time.sleep(sleep_interval)
         job_resp = requests.get(job_url, headers=authenticated_headers, verify=False)
 
-        if job_resp.status_code == 200:
-            job_status = str((job_resp.json())['LastRunStatus']['Id'])
-            job_status_str = job_status_map[job_status]
-            print("Iteration %s: Status of %s is %s" % (loop_ctr, tracked_job_id, job_status_str))
-
-            if int(job_status) == 2060:
-                job_incomplete = False
-                print("Job completed successfully!")
-                break
-            elif int(job_status) in failed_job_status:
-                job_incomplete = True
-
-                if job_status_str == "Warning":
-                    print("Completed with errors")
-                else:
-                    print("Error: Job failed.")
-
-                job_hist_url = str(job_url) + "/ExecutionHistories"
-                job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
-
-                if job_hist_resp.status_code == 200:
-                    # Get the job's execution details
-                    job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
-                    execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
-                    job_hist_det_url = str(job_hist_url) + execution_hist_detail
-                    job_hist_det_resp = requests.get(job_hist_det_url,
-                                                    headers=authenticated_headers,
-                                                    verify=False)
-                    if job_hist_det_resp.status_code == 200:
-                        pprint(job_hist_det_resp.json()['value'])
+        try:
+            if job_resp.status_code == 200:
+                job_status = str((job_resp.json())['LastRunStatus']['Id'])
+                job_status_str = job_status_map[job_status]
+                print("Iteration %s: Status of %s is %s" % (loop_ctr, tracked_job_id, job_status_str))
+    
+                if int(job_status) == 2060:
+                    job_incomplete = False
+                    print("Job completed successfully!")
+                    break
+                elif int(job_status) in failed_job_status:
+                    job_incomplete = True
+    
+                    if job_status_str == "Warning":
+                        print("Completed with errors")
                     else:
-                        print("Unable to parse job execution history... exiting")
-                break
-        else:
-            print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
+                        print("Error: Job failed.")
+    
+                    job_hist_url = str(job_url) + "/ExecutionHistories"
+                    job_hist_resp = requests.get(job_hist_url, headers=authenticated_headers, verify=False)
+    
+                    if job_hist_resp.status_code == 200:
+                        # Get the job's execution details
+                        job_history_id = str((job_hist_resp.json())['value'][0]['Id'])
+                        execution_hist_detail = "(" + job_history_id + ")/ExecutionHistoryDetails"
+                        job_hist_det_url = str(job_hist_url) + execution_hist_detail
+                        job_hist_det_resp = requests.get(job_hist_det_url,
+                                                        headers=authenticated_headers,
+                                                        verify=False)
+                        if job_hist_det_resp.status_code == 200:
+                            pprint(job_hist_det_resp.json()['value'])
+                        else:
+                            print("Unable to parse job execution history... exiting")
+                    break
+            else:
+                print("Unable to poll status of %s - Iteration %s " % (tracked_job_id, loop_ctr))
+        except AttributeError:
+            print("There was a problem getting the job info during the wait. Full error details:")
+            pprint(job_resp)
+            return False
 
     if job_incomplete:
         print("Job %s incomplete after polling %s times...Check status" % (tracked_job_id, loop_ctr))
@@ -428,15 +451,32 @@ def track_job_to_completion(ome_ip_address: str,
 
 ## Printing a Dictionary to a CSV File
 
+This code is a generic template for getting some data from OME and then sending it to CSV. The variable names at a
+minimum will need to be updated.
+
 ```python
-# Use UTF 8 in case there are non-ASCII characters like 格蘭特
-print("Writing CSV to file...")
-with open(out_file, 'w', encoding='utf-8', newline='') as csv_file:
-    csv_columns = ["Id", "Name", "Description", "VlanMaximum", "VlanMinimum", "Type"]
-    writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
-    writer.writeheader()
-    for network in network_data:
-        writer.writerow(network)
+warranty_info = get_data(headers, base_uri)
+
+if warranty_info:
+    if args.out_file:
+        # Use UTF 8 in case there are non-ASCII characters like 格蘭特
+        print("Writing CSV to file...")
+        with open(args.out_file, 'w', encoding='utf-8', newline='') as csv_file:
+            # This code takes the list of dictionaries called warranty info, extracts the first dictionary in
+            # the list, which we assume will have keys identical to the other dictionaries in the list,
+            # creates an iterable from its keys, and then runs it through a lambda function which will remove
+            # any elements that have the string @odata in them. It will show add all other elements to the CSV
+            # file. In this way we do not need to manually enumerate the CSV header elements.
+            csv_columns = list(filter(lambda elem: '@odata' not in elem, warranty_info[0].keys()))
+            writer = csv.DictWriter(csv_file, fieldnames=csv_columns, extrasaction='ignore')
+            writer.writeheader()
+            for warranty in warranty_info:
+                writer.writerow(warranty)
+    else:
+        pprint(warranty_info)
+else:
+    print("There was a problem retrieving the SupportAssist data from OME! Exiting.")
+    sys.exit(0)
 ```
 
 ## Prompt a User with a Yes/No Question
@@ -474,4 +514,67 @@ def query_yes_no(question: str, default: str = "yes") -> bool:
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
+```
+
+## Check that a Filepath is Valid
+
+```python
+
+from os.path import isfile
+
+def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool:
+    """
+    Tests whether a filepath is valid or not. You can only provide either input_filepath or output_filepath. Not both.
+
+    Args:
+        output_filepath: The path to an output file you want to test
+        input_filepath:The path to an input file you want to test
+
+    Returns:
+        Returns true if the path is valid and false if it is not
+    """
+
+    if input_filepath != "" and output_filepath != "":
+        print("You can only provide either an InputFilePath or an OutputFilePath.")
+        sys.exit(0)
+
+    if isfile(output_filepath):
+        if not query_yes_no(output_filepath + " already exists? Do you want to continue? (y/n): ", "no"):
+            return False
+
+    if output_filepath:
+        try:
+            open(output_filepath, 'w')
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % output_filepath)
+            return False
+
+    if input_filepath:
+        try:
+            open(input_filepath, 'r')
+            return True
+        except OSError:
+            print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
+                  " issue." % input_filepath)
+            return False
+```
+
+## Filter a List of Dictionaries
+
+A lot of times in this API code you'll want to filter a list of dictionaries based on some property. A fast way to do
+that is to use a list comprehension with a filter function:
+
+```python
+warranty_info = [warranty for warranty in warranty_info 
+                 if args.warranty_keyword.lower() in warranty['ServiceLevelDescription'].lower()]
+```
+
+## Create a List of Attributes from a List of Dictionaries
+
+Say you have a list of dictionaries and you want to get the device IDs of all those dictionaries and then create a list
+from it. You could do:
+
+```python
+some_list = [host['Id'] for host in some_list]
 ```

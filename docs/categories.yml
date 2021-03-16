@@ -1,15 +1,15 @@
 # This file defines the categories in which each script will be placed
 # This is used as part of the automated documenatation generation process
 
-python_code_path: '../Core/Python'
-powershell_path: '../Core/PowerShell'
+python_code_path: '../Python'
+powershell_path: '../PowerShell'
 deploy:
   add_device_to_static_group:
     - add_device_to_static_group.py
     - Add-DeviceToStaticGroup.ps1
-  add_members:
-    - add_members.py
-    - Add-Members.ps1
+  add_members_to_mcm_group:
+    - Add-MembersToMcmGroup.ps1
+    - add_members_to_mcm_group.py
   copy_vlans:
     - copy_vlans.py
     - Copy-Vlans.ps1
@@ -97,6 +97,9 @@ monitor:
     - Get-ReportList.ps1
   get_template:
     - get_template.py
+  get_warranty_information:
+    - get_warranty_information.py
+    - Get-WarrantyInformation.ps1
   invoke_report_execution:
     - invoke_report_execution.py
     - Invoke-ReportExecution.ps1
@@ -108,3 +111,44 @@ maintain:
     - Invoke-RetireLead.ps1
   set_scale_vlan_profile:
     - Set-ScaleVlanProfile.ps1
+supportassistenterprise:
+  get_supportassist_cases:
+    - get_supportassist_cases.py
+    - Get-SupportassistCases.ps1
+  invoke_manage_supportassist_groups:
+    - invoke_manage_supportassist_groups.py
+    - Invoke-ManageSupportAssistGroups.ps1
+powermanager:
+  get_power_manager_alerts:
+    - get_power_manager_alerts.py
+  get_power_manager_capable_devices:
+    - get_power_manager_capable_devices.py
+  get_power_manager_device_metrics:
+    - get_power_manager_device_metrics.py
+  get_power_manager_epr:
+    - get_power_manager_epr.py
+  get_power_manager_group_metrics:
+    - get_power_manager_group_metrics.py
+  get_power_manager_monitoring_list:
+    - get_power_manager_monitoring_list.py
+  get_power_manager_policies:
+    - get_power_manager_policies.py
+  get_power_manager_reports:
+    - get_power_manager_reports.py
+  get_power_manager_top_energy_consumers:
+    - get_power_manager_top_energy_consumers.py
+  get_power_manager_top_offenders:
+    - get_power_manager_top_offeners.py
+  get_set_power_manager_setting:
+    - get_set_power_manager_setting.py
+  find_non_pmp_capable_devices:
+    - Find-NonPmpCapableDevices.ps1
+    - find_non_pmp_capable_devices.py
+  find_non_power_policy_capable_devices:
+    - Find-NonPowerPolicyCapableDevices.ps1
+    - find_non_power_policy_capable_devices.py
+  invoke_refresh_power_manager_inventory:
+    - invoke_refresh_power_manager_inventory.py
+    - Invoke-RefreshPowerManagerInventory.ps1
+  new_power_manager_physical_group:
+    - new_power_manager_physical_group.py
