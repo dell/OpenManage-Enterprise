@@ -13,6 +13,8 @@
   - [Printing a Dictionary to a CSV File](#printing-a-dictionary-to-a-csv-file)
   - [Prompt a User with a Yes/No Question](#prompt-a-user-with-a-yesno-question)
   - [Check that a Filepath is Valid](#check-that-a-filepath-is-valid)
+  - [Filter a List of Dictionaries](#filter-a-list-of-dictionaries)
+  - [Create a List of Attributes from a List of Dictionaries](#create-a-list-of-attributes-from-a-list-of-dictionaries)
 
 ## Authenticating to an OME Instance
 
@@ -556,4 +558,23 @@ def confirm_isvalid(output_filepath: str = "", input_filepath: str = "") -> bool
             print("The filepath %s does not appear to be valid. This could be due to an incorrect path or a permissions"
                   " issue." % input_filepath)
             return False
+```
+
+## Filter a List of Dictionaries
+
+A lot of times in this API code you'll want to filter a list of dictionaries based on some property. A fast way to do
+that is to use a list comprehension with a filter function:
+
+```python
+warranty_info = [warranty for warranty in warranty_info 
+                 if args.warranty_keyword.lower() in warranty['ServiceLevelDescription'].lower()]
+```
+
+## Create a List of Attributes from a List of Dictionaries
+
+Say you have a list of dictionaries and you want to get the device IDs of all those dictionaries and then create a list
+from it. You could do:
+
+```python
+some_list = [host['Id'] for host in some_list]
 ```
