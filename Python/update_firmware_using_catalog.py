@@ -259,6 +259,9 @@ def catalog_creation_payload(repo_type: str,
         source_path = path_tuple[0]
         filename = path_tuple[1]
 
+    if not repo_source_ip:
+        repo_source_ip = ""
+
     return {
         "Filename": filename,
         "SourcePath": source_path,
@@ -734,7 +737,8 @@ def create_firmware_update_payload(device_info: dict, compliance_data_list: list
 
 
 def create_payload_for_firmware_update(job_type_id: int, baseline_identifier: str,
-                                       catalog_identifier: str, repository_id: str, target_data: list):
+                                       catalog_identifier: str, repository_id: str, target_data: list,
+                                       stage_update: bool):
     """
     Generate the payload to initiate a firmware update job
 
@@ -746,10 +750,17 @@ def create_payload_for_firmware_update(job_type_id: int, baseline_identifier: st
         repository_id: ID of the repository which we will update against
         target_data: A list of dictionaries containing the information required to tell OME what nodes
                      (servers/chassis) to update and the specific devices on those nodes
+        stage_update: A boolean indicating whether you would like to stage the updates or deploy them now
 
-    Returns: A dictonary representing the firmware upadte payload
+    Returns: A dictionary representing the firmware update payload
 
     """
+
+    if stage_update:
+        stage_update_string = "true"
+    else:
+        stage_update_string = "false"
+
     return {
         "JobName": "Update Firmware-Test:" + baseline_identifier,
         "JobDescription": "Firmware Update Job",
@@ -779,14 +790,14 @@ def create_payload_for_firmware_update(job_type_id: int, baseline_identifier: st
             "Value": "true"
         }, {
             "Key": "stagingValue",
-            "Value": "false"
+            "Value": stage_update_string
         }],
         "Targets": target_data
     }
 
 
 def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository_id: int, catalog_identifier: int,
-                    baseline_identifier: int, target_data: list) -> bool:
+                    baseline_identifier: int, target_data: list, stage_update: bool) -> bool:
     """
     Executes the firmware update job
 
@@ -798,6 +809,7 @@ def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository
         baseline_identifier: ID of the baseline which we will update against
         target_data: A list of dictionaries containing the information required to tell OME what nodes
                      (servers/chassis) to update and the specific devices on those nodes
+        stage_update: A boolean indicating whether you would like to stage the updates or deploy them now
 
     Returns: A boolean - true if the job completed successfully or false otherwise
 
@@ -811,7 +823,8 @@ def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository
         return False
 
     payload = create_payload_for_firmware_update(update_task['Id'], str(baseline_identifier),
-                                                 str(catalog_identifier), str(repository_id), target_data)
+                                                 str(catalog_identifier), str(repository_id), target_data,
+                                                 stage_update)
     url = 'https://{0}/api/JobService/Jobs'.format(ome_ip_address)
     update_data = post_data(url, authenticated_headers, payload,
                             "There was a problem submitting the firmware update job!")
@@ -924,7 +937,7 @@ if __name__ == '__main__':
     parser.add_argument("--ip", required=True, help="OME Appliance IP")
     parser.add_argument("--user", required=False, help="Username for OME Appliance", default="admin")
     parser.add_argument("--password", required=False, help="Password for OME Appliance")
-    parser.add_argument("--updateactions", required=False, nargs="*",
+    parser.add_argument("--updateactions", required=False,
                         help="Desired action to take. Can be upgrade, downgrade, or flash-all.",
                         choices=['upgrade', 'downgrade', 'flash-all'], default='upgrade')
     parser.add_argument("--groupname", "-g", help="The name of a group whose devices should be updated")
@@ -956,6 +969,8 @@ if __name__ == '__main__':
     parser.add_argument("--refresh-retry-length", type=int, required=False, default=60,
                         help="How long you want to wait between attempts to check if a catalog refresh "
                              "completed successfully. Defaults to 60 seconds. This is typically longer than necessary.")
+    parser.add_argument("--stage-update", required=False, default=False, action='store_true',
+                        help="Stage the update for next restart instead of applying it immediately.")
     args = parser.parse_args()
     if args.repotype == 'CIFS':
         if args.reposourceip is None or args.catalogpath is None or args.repouser is None:
@@ -988,12 +1003,10 @@ if __name__ == '__main__':
         password = args.password
 
     update_actions = set()
-    for action in args.updateactions:
-        if action == "flash-all":
-            update_actions.add('UPGRADE')
-            update_actions.add('DOWNGRADE')
-            break
-        update_actions.add(action.upper())
+    if args.updateactions == "flash-all":
+        update_actions.add('UPGRADE')
+        update_actions.add('DOWNGRADE')
+    update_actions.add(args.updateactions.upper())
 
     if args.refresh and not args.catalog_name:
         print("WARNING: You provided the refresh switch. This can only be used with the catalog-name argument.")
@@ -1119,6 +1132,7 @@ if __name__ == '__main__':
                                                          desired_action=update_actions)
 
         if compliance_list:
+
             target_payload = create_firmware_update_payload(device_information, compliance_list)
 
             print("Initiating the firmware update...")
@@ -1127,7 +1141,8 @@ if __name__ == '__main__':
                                    repository_id=repo_id,
                                    catalog_identifier=catalog_id,
                                    baseline_identifier=baseline_id,
-                                   target_data=target_payload):
+                                   target_data=target_payload,
+                                   stage_update=args.stage_update):
                 print("Error: The firmware update job did not complete successfully! See above for details.")
                 sys.exit(0)
 
