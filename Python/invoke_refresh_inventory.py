@@ -612,6 +612,13 @@ if __name__ == '__main__':
         if not headers:
             sys.exit(0)
 
+        if not args.skip_config_inventory and (args.device_ids or args.service_tags or args.idrac_ips or
+                                               args.device_names):
+            print("The arguments device-ids, service-tags, idrac-ips, and device-names can only be used when you use "
+                  "the skip-config-inventory argument. Otherwise you must use the groupname argument to control device "
+                  "targets.")
+            sys.exit(0)
+
         if args.device_ids:
             device_ids_arg = args.device_ids.split(',')
         else:
