@@ -38,8 +38,8 @@ alerts from the OME instance. The below filters are available:
 - Subcategory ID - Filter by a specific subcategory. The list is long - see the --get-subcategories option for details
 - Subcategory name - Same as above except the name of the category instead of the ID
 - Message - Filter by the message generated with the alert
-- TimeStampBegin - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
-- TimeStampEnd - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
+- TimeStampBegin - Filter by starting time of alerts with format YYYY-MM-DD HH:MM:SS.SS
+- TimeStampEnd - Filter by ending time of alerts with format YYYY-MM-DD HH:MM:SS.SS
 - Device name - Filter by a specific device name
 - Group name - Filter alerts by a group name
 - Group description - Filter alerts by a group description
@@ -51,6 +51,7 @@ Authentication is done over x-auth with basic authentication. Note: Credentials 
 python get_alerts --ip 192.168.1.93 --password somepass --top 1 --skip 5
 python get_alerts --ip 192.168.1.93 --password somepass --alerts-by-group-name "Test" --severity-type CRITICAL --top 5
 python get_alerts --ip 192.168.1.93 --password somepass --orderby Message --category-name AUDIT --alert-device-type STORAGE
+python get_alerts --ip 192.168.1.85 --user admin --password somepass --top 10 --time-stamp-begin "2015-09-07 19:01:28.46"
 ```
 """
 
@@ -232,11 +233,11 @@ if __name__ == '__main__':
                              "program with the --get-subcategories option.")
     parser.add_argument("--message", required=False, help="Filter by message.")
     parser.add_argument("--time-stamp-begin", required=False,
-                        help="Filter by starting time of alerts. This is not currently implemented. See: "
-                             "https://github.com/dell/OpenManage-Enterprise/issues/101")
+                        help="Filter by starting time of alerts. Use format YYYY-MM-DD HH:MM:SS.SS. "
+                             "Ex: 2021-09-07 19:01:28.46. You must surround it with quotes \"")
     parser.add_argument("--time-stamp-end", required=False,
-                        help="Filter by ending time of alerts. This is not currently implemented. See: "
-                             "https://github.com/dell/OpenManage-Enterprise/issues/101")
+                        help="Filter by ending time of alerts. Use format YYYY-MM-DD HH:MM:SS.SS. "
+                             "Ex: 2021-09-07 19:01:28.46. You must surround it with quotes \".")
     parser.add_argument("--alert-device-name", required=False, help="Filter by the OME device name.")
     parser.add_argument("--alerts-by-group-name", required=False,
                         help="The name of the group on which you want to filter.")
@@ -317,14 +318,10 @@ if __name__ == '__main__':
             odata_filter.append("Message eq '%s'" % args.message)
 
         if args.time_stamp_begin:
-            # TODO https://github.com/dell/OpenManage-Enterprise/issues/101
-            parser.error("Error: time-stamp-start is not currently implemented. See "
-                         "https://github.com/dell/OpenManage-Enterprise/issues/101")
+            odata_filter.append("TimeStamp ge '%s'" % args.time_stamp_begin)
 
         if args.time_stamp_end:
-            # TODO https://github.com/dell/OpenManage-Enterprise/issues/101
-            parser.error("Error: time-stamp-end is not currently implemented. See "
-                         "https://github.com/dell/OpenManage-Enterprise/issues/101")
+            odata_filter.append("TimeStamp le '%s'" % args.time_stamp_end)
 
         group_url = "https://%s/api/GroupService/Groups" % args.ip
         groups = None

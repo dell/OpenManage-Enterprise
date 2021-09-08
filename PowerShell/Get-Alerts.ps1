@@ -109,12 +109,12 @@ limitations under the License.
     Filter by message.
 
   .PARAMETER TimeStampBegin
-    Filter by starting time of alerts. This is not currently implemented. 
-    See: https://github.com/dell/OpenManage-Enterprise/issues/101
+    Filter by starting time of alerts. Use format YYYY-MM-DD HH:MM:SS.SS. Ex: 2021-09-07 19:01:28.46
+    You must surround it with quotes '
 
   .PARAMETER TimeStampEnd
-    Filter by ending time of alerts. This is not currently implemented. 
-    See: https://github.com/dell/OpenManage-Enterprise/issues/101
+    Filter by ending time of alerts. Use format YYYY-MM-DD HH:MM:SS.SS. Ex: 2021-09-07 19:01:28.46
+    You must surround it with quotes '
 
   .PARAMETER AlertDeviceName
     Filter by the OME device name.
@@ -129,6 +129,7 @@ limitations under the License.
     $creds = Get-Credential
     Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -CategoryName SYSTEM_HEALTH -Top 10
     Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -Top 5 -Skip 3 -Orderby TimeStampAscending -StatusType CRITICAL
+    Get-Alerts.ps1 -IpAddress 192.168.1.85 -Credentials $creds -TimeStampEnd '2021-09-07 19:01:28.46' -TimeStampBegin '2015-09-07 19:01:28.46' -CategoryName SYSTEM_HEALTH -Top 10
 #>
 
 [CmdletBinding()]
@@ -199,7 +200,7 @@ param(
     [string] $TimeStampEnd,
 
     [Parameter(Mandatory = $false)]
-    [string] $AlertByDeviceName,
+    [string] $AlertDeviceName,
 
     [Parameter(Mandatory = $false)]
     [string] $AlertsByGroupName,
@@ -420,15 +421,11 @@ try {
     }
 
     if ($PSBoundParameters.ContainsKey('TimeStampBegin')) {
-        # TODO https://github.com/dell/OpenManage-Enterprise/issues/101
-        Write-Error "Error: time-stamp-start is not currently implemented. See "
-        "https://github.com/dell/OpenManage-Enterprise/issues/101"
+        $UserOdataFilter += "TimeStamp ge '$($TimeStampBegin)'"
     }
 
     if ($PSBoundParameters.ContainsKey('TimeStampEnd')) {
-        # TODO https://github.com/dell/OpenManage-Enterprise/issues/101
-        Write-Error "Error: time-stamp-end is not currently implemented. See "
-        "https://github.com/dell/OpenManage-Enterprise/issues/101"
+        $UserOdataFilter += "TimeStamp le '$($TimeStampEnd)'"
     }
 
 
@@ -540,5 +537,7 @@ try {
     }
 }
 catch {
-    Write-Error "Exception occured at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
+    Write-Error "Exception occurred at line $($_.InvocationInfo.ScriptLineNumber) - $($_.Exception.Message)"
 }
+
+# https://192.168.1.85/api/AlertService/Alerts?$filter=TimeStamp%20ge%20%272021-09-07%2019:01:22.483%27 - working

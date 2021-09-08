@@ -891,6 +891,7 @@ Authentication is done over x-auth with basic authentication. Note: Credentials 
 python get_alerts --ip 192.168.1.93 --password somepass --top 1 --skip 5
 python get_alerts --ip 192.168.1.93 --password somepass --alerts-by-group-name "Test" --severity-type CRITICAL --top 5
 python get_alerts --ip 192.168.1.93 --password somepass --orderby Message --category-name AUDIT --alert-device-type STORAGE
+python get_alerts --ip 192.168.1.85 --user admin --password somepass --top 10 --time-stamp-begin "2015-09-07 19:01:28.46"
 ```
 
 
@@ -900,6 +901,8 @@ PS C:\>$creds = Get-Credential
     Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -CategoryName SYSTEM_HEALTH -Top 10
     Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -Top 5 -Skip 3 -Orderby TimeStampAscending -StatusType 
     CRITICAL
+    Get-Alerts.ps1 -IpAddress 192.168.1.85 -Credentials $creds -TimeStampEnd '2021-09-07 19:01:28.46' -TimeStampBegin 
+    '2015-09-07 19:01:28.46' -CategoryName SYSTEM_HEALTH -Top 10
 
 ```
 
