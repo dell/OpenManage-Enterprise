@@ -950,8 +950,8 @@ if __name__ == '__main__':
                                                 "cause the script to create a new catalog and associate it with a "
                                                 "baseline.",
                              choices=['DELL_ONLINE', 'NFS', 'CIFS'], type=str)
-    mutex_group.add_argument("--catalog-name", help="The name of an existing catalog that you would like to use. If "
-                             "you want to use Dell's online catalog set this to \"Dell_Online\"", type=str)
+    mutex_group.add_argument("--catalog-name", help="The name of an existing catalog that you would like to use.",
+                             type=str)
     parser.add_argument("--reposourceip", required=False, type=str,
                         help="The IP address or hostname of the repository.")
     parser.add_argument("--catalogpath", required=False, type=str,
