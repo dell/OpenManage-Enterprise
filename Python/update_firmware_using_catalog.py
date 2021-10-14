@@ -467,7 +467,7 @@ def get_device_details(ome_ip_address: str, authenticated_headers: dict, device_
         authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
         device_ids: A list of all the target device IDs
 
-    Returns: Either a dictionary of dictionariesin the form device_id: {'Type': <TYPE>, 'DeviceName': <NAME>} or an
+    Returns: Either a dictionary of dictionaries in the form device_id: {'Type': <TYPE>, 'DeviceName': <NAME>} or an
              empty dictionary if the function encounters a problem
 
     """
@@ -950,8 +950,8 @@ if __name__ == '__main__':
                                                 "cause the script to create a new catalog and associate it with a "
                                                 "baseline.",
                              choices=['DELL_ONLINE', 'NFS', 'CIFS'], type=str)
-    mutex_group.add_argument("--catalog-name", help="The name of an existing catalog that you would like to use.",
-                             type=str)
+    mutex_group.add_argument("--catalog-name", help="The name of an existing catalog that you would like to use. If "
+                             "you want to use Dell's online catalog set this to \"Dell_Online\"", type=str)
     parser.add_argument("--reposourceip", required=False, type=str,
                         help="The IP address or hostname of the repository.")
     parser.add_argument("--catalogpath", required=False, type=str,
