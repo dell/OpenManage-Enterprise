@@ -473,13 +473,53 @@ def get_device_details(ome_ip_address: str, authenticated_headers: dict, device_
     """
     query_string = ""
     device_details = {device_id: {'Id': None, 'Name': None} for device_id in device_ids}
-    for device_id in device_ids:
-        query_string = query_string + "{}".format(device_id) + ','
-    query_string = query_string[0:-1]
 
-    device_url = 'https://%s/api/DeviceService/Devices?Id=%s' % (ome_ip_address, query_string)
-    print("Retrieving information for all devices...")
-    device_info = get_data(authenticated_headers, device_url)
+    if len(device_ids) < 49:
+        for device_id in device_ids:
+            query_string = query_string + "{}".format(device_id) + ','
+        query_string = query_string[0:-1]
+
+        device_url = 'https://%s/api/DeviceService/Devices?Id=%s' % (ome_ip_address, query_string)
+        print("Retrieving information for all devices...")
+        device_info = get_data(authenticated_headers, device_url)
+
+    # This must exist because of https://github.com/dell/OpenManage-Enterprise/issues/228. Because OME is not currently
+    # handling URLs correctly, we have to manually account for this. We do this by avoiding the nextLink url altogether.
+    # We instead form a list of query strings each we know will only return results in sets of 50.
+    else:
+        query_strings = []
+        lower_bound = 0
+
+        # Create query strings in sets of 50
+        for count in range(50, len(device_ids), 50):
+            query_string = ""
+
+            for device_id in device_ids[lower_bound*50: count]:
+                query_string = query_string + "{}".format(device_id) + ','
+            query_strings.append(query_string[0:-1])
+
+            lower_bound = lower_bound + 1
+
+        # Capture the remainder of the devices. Ex if you have 160 devices the above loop would capture the first 150
+        # and this will capture the last 10
+        query_string = ""
+        for device_id in device_ids[lower_bound*50:]:
+            query_string = query_string + "{}".format(device_id) + ','
+
+        query_strings.append(query_string[0:-1])
+
+        print("Retrieving information for all devices...")
+        device_info = []
+        for query_string in query_strings:
+            device_url = 'https://%s/api/DeviceService/Devices?Id=%s' % (ome_ip_address, query_string)
+            device_info.append(get_data(authenticated_headers, device_url))
+
+        temp_list = []
+        for dict_list in device_info:
+            for dictionary in dict_list:
+                temp_list.append(dictionary)
+
+        device_info = temp_list
 
     if len(device_info) < 1:
         print("There was a problem retrieving the device type names. Quitting.")
@@ -797,7 +837,8 @@ def create_payload_for_firmware_update(job_type_id: int, baseline_identifier: st
 
 
 def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository_id: int, catalog_identifier: int,
-                    baseline_identifier: int, target_data: list, stage_update: bool) -> bool:
+                    baseline_identifier: int, target_data: list, stage_update: bool, max_retries: int = 20,
+                    sleep_interval: int = 30) -> bool:
     """
     Executes the firmware update job
 
@@ -810,6 +851,11 @@ def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository
         target_data: A list of dictionaries containing the information required to tell OME what nodes
                      (servers/chassis) to update and the specific devices on those nodes
         stage_update: A boolean indicating whether you would like to stage the updates or deploy them now
+        max_retries: Controls the maximum number of times that the script will poll OME to check if the firmware update
+                     job has finished.
+        sleep_interval: Controls the length of time between each poll of OME. For example: if max_retries is set to 20
+                        and this is set to 5 then the script would poll OME 20 times with 5 seconds between each poll
+                        before timing out.
 
     Returns: A boolean - true if the job completed successfully or false otherwise
 
@@ -831,7 +877,8 @@ def firmware_update(ome_ip_address: str, authenticated_headers: dict, repository
     if not update_data:
         return False
 
-    return track_job_to_completion(ome_ip_address, authenticated_headers, update_data["Id"])
+    return track_job_to_completion(ome_ip_address, authenticated_headers, update_data["Id"], max_retries=max_retries,
+                                   sleep_interval=sleep_interval)
 
 
 def refresh_compliance_data(ome_ip_address: str, authenticated_headers: dict, baseline_job_id: int) -> bool:
@@ -971,6 +1018,15 @@ if __name__ == '__main__':
                              "completed successfully. Defaults to 60 seconds. This is typically longer than necessary.")
     parser.add_argument("--stage-update", required=False, default=False, action='store_true',
                         help="Stage the update for next restart instead of applying it immediately.")
+    parser.add_argument("--maximum-retries", required=False, type=int, help="Controls the maximum number of times that"
+                        " the script will poll OME to check if the firmware update job has finished.", default=None)
+    parser.add_argument("--sleep-interval", required=False, type=int, help="Controls the length of time between each"
+                        " poll of OME. For example: if maximum-retries is set to 20 and this is set to 5 then the "
+                        "script would poll OME 20 times with 5 seconds between each poll before timing out.",
+                        default=None)
+
+
+
     args = parser.parse_args()
     if args.repotype == 'CIFS':
         if args.reposourceip is None or args.catalogpath is None or args.repouser is None:
@@ -1013,8 +1069,13 @@ if __name__ == '__main__':
 
     if (args.reposourceip or args.catalogpath or args.repouser or args.repodomain or args.repopassword) \
             and not args.repotype:
-        print("WARNING: - The arguments reposourceip, catalogpath, repouser, repodomain, and repopassword can only "
-              "be used with repotype. We are ignoring these arguments!")
+        print("Error: - The arguments reposourceip, catalogpath, repouser, repodomain, and repopassword can only "
+              "be used with repotype. The reason for this is that these arguments are for telling OME to create a new"
+              " catalog from some target repository. If you provided a catalog name, then the catalog has already"
+              " been created and there is no reason to do that. Running this command without have a good idea of what"
+              " it does is dangerous. Review the arguments provided and make sure they align with what you intend "
+              "to do.")
+        exit(0)
 
     try:
         pool = urllib3.HTTPSConnectionPool(ip_address, port=443,
@@ -1142,7 +1203,9 @@ if __name__ == '__main__':
                                    catalog_identifier=catalog_id,
                                    baseline_identifier=baseline_id,
                                    target_data=target_payload,
-                                   stage_update=args.stage_update):
+                                   stage_update=args.stage_update,
+                                   max_retries=args.maximum_retries,
+                                   sleep_interval=args.sleep_interval):
                 print("Error: The firmware update job did not complete successfully! See above for details.")
                 sys.exit(0)
 
