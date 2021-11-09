@@ -802,7 +802,7 @@ def create_payload_for_firmware_update(job_type_id: int, baseline_identifier: st
         stage_update_string = "false"
 
     return {
-        "JobName": "Update Firmware-Test:" + baseline_identifier,
+        "JobName": "Update Firmware:" + baseline_identifier,
         "JobDescription": "Firmware Update Job",
         "Schedule": "startNow",
         "State": "Enabled",
@@ -1019,13 +1019,11 @@ if __name__ == '__main__':
     parser.add_argument("--stage-update", required=False, default=False, action='store_true',
                         help="Stage the update for next restart instead of applying it immediately.")
     parser.add_argument("--maximum-retries", required=False, type=int, help="Controls the maximum number of times that"
-                        " the script will poll OME to check if the firmware update job has finished.", default=None)
+                        " the script will poll OME to check if the firmware update job has finished.", default=20)
     parser.add_argument("--sleep-interval", required=False, type=int, help="Controls the length of time between each"
                         " poll of OME. For example: if maximum-retries is set to 20 and this is set to 5 then the "
                         "script would poll OME 20 times with 5 seconds between each poll before timing out.",
-                        default=None)
-
-
+                        default=30)
 
     args = parser.parse_args()
     if args.repotype == 'CIFS':
