@@ -3,6 +3,10 @@
 - [簡體中文 (Simplified Chinese)](docs/translations/README_zh.md)
 - [繁體中文 (Traditional Chinese)](docs/translations/README_zh_TW.md)
 
+## Maintenance Mode
+
+This repo is in a maintenance mode. It is still being watched and all code here is still functional but you may not see commits for long periods of time. We will still accept feature requests and bug reports via the issues. 
+
 ## OME/OME-M and Plugin API Samples / Cookbooks
 
 This repository hosts complete examples of how to use the OME/OME-M API. We designed these scripts to standalone but they are also meant to be used in the scripts of others.
