@@ -66,6 +66,8 @@ You can find a current copy of the OME API documentation [here](https://dl.dell.
 
 <li><a href="#get-firmware-baselines">Get Firmware Baselines</a></li>
 
+<li><a href="#get-group-by-device">Get Group By Device</a></li>
+
 <li><a href="#get-group-details">Get Group Details</a></li>
 
 <li><a href="#get-group-details-by-filter">Get Group Details By Filter</a></li>
@@ -168,8 +170,8 @@ Note: The credentials entered are not stored to disk.
 #### PowerShell Example
 ```
 PS C:\>$creds = Get-Credentials
-    .\Add-DeviceToStaticGroup.ps1' -IpAddress 192.168.1.93 -Credentials $creds -GroupName 'YourGroup' -IdracIps 
-    '192.168.1.45,192.168.1.63' -UseDiscoveryJobId 14094
+    .\Add-DeviceToStaticGroup.ps1' -IpAddress 192.168.1.93 -Credentials $creds -GroupName 'YourGroup' -IdracIps '192.16
+    8.1.45,192.168.1.63' -UseDiscoveryJobId 14094
 
 ```
 
@@ -360,8 +362,8 @@ or the job name pattern(Discovery_Essentials)
 #### PowerShell Example
 ```
 PS C:\>$cred = Get-Credential
-    .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" 
-    -DeviceUserName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
+    .\Edit-DiscoveryJob --IpAddress "10.xx.xx.xx" -Credentials $cred -JobNamePattern "Discovery_Essentials_IP" -DeviceU
+    serName "root" -DevicePassword "test12" -IpArray 10.xx.xx.xx,10.xx.xx.xx
 
 ```
 
@@ -410,13 +412,13 @@ where {Device_Type} can be server,chassis
 ```
 PS C:\>$creds = Get-Credential # Your OME credentials
     $servcreds = Get-Credential # Your OME credentials
-    .\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -ServerIps 192.168.1.63-192.168.1.65 
-    -ServerCredentials $servcreds -GroupName TestGroup -JobCheckSleepInterval 10 -ServerCsv Book1.csv,'IP address' 
-    -ChassisCsv Book1.csv,'ChassisIp' -ChassisCredentials $chassiscreds
+    .\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -ServerIps 192.168.1.63-192.168.1.65 -ServerCre
+    dentials $servcreds -GroupName TestGroup -JobCheckSleepInterval 10 -ServerCsv Book1.csv,'IP address' -ChassisCsv Bo
+    ok1.csv,'ChassisIp' -ChassisCredentials $chassiscreds
     
 
-    PS C:\>.\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -NetworkDeviceIps 
-    192.168.1.24,192.168.1.34 -SnmpCommunityString 'SomeString'
+    PS C:\>.\Invoke-DiscoverDevice -IpAddress 192.168.1.93 -Credentials $creds -NetworkDeviceIps 192.168.1.24,192.168.1
+    .34 -SnmpCommunityString 'SomeString'
 
 ```
 
@@ -605,12 +607,12 @@ Note that the credentials entered are not stored to disk.
 ```
 PS C:\>$cred = Get-Credential
     $newusercred = Get-Credential
-    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
-    ADMINISTRATOR
-    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
-    ADMINISTRATOR -NewUserDescription 'This is a description of the user'
-    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole 
-    ADMINISTRATOR -NewUserLocked
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMIN
+    ISTRATOR
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMIN
+    ISTRATOR -NewUserDescription 'This is a description of the user'
+    .\New-OMEntUser.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -NewUserCredentials $newusercred -NewUserRole ADMIN
+    ISTRATOR -NewUserLocked
 
 ```
 
@@ -703,8 +705,8 @@ For authentication X-Auth is used over Basic Authentication. Note that the crede
 #### PowerShell Example
 ```
 PS C:\>$cred = Get-Credential
-    .\Set-PowerState.ps1 -IpAddress 192.168.1.93 -Credentials $creds -IdracIps 192.168.1.63 -State POWER_ON -CsvFile 
-    test.csv
+    .\Set-PowerState.ps1 -IpAddress 192.168.1.93 -Credentials $creds -IdracIps 192.168.1.63 -State POWER_ON -CsvFile te
+    st.csv
 
 ```
 
@@ -774,8 +776,8 @@ Note that the credentials entered are not stored to disk.
 ```
 PS C:\>$cred = Get-Credential
     .\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -DeviceId 25234
-    .\Update-FirmwareUsingCatalog -IpAddress 192.168.1.93 -Credentials $creds -UpdateActions upgrade -RepoType 
-    DELL_ONLINE -IdracIps 192.168.1.45
+    .\Update-FirmwareUsingCatalog -IpAddress 192.168.1.93 -Credentials $creds -UpdateActions upgrade -RepoType DELL_ONL
+    INE -IdracIps 192.168.1.45
     
 
     PS C:\>.\Update-FirmwareUsingCatalog -IpAddress "10.xx.xx.xx" -Credentials $cred -GroupName Test
@@ -878,8 +880,8 @@ alerts from the OME instance. The below filters are available:
 - Subcategory ID - Filter by a specific subcategory. The list is long - see the --get-subcategories option for details
 - Subcategory name - Same as above except the name of the category instead of the ID
 - Message - Filter by the message generated with the alert
-- TimeStampBegin - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
-- TimeStampEnd - Not currently available. See https://github.com/dell/OpenManage-Enterprise/issues/101
+- TimeStampBegin - Filter by starting time of alerts with format YYYY-MM-DD HH:MM:SS.SS
+- TimeStampEnd - Filter by ending time of alerts with format YYYY-MM-DD HH:MM:SS.SS
 - Device name - Filter by a specific device name
 - Group name - Filter alerts by a group name
 - Group description - Filter alerts by a group description
@@ -899,10 +901,10 @@ python get_alerts --ip 192.168.1.85 --user admin --password somepass --top 10 --
 ```
 PS C:\>$creds = Get-Credential
     Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -CategoryName SYSTEM_HEALTH -Top 10
-    Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -Top 5 -Skip 3 -Orderby TimeStampAscending -StatusType 
-    CRITICAL
-    Get-Alerts.ps1 -IpAddress 192.168.1.85 -Credentials $creds -TimeStampEnd '2021-09-07 19:01:28.46' -TimeStampBegin 
-    '2015-09-07 19:01:28.46' -CategoryName SYSTEM_HEALTH -Top 10
+    Get-Alerts.ps1 -IpAddress 192.168.1.93 -Credentials $creds -Top 5 -Skip 3 -Orderby TimeStampAscending -StatusType C
+    RITICAL
+    Get-Alerts.ps1 -IpAddress 192.168.1.85 -Credentials $creds -TimeStampEnd '2021-09-07 19:01:28.46' -TimeStampBegin '
+    2015-09-07 19:01:28.46' -CategoryName SYSTEM_HEALTH -Top 10
 
 ```
 
@@ -1004,8 +1006,8 @@ PS C:\>$cred = Get-Credential
      where {InventoryType} can be cpus or memory or controllers or disks or os
     
 
-    PS C:\>.\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -InventoryType {InventoryType} -FilterBy SvcTag 
-    -DeviceInfo BZ0M630
+    PS C:\>.\Get-DeviceInventory.ps1 -IpAddress "10.xx.xx.xx" -InventoryType {InventoryType} -FilterBy SvcTag -DeviceIn
+    fo BZ0M630
     where {InventoryType} can be cpus or memory or controllers or disks or os
     In this instance you will be prompted for credentials to use to
     connect to the appliance
@@ -1075,6 +1077,39 @@ PS C:\>$cred = Get-Credential
     Get-FirmwareBaselines.ps1 -IpAddress "10.xx.xx.xx" -Credentials $cred -IdracIp 192.168.1.45
 
 ```
+
+
+---
+### Get Group By Device
+
+#### Available Scripts
+
+- [get_group_by_device.py](../Python/get_group_by_device.py)
+
+
+#### Synopsis
+Takes as input a device(s) and returns all groups to which that device belongs.
+
+#### Description
+This script uses the OME REST API to find all groups to which a device belongs. Note: The credentials entered are not
+ stored to disk. Multiple devices can be specified. It will produce output in the following format:
+
+```
+-----------------------------
+Device 192.168.1.120 belongs to groups:
+-----------------------------
+Group Name: All Devices        Group ID: 1031
+Group Name: Dell iDRAC Servers        Group ID: 1010
+Group Name: Servers        Group ID: 1009
+Group Name: Some group        Group ID: 14382
+Group Name: System Groups        Group ID: 500
+Group Name: fx2cmc        Group ID: 14377
+```
+
+#### Python Example
+    python get_group_by_device.py --ip 192.168.1.85 --user admin --password password --idrac-ip 192.168.1.120
+    python get_group_by_device.py --ip 192.168.1.85 --user admin --password password --service-tags AAAAA,BBBBB
+
 
 
 ---
@@ -1335,8 +1370,8 @@ For authentication X-Auth is used over Basic Authentication Note that the creden
 
 #### PowerShell Example
 ```
-PS C:\>.\Get-WarrantyInformation.ps1' -IpAddress 192.168.1.93 -credentials $creds -outfile test.csv 
-    -WarrantyKeyword silver
+PS C:\>.\Get-WarrantyInformation.ps1' -IpAddress 192.168.1.93 -credentials $creds -outfile test.csv -WarrantyKeywor
+    d silver
 
 ```
 
@@ -1672,10 +1707,10 @@ PS C:\>$creds = Get-Credential # Your OME credentials
     $servcreds = Get-Credential # Your OME credentials
     .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -GenerateJson test.json
     .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -AddGroup test.json
-    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -AddDevices 'Test Group 2' 
-    -ServiceTag CEAOEU
-    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -RemoveDevices 'Test Group 2' 
-    -ServiceTag CEAOEU
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -AddDevices 'Test Group 2' -Serv
+    iceTag CEAOEU
+    .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -RemoveDevices 'Test Group 2' -S
+    erviceTag CEAOEU
     .\Invoke-ManageSupportAssistGroups.ps1 -IpAddress 192.168.1.93 -Credentials $creds -RemoveGroup 'Test Group 2'
 
 ```

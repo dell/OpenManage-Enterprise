@@ -69,6 +69,8 @@ monitor:
   get_firmware_baselines:
     - get_firmware_baselines.py
     - Get-FirmwareBaselines.ps1
+  get_group_by_device:
+    - get_group_by_device.py
   get_group_details:
     - get_group_details.py
     - Get-GroupDetails.ps1
