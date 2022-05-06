@@ -281,6 +281,7 @@ def discover_device(ome_ip_address,
         device_discover_password: Password for the targeted device(s)
         list_of_device_ips: A list of IP addresses you want to discover
         device_type: The type of device to be discovered
+        discover_type: Protocol used for discovery
 
     Returns: Returns a response object containing the details of the discovery job from the server
 
