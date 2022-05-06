@@ -269,7 +269,8 @@ def discover_device(ome_ip_address,
                     device_discover_username,
                     device_discover_password,
                     list_of_device_ips,
-                    device_type) -> requests.models.Response:
+                    device_type,
+                    discover_type) -> requests.models.Response:
     """
     Discovers devices and adds them to the target OME instance
 
@@ -293,8 +294,13 @@ def discover_device(ome_ip_address,
                 {"NetworkAddressDetail": ip_adds})
     if device_type in ('server', 'chassis'):
         connection_profile = json.loads(discover_payload["DiscoveryConfigModels"][0]["ConnectionProfile"])
+        connection_profile['credentials'][0]['type'] = discover_type            
         connection_profile['credentials'][0]['credentials']['username'] = device_discover_username
         connection_profile['credentials'][0]['credentials']['password'] = device_discover_password
+        if discover_type == 'IPMI':
+            del connection_profile['credentials'][0]['credentials']['port']
+            connection_profile['credentials'][0]['credentials']['kgkey'] = None
+            connection_profile['credentials'][0]['credentials']['privilege'] = 2
         discover_payload["DiscoveryConfigModels"][0]["ConnectionProfile"] = json.dumps(connection_profile)
     pprint(discover_payload)
     url = 'https://%s/api/DiscoveryConfigService/DiscoveryConfigGroups' % ome_ip_address
@@ -442,6 +448,9 @@ if __name__ == '__main__':
     parser.add_argument("--deviceType", required=True,
                         choices=('server', 'chassis'),
                         help="Device Type  to discover devices")
+    parser.add_argument("--discoverType", required=False, default='WSMAN', type=str,
+                        choices=('WSMAN', 'REDFISH', 'IPMI'),
+                        help="Protocol used to discover devices")
     mutex_group = parser.add_mutually_exclusive_group(required=True)
     mutex_group.add_argument("--targetIpAddresses",
                              help="Array of Ip address to discover devices ")
@@ -465,6 +474,7 @@ if __name__ == '__main__':
 
     discover_user_name = args.targetUserName
     discover_password = args.targetPassword
+    discover_type = args.discoverType
 
     ip_array = args.targetIpAddresses
     csv_file_path = args.targetIpAddrCsvFile
@@ -516,7 +526,7 @@ if __name__ == '__main__':
 
         discovery_resp = discover_device(ip_address, headers,
                                          discover_user_name, discover_password,
-                                         list_of_ip, device_type)
+                                         list_of_ip, device_type, discover_type)
         if discovery_resp.status_code == 201:
             print("Discovering devices.....")
             time.sleep(30)
