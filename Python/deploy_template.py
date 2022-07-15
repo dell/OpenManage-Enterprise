@@ -245,6 +245,37 @@ def get_device_id(authenticated_headers: dict,
 
     return device_id
 
+def get_template_id(authenticated_headers: dict,
+                  ome_ip_address: str,
+                  template_name: str = None) -> int:
+    """
+    Resolves a template name to template ID
+
+    Args:
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
+        template_name: Name of template
+
+    Returns: Returns the template ID or -1 if it couldn't be found
+    """
+
+    if not template_name:
+        print("No argument provided to template_name")
+        return -1
+
+    # Resolve template name to ID
+    if template_name:
+        template_id = get_data(authenticated_headers, "https://%s/api/TemplateService/Templates" % ome_ip_address,
+                             "Name eq \'%s\'" % template_name)
+        if len(template_id) == 0:
+            print("Error: We were unable to find template name " + template_name + " on this OME server. Exiting.")
+            return -1
+
+        template_id = template_id[0]['Id']
+    else:
+        template_id = -1
+
+    return template_id
 
 def track_job_to_completion(ome_ip_address: str,
                             authenticated_headers: dict,
@@ -287,8 +318,7 @@ def track_job_to_completion(ome_ip_address: str,
     while loop_ctr < max_retries:
         loop_ctr += 1
         time.sleep(sleep_interval)
-        job_resp = get_data(authenticated_headers, job_url)
-        requests.get(job_url, headers=authenticated_headers, verify=False)
+        job_resp = requests.get(job_url, headers=authenticated_headers, verify=False)
 
         try:
             if job_resp.status_code == 200:
@@ -347,6 +377,8 @@ if __name__ == '__main__':
                         default="admin")
     parser.add_argument("-p", "--password", required=False,
                         help="Password for OME Appliance")
+    parser.add_argument("-t", "--template-name", required=False,
+                        help="Name of template to deploy")
     exclusive_group = parser.add_mutually_exclusive_group(required=False)
     exclusive_group.add_argument("--source-device-id", help="ID of the device to serve as source template")
     exclusive_group.add_argument("--source-service-tag", help="Service tag of the device to serve as source template")
@@ -473,57 +505,68 @@ if __name__ == '__main__':
             for device in group_devices:
                 target_ids.append(device['Id'])
 
-        ############################
-        # Get the template payload #
-        ############################
         template_id = None
         identity_pool_id = None
-        name = str(datetime.now())
+        if source_id != -1:
+            ############################
+            # Get the template payload #
+            ############################
+            name = str(datetime.now())
 
-        # TODO - Possible enhancement. Make it so we can also run against chassis and network devices
+            # TODO - Possible enhancement. Make it so we can also run against chassis and network devices
 
-        template_payload = {
-            "Name": name,
-            "Description": "Template",
-            "TypeId": 2,  # This is the template type for servers.
-            "ViewTypeId": 2,  # This viewtype corresponds to a deployment (as opposed to compliance/inventory)
-            "SourceDeviceId": source_id,
-            "Fqdds": args.component
-        }
+            template_payload = {
+                "Name": name,
+                "Description": "Template",
+                "TypeId": 2,  # This is the template type for servers.
+                "ViewTypeId": 2,  # This viewtype corresponds to a deployment (as opposed to compliance/inventory)
+                "SourceDeviceId": source_id,
+                "Fqdds": args.component
+            }
 
-        # This will create the template from the source IP and make it available to other devices
-        template_post_response = requests.post('https://%s/api/TemplateService/Templates' % args.ip, verify=False,
-                                               data=json.dumps(template_payload),
-                                               headers=headers)
-        #######################
-        # Create the template #
-        #######################
-        if template_post_response.status_code == 201:
-            template_id = template_post_response.json()
-        else:
-            print("Unable to create template... exiting")
-            sys.exit(0)
-
-        attempts = 0
-        while True:
-            template_test = get_data(headers, "https://%s/api/TemplateService/Templates(%s)" % (args.ip, template_id))
-            print("Checking to see if the template has been created... attempt " + str(attempts + 1))
-            if 'Status' in template_test:
-                # Status 2060 corresponds to completed. 2050 corresponds to running. Those are the only two statuses
-                # we should see here. 0 is what is returned for the brief moment while the template is being created
-                if template_test['Status'] == 2060:
-                    print("Template created successfully!")
-                    break
-                elif template_test['Status'] != 2050 and template_test['Status'] != 0:
-                    print("Error: There was a problem creating the template. See the OME job logs for details. "
-                          "Template's ID is " + str(template_id))
-                    sys.exit(0)
-            time.sleep(5)
-            if attempts > 30:
-                print("Error: There was a problem creating the template. See the OME job logs for details. "
-                      "Template's ID is " + str(template_id))
+            # This will create the template from the source IP and make it available to other devices
+            template_post_response = requests.post('https://%s/api/TemplateService/Templates' % args.ip, verify=False,
+                                                data=json.dumps(template_payload),
+                                                headers=headers)
+            #######################
+            # Create the template #
+            #######################
+            if template_post_response.status_code == 201:
+                template_id = template_post_response.json()
+            else:
+                print("Unable to create template... exiting")
                 sys.exit(0)
-            attempts = attempts + 1
+
+            attempts = 0
+            while True:
+                template_test = get_data(headers, "https://%s/api/TemplateService/Templates(%s)" % (args.ip, template_id))
+                print("Checking to see if the template has been created... attempt " + str(attempts + 1))
+                if 'Status' in template_test:
+                    # Status 2060 corresponds to completed. 2050 corresponds to running. Those are the only two statuses
+                    # we should see here. 0 is what is returned for the brief moment while the template is being created
+                    if template_test['Status'] == 2060:
+                        print("Template created successfully!")
+                        break
+                    elif template_test['Status'] != 2050 and template_test['Status'] != 0:
+                        print("Error: There was a problem creating the template. See the OME job logs for details. "
+                            "Template's ID is " + str(template_id))
+                        sys.exit(0)
+                time.sleep(5)
+                if attempts > 30:
+                    print("Error: There was a problem creating the template. See the OME job logs for details. "
+                        "Template's ID is " + str(template_id))
+                    sys.exit(0)
+                attempts = attempts + 1
+
+        if args.template_name:
+            #############################
+            # Get Template ID from Name #
+            #############################
+            template_id_result = get_template_id(headers, args.ip, template_name=args.template_name)
+            if template_id != -1:
+                template_id = template_id_result
+            else:
+                print("Could not resolve ID for: " + service_tag)
 
         # For an explanation of how this works see:
         # https://github.com/grantcurell/dell/tree/master/IO%20Identities%20with%20LifeCycle%20Controller
