@@ -29,7 +29,7 @@ Note that the credentials entered are not stored to disk.
 
 #### Example
     python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml
-    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name 格蘭特是最好的
+    python new_template.py --ip 192.168.1.93 --password password --template-file gelante.xml --template-name "Test Template
 """
 import argparse
 import json
