@@ -558,7 +558,7 @@ if __name__ == '__main__':
                     sys.exit(0)
                 attempts = attempts + 1
 
-        if args.template_name:
+        if args.template_name and source_id == -1:
             #############################
             # Get Template ID from Name #
             #############################
