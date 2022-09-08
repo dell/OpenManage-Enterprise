@@ -83,7 +83,7 @@ def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> d
                     "password, and IP?")
 
 
-def create_static_group(authenticated_headers: dict, ome_ip_address: str, group_name: str) -> int:
+def create_static_group(authenticated_headers: dict, ome_ip_address: str, group_name: str, parent_group_name: str) -> int:
     """
     Authenticate with OME and enumerate groups
 
@@ -95,7 +95,7 @@ def create_static_group(authenticated_headers: dict, ome_ip_address: str, group_
     Returns: Returns an integer containing the ID of the group or -1 if the group creation failed
     """
     try:
-        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq 'Static Groups'" % ome_ip_address
+        group_url = "https://%s/api/GroupService/Groups?$filter=Name eq '%s'" % (ome_ip_address, parent_group_name)
 
         response = requests.get(group_url, headers=authenticated_headers, verify=False)
         if response.status_code == 200:
@@ -138,6 +138,8 @@ if __name__ == '__main__':
                         help="Password for OME Appliance")
     parser.add_argument("--groupname", "-g", required=True,
                         help="A valid name for the group")
+    parser.add_argument("--parent-group-name", required=False,
+                        help="Parent group name to create the group under", default="Static Groups")
     args = parser.parse_args()
 
     if not args.password:
@@ -158,7 +160,7 @@ if __name__ == '__main__':
         if not headers:
             sys.exit(0)
 
-        create_static_group(headers, args.ip, args.groupname)
+        create_static_group(headers, args.ip, args.groupname, args.parent_group_name)
 
     except Exception as error:
         print("Unexpected error:", str(error))
