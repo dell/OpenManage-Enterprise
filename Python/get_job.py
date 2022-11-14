@@ -40,56 +40,85 @@ import csv
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
-import requests
-import urllib3
+try:
+    import urllib3
+    import requests
+except ModuleNotFoundError:
+    print("This program requires urllib3, requests. To install them on most systems run "
+          "`pip install requests urllib3`")
+    sys.exit(0)
 
+def authenticate(ome_ip_address: str, ome_username: str, ome_password: str) -> dict:
+    """
+    Authenticates with OME and creates a session
 
-def get_job_list(ome_ip_address, user_name, ome_password):
+    Args:
+        ome_ip_address: IP address of the OME server
+        ome_username:  Username for OME
+        ome_password: OME password
+
+    Returns: A dictionary of HTTP headers
+
+    Raises:
+        Exception: A generic exception in the event of a failure to connect
+    """
+
+    authenticated_headers = {'content-type': 'application/json'}
+    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
+    user_details = {'UserName': ome_username,
+                    'Password': ome_password,
+                    'SessionType': 'API'}
+    try:
+        session_info = requests.post(session_url, verify=False,
+                                        data=json.dumps(user_details),
+                                        headers=authenticated_headers)
+    except requests.exceptions.ConnectionError:
+        print("Failed to connect to OME. This typically indicates a network connectivity problem. Can you ping OME?")
+        sys.exit(0)
+
+    if session_info.status_code == 201:
+        authenticated_headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        return authenticated_headers
+    
+    print("There was a problem authenticating with OME. Are you sure you have the right username, password, "
+        "and IP?")
+    raise Exception("There was a problem authenticating with OME. Are you sure you have the right username, "
+                    "password, and IP?")
+
+def get_job_list(authenticated_headers: dict, ome_ip_address: str):
     """
     Get list of jobs
     
     Args:
-        ome_ip_address: OME IP or FQDN
-        user_name: Authentication username
-        ome_password: Authentication password
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
     
     Returns: None
     """
 
     """ Authenticate with OME and enumerate groups """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': user_name,
-                        'Password': ome_password,
-                        'SessionType': 'API'}
         group_data = None
         next_link_url = 'https://%s/api/JobService/Jobs' % ome_ip_address
 
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        while next_link_url is not None:
+            group_response = requests.get(next_link_url, headers=authenticated_headers, verify=False)
+            next_link_url = None
 
-            while next_link_url is not None:
-                group_response = requests.get(next_link_url, headers=headers, verify=False)
-                next_link_url = None
-
-                if group_response.status_code == 200:
-                    data = group_response.json()
-                    if data['@odata.count'] <= 0:
-                        print("No subgroups of static groups found on OME server: " + ome_ip_address)
-                        return 0
-                    if '@odata.nextLink' in data:
-                        next_link_url = ("https://%s" % ome_ip_address) + data['@odata.nextLink'] 
-                    if group_data is None:
-                        group_data = data["value"]
-                    else:
-                        group_data += data["value"]
+            if group_response.status_code == 200:
+                data = group_response.json()
+                if data['@odata.count'] <= 0:
+                    print("No subgroups of static groups found on OME server: " + ome_ip_address)
+                    return 0
+                if '@odata.nextLink' in data:
+                    next_link_url = ("https://%s" % ome_ip_address) + data['@odata.nextLink'] 
+                if group_data is None:
+                    group_data = data["value"]
                 else:
-                    print("Unable to retrieve group list from %s" % ome_ip_address)
-                    sys.exit(1)
+                    group_data += data["value"]
+            else:
+                print("Unable to retrieve group list from %s" % next_link_url)
+                sys.exit(1)
 
         pprint.pprint(group_data)
 
@@ -97,14 +126,13 @@ def get_job_list(ome_ip_address, user_name, ome_password):
         print("Encountered an error: " + str(error))
         sys.exit(1)
 
-def get_job(ome_ip_address, user_name, ome_password, job_id):
+def get_job(authenticated_headers: dict, ome_ip_address: str, job_id):
     """
     Get job by id
     
     Args:
-        ome_ip_address: OME IP or FQDN
-        user_name: Authentication username
-        ome_password: Authentication password
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
         job_id: Job ID
     
     Returns: None
@@ -112,27 +140,16 @@ def get_job(ome_ip_address, user_name, ome_password, job_id):
 
     """ Authenticate with OME and enumerate groups """
     try:
-        session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
-        headers = {'content-type': 'application/json'}
-        user_details = {'UserName': user_name,
-                        'Password': ome_password,
-                        'SessionType': 'API'}
-        group_data = None
+        data = None
         job_url = 'https://%s/api/JobService/Jobs(%s)' % (ome_ip_address, job_id)
 
-        session_info = requests.post(session_url, verify=False,
-                                     data=json.dumps(user_details),
-                                     headers=headers)
-        if session_info.status_code == 201:
-            headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+        group_response = requests.get(job_url, headers=authenticated_headers, verify=False)
 
-            group_response = requests.get(job_url, headers=headers, verify=False)
-
-            if group_response.status_code == 200:
-                data = group_response.json()
-            else:
-                print("Unable to retrieve job from %s" % ome_ip_address)
-                sys.exit(1)
+        if group_response.status_code == 200:
+            data = group_response.json()
+        else:
+            print("Unable to retrieve job from %s" % job_url)
+            sys.exit(1)
 
         pprint.pprint(data)
 
@@ -140,14 +157,13 @@ def get_job(ome_ip_address, user_name, ome_password, job_id):
         print("Encountered an error: " + str(error))
         sys.exit(1)
 
-def get_job_execution_history(ome_ip_address, user_name, ome_password, job_id, executionhistory_export):
+def get_job_execution_history(authenticated_headers: dict, ome_ip_address: str, job_id, executionhistory_export):
     """
     Get job execution history
     
     Args:
-        ome_ip_address: OME IP or FQDN
-        user_name: Authentication username
-        ome_password: Authentication password
+        authenticated_headers: A dictionary of HTTP headers generated from an authenticated session with OME
+        ome_ip_address: IP address of the OME server
         job_id: Job ID
         executionhistory_export: Export job execution history to csv
     
@@ -155,61 +171,49 @@ def get_job_execution_history(ome_ip_address, user_name, ome_password, job_id, e
     """
 
     """ Authenticate with OME and enumerate groups """
-    session_url = 'https://%s/api/SessionService/Sessions' % ome_ip_address
-    headers = {'content-type': 'application/json'}
-    user_details = {'UserName': user_name,
-                    'Password': ome_password,
-                    'SessionType': 'API'}
-    group_data = None
     job_url = 'https://%s/api/JobService/Jobs(%s)/ExecutionHistories' % (ome_ip_address, job_id)
 
-    session_info = requests.post(session_url, verify=False,
-                                    data=json.dumps(user_details),
-                                    headers=headers)
-    if session_info.status_code == 201:
-        headers['X-Auth-Token'] = session_info.headers['X-Auth-Token']
+    group_response = requests.get(job_url, headers=headers, verify=False)
 
-        group_response = requests.get(job_url, headers=headers, verify=False)
+    if group_response.status_code == 200:
+        data = group_response.json()
+        job_histories = data["value"]
+        header = ["JobName", "StartTime", "EndTime", "Progress", "ExecutedBy", "JobStatus", "ExecutionHistoryId", "ExecutionStartTime", "ExecutionEndTime", "ElapsedTime", "Key", "Value", "ExecutionJobStatus"]
+        data_export = []
+        for job_history in job_histories:
+            job_history_detail_url = job_history['ExecutionHistoryDetails@odata.navigationLink']
+            job_history_detail_url = ("https://%s" % ome_ip_address) + job_history_detail_url
+            job_history_detail_response = requests.get(job_history_detail_url, headers=authenticated_headers, verify=False)
+            if job_history_detail_response.status_code == 200:
+                job_history_detail_data = job_history_detail_response.json()
+                job_history_detail_data = job_history_detail_data["value"]
+                for item in job_history_detail_data:
+                    data_export.append([
+                        job_history["JobName"],
+                        job_history["StartTime"],
+                        job_history["EndTime"],
+                        job_history["ExecutedBy"],
+                        job_history["JobStatus"]["Name"],
+                        job_history["Id"],
+                        item["Progress"],
+                        item["StartTime"],
+                        item["EndTime"],
+                        item["ElapsedTime"],
+                        item["Key"],
+                        item["Value"],
+                        item["JobStatus"]["Name"]
+                    ])
 
-        if group_response.status_code == 200:
-            data = group_response.json()
-            job_histories = data["value"]
-            header = ["JobName", "StartTime", "EndTime", "Progress", "ExecutedBy", "JobStatus", "ExecutionHistoryId", "ExecutionStartTime", "ExecutionEndTime", "ElapsedTime", "Key", "Value", "ExecutionJobStatus"]
-            data_export = []
-            for job_history in job_histories:
-                job_history_detail_url = job_history['ExecutionHistoryDetails@odata.navigationLink']
-                job_history_detail_url = ("https://%s" % ome_ip_address) + job_history_detail_url
-                job_history_detail_response = requests.get(job_history_detail_url, headers=headers, verify=False)
-                if job_history_detail_response.status_code == 200:
-                    job_history_detail_data = job_history_detail_response.json()
-                    job_history_detail_data = job_history_detail_data["value"]
-                    for item in job_history_detail_data:
-                        data_export.append([
-                            job_history["JobName"],
-                            job_history["StartTime"],
-                            job_history["EndTime"],
-                            job_history["ExecutedBy"],
-                            job_history["JobStatus"]["Name"],
-                            job_history["Id"],
-                            item["Progress"],
-                            item["StartTime"],
-                            item["EndTime"],
-                            item["ElapsedTime"],
-                            item["Key"],
-                            item["Value"],
-                            item["JobStatus"]["Name"]
-                        ])
-
-            pprint.pprint(data_export)
-            with open('get_job_execution_history.csv', 'w') as f:
-                writer = csv.writer(f)
-                # write the header
-                writer.writerow(header)
-                # write multiple rows
-                writer.writerows(data_export)
-        else:
-            print("Unable to retrieve job from %s" % ome_ip_address)
-            sys.exit(1)
+        pprint.pprint(data_export)
+        with open('get_job_execution_history.csv', 'w') as f:
+            writer = csv.writer(f)
+            # write the header
+            writer.writerow(header)
+            # write multiple rows
+            writer.writerows(data_export)
+    else:
+        print("Unable to retrieve job from %s" % job_url)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
@@ -239,9 +243,14 @@ if __name__ == '__main__':
     else:
         password = args.password
 
+    headers = authenticate(args.ip, args.user, password)
+
+    if not headers:
+        sys.exit(0)
+
     if args.executionhistory_export:
-        get_job_execution_history(args.ip, args.user, password, args.job_id, args.executionhistory_export)
+        get_job_execution_history(headers, args.ip, args.job_id, args.executionhistory_export)
     elif args.job_id:
-        get_job(args.ip, args.user, password, args.job_id)
+        get_job(headers, args.ip, args.job_id)
     else:
-        get_job_list(args.ip, args.user, password)
+        get_job_list(headers, args.ip)
