@@ -149,10 +149,15 @@ class OMEReportExecutor(object):
                                            headers=headers,
                                            verify=False)
         if report_details_resp.status_code == 200:
-            report_details_info = report_details_resp.json()
-            column_info_arr = report_details_info['ColumnNames']
-
-            column_names = [x['Name'] for x in column_info_arr]
+            # get the column names 
+            report_results_url = self.base_url + 'ReportService/ReportDefs(%s)/ReportResults' % self.report_id
+            report_results_resp = requests.get(report_results_url,
+                                           headers=headers,
+                                           verify=False)
+            column_names = [] 
+            if report_results_resp.status_code == 200:
+                for col_data in report_results_resp.json()['ResultRowColumns']:
+                    column_names.append(col_data['Name'])
             if self.output_file is None:
                 print(",".join(column_names))
             result_url = report_details_url + "/ReportResults/ResultRows"
