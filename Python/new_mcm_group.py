@@ -143,6 +143,7 @@ def create_mcm_group(session_manager, group_name):
     return job_id
 
 
+# Modified this section to return members
 def get_domains(session_manager):
     members = []
     session = session_manager.get_session()
@@ -153,10 +154,10 @@ def get_domains(session_manager):
         member_devices = response.get('value')
         member_devices = list(filter(lambda x: x.get(
             'DomainRoleTypeValue') == 'MEMBER', member_devices))
+        members = member_devices
     else:
         print('Failed to get domains and status code returned is %s', response.status_code)
     return members
-
 
 def get_discovered_domains(session_manager, role=None):
     discovered_domains = []
