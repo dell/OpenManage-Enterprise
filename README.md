@@ -13,6 +13,12 @@ This repository hosts complete examples of how to use the OME/OME-M API. We desi
 
 Scripts are subdivided into Python and PowerShell. We do our best to maintain functional equivalance between the two, but sometimes they differ. These differences are typically noted in [the docs](docs/API.md).
 
+## OME Integration with Kafka
+
+This repository shows examples of how to visualize the OME [metrics](Kafka/Metrics/kafka-metrics.md) and [alerts](Kafka/Alerts/kafka-alerts.md) sent to a Kafka broker in a Grafana dashboard. It uses open source components like vector and victoriametrics/victorialogs to format the data received by Kafka and shows in Grafana dsahboard.
+
+Note: This solution is to be used as a reference/example. It is by no means a comprehensive collection of visualizations which can be shown in Grafana.
+
 ## Complete List of All Scripts
 
 See [the docs](docs/API.md). Scripts are listed by their functional type in the case of OME or by plugin if they belong to a plugin.

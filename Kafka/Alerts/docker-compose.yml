@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  grafana:
+    depends_on:
+    - victorialogs
+    image: grafana/grafana:latest
+    ports:
+    - 3000:3000
+    volumes:
+    - grafana-storage:/var/lib/grafana
+
+  kafka:
+    container_name: kafka
+    environment:
+    - KAFKA_CFG_NODE_ID=1
+    - KAFKA_CFG_PROCESS_ROLES=controller,broker
+    - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+    - KAFKA_CFG_LISTENERS=PLAINTEXT_INTERNAL://:9092,PLAINTEXT_EXTERNAL://:29092,CONTROLLER://:9093
+    - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT_INTERNAL://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+    - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+    - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT_INTERNAL
+    - ALLOW_PLAINTEXT_LISTENER=yes
+    image: bitnami/kafka:latest
+    ports:
+    - 9092:9092
+    - 29092:29092
+
+  vector:
+    command:
+    - --config
+    - /etc/vector/vector.yaml
+    container_name: vector
+    depends_on:
+    - kafka
+    image: timberio/vector:0.41.0-debian
+    ports:
+    - 8686:8686
+    volumes:
+    - ./vector/vector.yaml:/etc/vector/vector.yaml
+
+  
+  victorialogs:
+    image: victoriametrics/victoria-logs
+    container_name: victorialogs
+    ports:
+      - "9428:9428"
+    command:
+      - -storageDataPath=/vlogs
+
+volumes:
+  grafana-storage: null

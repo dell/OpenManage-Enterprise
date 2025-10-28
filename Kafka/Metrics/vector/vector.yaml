@@ -1,0 +1,74 @@
+data_dir: /var/lib/vector
+
+sources:
+  kafka_in:
+    type: kafka
+    bootstrap_servers: "kafka:9092"
+    topics: ["telemetry"]
+    group_id: "vector-group"
+    decoding:
+      codec: json
+
+transforms:
+  # 1. Flatten nested System/Metric arrays into a single array 'metrics'
+  remap_metrics:
+    type: remap
+    inputs: ["kafka_in"]
+    source: |
+      all_metrics = []
+      SystemArr = array!(.System)
+
+      for_each(SystemArr) -> |_index, system| {
+        for_each(array!(system.Metric)) -> |_index1, metric| {
+          id_replaced = replace!(metric.MetricId, ".", "_")
+          parts = split(id_replaced, "_")
+          part_count = length(parts)
+          # slice from index 1 up to part_count - 2
+          sliced, err = slice(parts, 1, (part_count - 2))
+          metric_name, err = join(sliced, "_")
+          componentId = componentId = if exists(metric.ComponentId) && metric.ComponentId != null {
+                  metric.ComponentId
+              } else {
+                  "System"
+              }
+          parsed_metric, err = [{
+            "MetricName": metric_name,
+            "MetricValue": to_float(metric.MetricValue[0]),
+            "ComponentId": componentId,
+            "TimeStamp": metric.TimeStamp[0],
+            "Identifier": system.Identifier,
+            "Type": parts[0]
+          }]
+
+          all_metrics = append(all_metrics, parsed_metric)
+        }
+      }
+
+      . = all_metrics
+
+  # 2. Convert flattened events into Prometheus metrics
+  to_metrics:
+    type: log_to_metric
+    inputs: ["remap_metrics"]
+    metrics:
+      - type: gauge
+        name: "{{ MetricName }}"
+        field: MetricValue
+        description: "Telemetry metric from Kafka"
+        tags:
+          component: "{{ ComponentId }}"
+          identifier: "{{ Identifier }}"
+          type: "{{ Type }}"
+          timestamp: "{{ TimeStamp }}"
+
+sinks:
+  victoriametrics:
+    type: prometheus_remote_write
+    inputs: ["to_metrics"]
+    endpoint: "http://victoriametrics:8428/api/v1/write"
+
+  console:
+    type: console
+    inputs: ["to_metrics"]
+    encoding:
+      codec: json

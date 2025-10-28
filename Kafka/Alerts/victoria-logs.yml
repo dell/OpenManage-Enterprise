@@ -1,0 +1,8 @@
+version: "2"
+
+apiVersion: "v1"
+
+retention: "30d"
+logLevel: "info"
+
+# Additional configuration for logs if necessary
