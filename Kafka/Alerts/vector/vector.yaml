@@ -1,0 +1,56 @@
+data_dir: /var/lib/vector
+
+sources:
+  kafka_in:
+    bootstrap_servers: kafka:9092
+    decoding:
+      codec: json
+    group_id: vector-group
+    topics:
+      - alerts
+    type: kafka
+
+transforms:
+  remap_metrics:
+    inputs:
+      - kafka_in
+    source: |
+      all_alerts = []
+      DataArr = array!(.Data)
+
+      for_each(DataArr) -> |_index, data| {
+          alert_timestamp = format_timestamp!(parse_timestamp!(data.Timestamp,  "%Y%m%dT%H%M%SZ"),"%+")
+          parsed_alert = [{
+                  "message": data.Description,
+                  "timestamp": alert_timestamp,
+                  "severity": data.Severity,                  
+                  "system_identifier": data.AlertIdentifier,
+                  "is_acknowledged": data.IsAcknowledged,
+                  "updated_timestamp": data.UpdatedTimeStamp,
+                  "eemi_message_id": data.EEMIMessageId,
+                  "alert_id": data.AlertId
+                }]
+          all_alerts = append(all_alerts, parsed_alert)
+      }
+      . = all_alerts
+    type: remap
+
+sinks:
+  console:
+    encoding:
+      codec: json
+    inputs:
+      - remap_metrics
+    type: console
+  victoria_logs:
+    encoding:
+      codec: json
+    inputs:
+      - remap_metrics
+    type: http
+    uri: http://victorialogs:9428/insert/jsonline?_stream_fields=system_identifier,severity,is_acknowledged&_msg_field=message&extra_field=eemi_message_id,updated_timestamp&_time_field=timestamp
+    compression: gzip
+    framing:
+      method: newline_delimited
+    healthcheck:
+      enabled: false

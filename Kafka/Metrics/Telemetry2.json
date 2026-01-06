@@ -1,0 +1,2928 @@
+{
+  "System": [
+    {
+      "Metric": [
+        {
+          "MetricId": "NVMe.AvailableSpareThreshold.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.6:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "10"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CriticalWarning.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.7:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CriticalWarning.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.6:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CompositeTemperature.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
+          "MetricValue": [
+            "312"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CompositeTemperature.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.0-0:BOSS.SL.16-1",
+          "MetricValue": [
+            "310"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CompositeTemperature.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.7:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "305"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CompositeTemperature.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.6:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "305"
+          ]
+        },
+        {
+          "MetricId": "NVMe.AvailableSpareThreshold.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
+          "MetricValue": [
+            "10"
+          ]
+        },
+        {
+          "MetricId": "NVMe.AvailableSpareThreshold.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.0-0:BOSS.SL.16-1",
+          "MetricValue": [
+            "10"
+          ]
+        },
+        {
+          "MetricId": "NVMe.AvailableSpareThreshold.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.7:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "10"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.SystemUsage.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.SystemUsage.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.SystemUsage.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.MemoryUsage.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.MemoryUsage.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.MemoryUsage.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T140000Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.IOUsage.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.IOUsage.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.IOUsage.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "1",
+            "1",
+            "1"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0.918639693052224",
+            "0.80789210554223",
+            "0.820354609519005"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU2Temp",
+          "MetricValue": [
+            "71",
+            "71",
+            "71"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Min.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU1Temp",
+          "MetricValue": [
+            "75",
+            "75",
+            "77"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU2Temp",
+          "MetricValue": [
+            "73",
+            "73",
+            "73"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU1Temp",
+          "MetricValue": [
+            "78",
+            "78",
+            "78"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU2Temp",
+          "MetricValue": [
+            "71.9159732447616",
+            "72.250001360211",
+            "71.9523848386982"
+          ]
+        },
+        {
+          "MetricId": "Sensor.TemperatureReading.Avg.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "iDRAC.Embedded.1#CPU1Temp",
+          "MetricValue": [
+            "77.0677823809317",
+            "76.9995802374858",
+            "77.0166666666667"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktMultipleCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktMultipleCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktMultipleCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktMultipleCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T140000Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktExcessiveCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktExcessiveCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktExcessiveCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxErrorPktExcessiveCollision.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "203880",
+            "209688",
+            "223834"
+          ]
+        },
+        {
+          "MetricId": "NIC.TxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "183977",
+            "185723",
+            "196945"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxJabberPkt.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxJabberPkt.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxJabberPkt.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxJabberPkt.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxErrorPktFCSErrors.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T135500Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxErrorPktFCSErrors.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T135000Z",
+            "20241014T140000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxErrorPktFCSErrors.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135500Z",
+            "20241014T140000Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxErrorPktFCSErrors.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "5673578",
+            "5528914",
+            "5391737"
+          ]
+        },
+        {
+          "MetricId": "NIC.RxBytes.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135500Z",
+            "20241014T135000Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "3034739",
+            "2952756",
+            "2884742"
+          ]
+        },
+        {
+          "MetricId": "NIC.DiscardedPkts.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-2-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.DiscardedPkts.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Integrated.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.DiscardedPkts.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T140000Z",
+            "20241014T135000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Embedded.2-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NIC.DiscardedPkts.Max.5.Interval",
+          "TimeStamp": [
+            "20241014T135000Z",
+            "20241014T140000Z",
+            "20241014T135500Z"
+          ],
+          "ComponentId": "NIC.Embedded.1-1-1",
+          "MetricValue": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SystemInletTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "22"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SystemInletTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "23"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SystemInletTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "22.0004277244323"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SysNetAirflow.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SysNetAirflow.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SysNetAirflow.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalMemoryPower.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "18"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalMemoryPower.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "21"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalMemoryPower.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "19.0227696374851"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalCPUPower.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "424"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalCPUPower.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "434"
+          ]
+        },
+        {
+          "MetricId": "Power.TotalCPUPower.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "427.303664921466"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "1155"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "1161"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "1157.80876795163"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemEnergy.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "773.352"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemEnergy.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "773.607"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemEnergy.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "773.482357142857"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "34.1040000915527"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "33.2080001831055"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "33.2000007629395"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "34.1040000915527"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "34.9599990844727"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "34.7999992370605"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "34.7999992370605"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "34.9599990844727"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "34.41402223608"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "33.8202428659681"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "33.8922427899271"
+          ]
+        },
+        {
+          "MetricId": "GPU.PrimaryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "34.3864750730399"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "71104"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "74883"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "72483"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "70524"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "71410"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "75027"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "72653"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "70683"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "71251.0879120879"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "74956.5690607735"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "72558.9779005525"
+          ]
+        },
+        {
+          "MetricId": "GPU.PowerConsumption.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "70604"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "40"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "40"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "41"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "41"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "41"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "41"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "42"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "42"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "40.3406593406593"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "40.878453038674"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "41.2872928176796"
+          ]
+        },
+        {
+          "MetricId": "GPU.MemoryTemperature.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "41.2762430939227"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTotalSMUsageTime.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTotalSMUsageTime.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTotalSMUsageTime.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTotalSMUsageTime.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUTensorCoreUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMOccupancy.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUSMActivity.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.0003075"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.0003078076171875"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.0003075"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.000328828125"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.000456"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.0004305"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.000461"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.0004299296875"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.000381556404532967"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.000348630859375"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.00034664075448895"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeTxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.000365871503798342"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.0002117109375"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.000235234375"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.0002357353515625"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.0002317314453125"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.0004155"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.0003795"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.0004215"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.00037187109375"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0.000319651721325549"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0.000273333493396063"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0.000272512236705801"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeRxThroughput.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0.00028944020847721"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeLinkSpeed.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "5"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeCorrectableErrorCount.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeCorrectableErrorCount.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeCorrectableErrorCount.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUPCIeCorrectableErrorCount.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUMemoryClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "2619"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUHmmaUsage.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockFrequency.Avg.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "345"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Min.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.24-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.23-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.22-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "GPU.GPUClockEventReason.Max.15.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "Video.Slot.21-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.PercentageUsed.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.PercentageUsed.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.0-0:BOSS.SL.16-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.PercentageUsed.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.7:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.PercentageUsed.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Bay.6:Enclosure.Internal.0-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CriticalWarning.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "NVMe.CriticalWarning.Max.60.Interval",
+          "TimeStamp": [
+            "20241014T140000Z"
+          ],
+          "ComponentId": "SMARTData:Disk.Direct.0-0:BOSS.SL.16-1",
+          "MetricValue": [
+            "0"
+          ]
+        }
+      ],
+      "Identifier": "4LRZYY3"
+    },
+    {
+      "Metric": [
+        {
+          "MetricId": "Thermal.SystemInletTemperature.Max.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "24"
+          ]
+        },
+        {
+          "MetricId": "Thermal.SystemInletTemperature.Avg.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "23"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Min.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Max.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "SystemUtilization.CPUUsage.Avg.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "0"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Min.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "104"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Max.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "151"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemPowerConsumption.Avg.60.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "110"
+          ]
+        },
+        {
+          "MetricId": "Power.SystemEnergy.Max.0.Current",
+          "TimeStamp": [
+            "20241014T110109Z"
+          ],
+          "ComponentId": null,
+          "MetricValue": [
+            "550.023"
+          ]
+        }
+      ],
+      "Identifier": "81Z1YW3"
+    }
+  ]
+}
