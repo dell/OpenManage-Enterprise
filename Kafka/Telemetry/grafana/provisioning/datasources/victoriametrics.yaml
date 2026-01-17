@@ -1,0 +1,13 @@
+apiVersion: 1
+
+# Grafana datasource provisioning
+# This file auto-creates the VictoriaMetrics (Prometheus-compatible) datasource at Grafana startup.
+# It avoids manual datasource setup in the UI.
+datasources:
+  - name: VictoriaMetrics
+    type: prometheus
+    access: proxy
+    # Use the compose service name. From inside the Grafana container, localhost would be Grafana itself.
+    url: http://victoriametrics:8428
+    isDefault: true
+    editable: true

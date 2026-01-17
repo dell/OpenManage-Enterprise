@@ -1,0 +1,260 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "VictoriaLogs",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": 0
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 9
+                    },
+                    {
+                      "color": "red",
+                      "value": 10
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": "VictoriaLogs",
+          "editorMode": "code",
+          "expr": "system_identifier:$system_id $severity $acknowledged",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Alert Logs",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": false,
+            "source": "labels"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "severity",
+                "Line",
+                "system_identifier",
+                "Time",
+                "alert_id",
+                "eemi_message_id",
+                "is_acknowledged",
+                "updated_timestamp",
+                "Total"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "severity": 0,
+              "Line": 1,
+              "system_identifier": 2,
+              "Time": 3,
+              "alert_id": 4,
+              "eemi_message_id": 5,
+              "is_acknowledged": 6,
+              "updated_timestamp": 7
+            },
+            "renameByName": {
+              "system_identifier": "System ID",
+              "is_acknowledged": "Is Acknowledged"
+            }
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "severity"
+              },
+              {
+                "destinationType": "time",
+                "targetField": "updated_timestamp"
+              }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {}
+        }
+      ],
+      "transparent": true,
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "5s",
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "All",
+          "value": "*"
+        },
+        "datasource": "VictoriaLogs",
+        "allValue": "*",
+        "definition": "",
+        "includeAll": true,
+        "label": "System ID",
+        "name": "system_id",
+        "options": [],
+        "query": {
+          "field": "system_identifier",
+          "limit": 0,
+          "query": "*",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": ""
+        },
+        "allValue": "",
+        "definition": "",
+        "includeAll": true,
+        "name": "severity",
+        "options": [],
+        "query": "4 : severity:4,6 : severity:6,8 : severity:8,10 : severity:10",
+        "refresh": 1,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": ""
+        },
+        "allValue": "",
+        "definition": "",
+        "includeAll": true,
+        "label": "Is Acknowledged",
+        "name": "acknowledged",
+        "options": [],
+        "query": "True : is_acknowledged:true,False : is_acknowledged:false",
+        "refresh": 1,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "Alert Logs",
+  "uid": "alert-logs",
+  "version": 3
+}

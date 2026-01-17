@@ -1,15 +1,26 @@
-## OME Integration with Kafka
+# OME Integration with Kafka
 
-### Overview 
+## Overview
 
-This repository shows examples of how to visualize the OME [metrics](./Metrics/README.md) and [alerts](./Alerts/README.md) sent to a Kafka broker in a Grafana dashboard. It uses open source components like vector and victoriametrics/victorialogs to format the data received by Kafka and show it in Grafana dashboard.
+This repository provides reference implementations for visualizing OME data sent to a Kafka broker using Grafana dashboards.
 
-Note: This solution is to be used as a reference/example. It is by no means a comprehensive collection of visualizations which can be shown in Grafana.
+| Solution | Description | Stack |
+|----------|-------------|-------|
+| [Telemetry](./Telemetry/README.md) | Time-series metrics visualization | Kafka → Vector → VictoriaMetrics → Grafana |
+| [Alerts](./Alerts/README.md) | Log-based alert visualization | Kafka → Vector → VictoriaLogs → Grafana |
 
-### Prerequisites
-- **OME**: Version 4.6 or above
+> **Note**: These solutions are intended as reference examples. They are not comprehensive collections of all possible Grafana visualizations.
 
-### OME Integration with Kafka Authors
+## Prerequisites
 
-* **Aayush Sharma**
-* **Mohiadeen Ameer**
+- **OME** 4.6 or above
+- **Docker** with Docker Compose, or **Podman** with podman-compose
+
+## Getting Started
+
+Each solution is self-contained with its own `docker-compose.yml`. See the respective README for setup instructions.
+
+## Authors
+
+- Mohiadeen Ameer
+- Aayush Sharma

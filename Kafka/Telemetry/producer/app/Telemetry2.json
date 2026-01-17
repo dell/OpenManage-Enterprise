@@ -2773,7 +2773,7 @@
           ],
           "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
           "MetricValue": [
-            "0"
+            "35"
           ]
         },
         {
@@ -2783,7 +2783,7 @@
           ],
           "ComponentId": "SMARTData:Disk.Direct.0-0:BOSS.SL.16-1",
           "MetricValue": [
-            "0"
+            "92"
           ]
         },
         {
@@ -2793,7 +2793,7 @@
           ],
           "ComponentId": "SMARTData:Disk.Bay.7:Enclosure.Internal.0-1",
           "MetricValue": [
-            "0"
+            "75"
           ]
         },
         {
@@ -2803,7 +2803,7 @@
           ],
           "ComponentId": "SMARTData:Disk.Bay.6:Enclosure.Internal.0-1",
           "MetricValue": [
-            "0"
+            "15"
           ]
         },
         {
@@ -2813,7 +2813,7 @@
           ],
           "ComponentId": "SMARTData:Disk.Direct.1-1:BOSS.SL.16-1",
           "MetricValue": [
-            "0"
+            "1"
           ]
         },
         {
@@ -2858,7 +2858,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "0.025"
           ]
         },
         {
@@ -2868,7 +2868,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "1"
           ]
         },
         {
@@ -2878,7 +2878,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "0.7"
           ]
         },
         {
