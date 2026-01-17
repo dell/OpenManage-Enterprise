@@ -1,0 +1,109 @@
+services:
+  ome_telemetry_producer:
+    build: ./producer
+    container_name: ome_telemetry_producer
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./producer/app/producer.py:/app/producer.py
+      - ./producer/app/Telemetry2.json:/app/Telemetry2.json
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: telemetry
+      TELEMETRY_FILE: Telemetry2.json
+      SEND_INTERVAL_SECONDS: 5  # Seconds to wait between sending telemetry batches
+      SEND_COUNT: 0  # Total send iterations; set to 0 to run continuously
+      KAFKA_CONNECT_RETRY_SECONDS: 5  # Retry interval when Kafka isn't reachable yet
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka_telemetry
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://:9092,PLAINTEXT_EXTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka:9092,PLAINTEXT_EXTERNAL://127.0.0.1:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - 29093:29092     # Host access (external listener): localhost:29093 -> kafka:29092 (containers use kafka:9092 internally)
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/9092'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  redpanda:
+    image: redpandadata/console:latest
+    container_name: redpanda_telemetry
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - 8090:8080
+    environment:
+      KAFKA_BROKERS: kafka:9092
+
+  vector:
+    image: timberio/vector:0.41.0-debian
+    container_name: vector_telemetry
+    restart: unless-stopped
+    volumes:
+      - ./vector/vector.yaml:/etc/vector/vector.yaml
+    ports:
+      - 8686:8686
+    depends_on:
+      kafka:
+        condition: service_healthy
+      victoriametrics:
+        condition: service_healthy
+    command: ["--config", "/etc/vector/vector.yaml"]
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics
+    container_name: victoriametrics
+    restart: unless-stopped
+    ports:
+      - 8428:8428
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8428/health >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_telemetry
+    restart: unless-stopped
+    ports:
+      - 3080:3000
+    depends_on:
+      victoriametrics:
+        condition: service_healthy
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      # Provision datasources/dashboards at startup (no manual UI configuration needed).
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      # Dashboard JSON loaded by the provisioning provider (see grafana/provisioning/dashboards/provider.yaml).
+      - ./grafana/dashboards/telemetry-dashboard.json:/var/lib/grafana/dashboards/telemetry-dashboard.json
+    environment:
+      # Prometheus datasource is built-in. This is kept for parity with Alerts and for future plugins.
+      GF_PLUGINS_PREINSTALL: ""
+      # Set Telemetry Dashboard as the default home page (removes Welcome to Grafana screen)
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/telemetry-dashboard.json
+
+volumes:
+  grafana-storage:

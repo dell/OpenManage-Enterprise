@@ -1,9 +1,44 @@
-# Alerts Visualization Documentation
+# Alerts Visualization
 
-OME sends the alerts data to Kafka in a specific format. Refer to the format [here](./omeKafkaALERTS.json). For showing this alerts information in Grafana, one of the possible ways is to store the data in a log storing platform like victoria-logs. To format the data as required by victoria-logs, we can use a solution like vector.
+## Overview
 
-The solution shown here assumes a docker setup to create container instances of these components and integrates them through necessary configuration files like [vector.yaml](vector/vector.yaml).
+OME sends alert data to Kafka in a specific JSON format (see [sample payload](./producer/app/omeKafkaALERTS.json)). This solution visualizes those alerts in Grafana by storing them in [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/), a high-performance log storage backend.
 
-## Note
+[Vector](https://vector.dev/) transforms and forwards Kafka messages to VictoriaLogs (see [vector.yaml](vector/vector.yaml)).
 
-For ease of reproducing, the solution has a [producer.py](./producer.py) script which generates the alerts in the necessary format and sends to Kafka. In actual setup, the alerts will be sent by OME, so the producer script can be avoided and the Kafka endpoints need to be replaced in vector configuration.
+## Quick Start
+
+From this directory:
+
+```bash
+docker compose up -d --build
+```
+
+Open Grafana at http://localhost:3000 to view the alerts dashboard.
+
+```bash
+docker compose down      # Stop
+docker compose down -v   # Stop and remove volumes
+```
+
+## Architecture
+
+```
+Kafka → Vector → VictoriaLogs → Grafana
+```
+
+## Endpoints
+
+| Service | URL |
+|---------|-----|
+| Grafana | http://localhost:3000 |
+| VictoriaLogs | http://localhost:9428 |
+| Redpanda Console | http://localhost:8080 |
+| Vector API | http://localhost:8687 |
+| Kafka (host) | localhost:29092 |
+
+## Notes
+
+- **Sample Producer**: A containerized Python producer ([producer.py](./producer/app/producer.py)) generates sample alerts for demonstration. In production, OME publishes alerts directly to Kafka—disable or remove the `ome_alerts_producer` service in [docker-compose.yml](docker-compose.yml).
+
+- **Existing Kafka Cluster**: To integrate with an existing Kafka deployment, remove the `kafka` and `redpanda` services and update `kafka:9092` references in [vector.yaml](vector/vector.yaml) to point to your cluster.
