@@ -59,7 +59,6 @@ transforms:
           component: "{{ ComponentId }}"
           identifier: "{{ Identifier }}"
           type: "{{ Type }}"
-          timestamp: "{{ TimeStamp }}"
 
 sinks:
   victoriametrics:

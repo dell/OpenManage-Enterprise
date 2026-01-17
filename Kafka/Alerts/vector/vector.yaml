@@ -11,7 +11,7 @@ sources:
     type: kafka
 
 transforms:
-  remap_metrics:
+  remap_alerts:
     inputs:
       - kafka_in
     source: |
@@ -40,13 +40,13 @@ sinks:
     encoding:
       codec: json
     inputs:
-      - remap_metrics
+      - remap_alerts
     type: console
   victoria_logs:
     encoding:
       codec: json
     inputs:
-      - remap_metrics
+      - remap_alerts
     type: http
     uri: http://victorialogs:9428/insert/jsonline?_stream_fields=system_identifier,severity,is_acknowledged&_msg_field=message&extra_field=eemi_message_id,updated_timestamp&_time_field=timestamp
     compression: gzip

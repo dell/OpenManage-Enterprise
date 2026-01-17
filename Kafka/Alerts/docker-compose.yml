@@ -1,40 +1,86 @@
-version: '3.8'
-
 services:
   grafana:
     image: grafana/grafana:latest
+    container_name: grafana_alerts
     depends_on:
-      - victorialogs
+      victorialogs:
+        condition: service_healthy
     ports:
       - 3000:3000
     volumes:
       - grafana-storage:/var/lib/grafana
+      # Provision datasources/dashboards at startup (no manual UI configuration needed).
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      # Dashboard JSON loaded by the provisioning provider (see grafana/provisioning/dashboards/provider.yaml).
+      - ./grafana/dashboards/alert-logs-dashboard.json:/var/lib/grafana/dashboards/alert-logs-dashboard.json
+    environment:
+      # Auto-install the VictoriaLogs datasource plugin on container startup.
+      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
+
+  ome_alerts_producer:
+    build: ./producer
+    container_name: ome_alerts_producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./producer/app/producer.py:/app/producer.py
+      - ./producer/app/omeKafkaALERTS.json:/app/omeKafkaALERTS.json
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: alerts
+      SEND_INTERVAL_SECONDS: 5  # Seconds to wait between sending alert batches
+      SEND_COUNT: 300  # Total send iterations; set to 0 to run continuously
+      KAFKA_CONNECT_RETRY_SECONDS: 5  # Retry interval when Kafka isn't reachable yet
 
   kafka:
-    container_name: kafka
+    image: apache/kafka:latest
+    container_name: kafka_alerts
     environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT_INTERNAL://:9092,PLAINTEXT_EXTERNAL://:29092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT_INTERNAL://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT_INTERNAL
-      - ALLOW_PLAINTEXT_LISTENER=yes
-    image: bitnami/kafka:latest
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://:9092,PLAINTEXT_EXTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka:9092,PLAINTEXT_EXTERNAL://127.0.0.1:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     ports:
-      - 9092:9092       # Internal (for containers like Vector)
-      - 29092:29092     # External (for your host Python script)
+      - 29092:29092     # Host access (external listener): localhost:29092 -> kafka:29092 (containers use kafka:9092 internally)
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/9092'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  redpanda:
+    image: redpandadata/console:latest
+    container_name: redpanda_alerts
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    environment:
+      KAFKA_BROKERS: kafka:9092
 
   vector:
     command: ["--config", "/etc/vector/vector.yaml"]
-    container_name: vector
+    container_name: vector_alerts
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+      victorialogs:
+        condition: service_healthy
     image: timberio/vector:0.41.0-debian
     ports:
-      - 8686:8686
+      - 8687:8686
     volumes:
       - ./vector/vector.yaml:/etc/vector/vector.yaml
 
@@ -43,8 +89,18 @@ services:
     container_name: victorialogs
     ports:
       - 9428:9428
+    volumes:
+      - victorialogs-storage:/vlogs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9428/health >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
     command:
       - -storageDataPath=/vlogs
+      - -retentionPeriod=30d
 
 volumes:
   grafana-storage:
+  victorialogs-storage:

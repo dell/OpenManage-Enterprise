@@ -2858,7 +2858,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "0.025"
           ]
         },
         {
@@ -2868,7 +2868,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "1"
           ]
         },
         {
@@ -2878,7 +2878,7 @@
           ],
           "ComponentId": null,
           "MetricValue": [
-            "0"
+            "0.7"
           ]
         },
         {

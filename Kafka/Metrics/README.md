@@ -1,9 +1,36 @@
-# Metrics Visualization Documentation
+# Telemetry Visualization Documentation
 
-OME sends the metrics data to Kafka in a specific format. Refer the format [here](./Telemetry2.json). For showing this metrics information in Grafana, one of the possible ways is to format the data as a time-series and dump it to a time-series database like prometheus or victoria metrics. To format the data we can use a solution like vector.
+OME sends telemetry data to Kafka in a specific format. Refer to the format [here](./producer/app/Telemetry2.json). To visualize telemetry in Grafana, the data can be converted into time-series metrics and stored in a database such as VictoriaMetrics. Vector is used to transform the Kafka payloads into metrics.
 
-The solution shown here assumes a docker setup to create container instances of these components and integrates them through necessary configuration files like [vector.yaml](vector/vector.yaml). The current solution shows the integration through victoria-metrics, but it can easily be replaced with a prometheus configuration. Necessary prometheus scrape configuration is present [here](prometheus/prometheus.yml).
+This solution uses Docker Compose to start the full pipeline using [docker-compose.yml](docker-compose.yml) and [vector.yaml](vector/vector.yaml). Vector sends metrics to VictoriaMetrics using the Prometheus Remote Write protocol, and Grafana queries VictoriaMetrics via its Prometheus-compatible datasource. (A Prometheus server is not deployed as part of this stack, but the pipeline can be adapted to Prometheus if needed.)
 
 ## Note
 
-For ease of reproducing, the solution has a [producer.py](./producer.py) script which generates the metrics in the necessary format and sends to Kafka. In actual setup, the metrics will be sent by OME, so the producer script can be avoided and the Kafka endpoints need to be replaced in vector configuration.
+For ease of reproducing, the solution includes a containerized Python producer (see [producer.py](./producer/app/producer.py)) that generates sample telemetry payloads and publishes them to Kafka when you run `docker compose up`.
+
+In an actual setup, OME publishes telemetry directly to Kafka. In that case, you can disable or remove the `ome_telemetry_producer` service in `docker-compose.yml`.
+
+If you are integrating with an existing Kafka deployment (instead of the local Kafka container), you can also disable or remove the `kafka` and `redpanda` services, and update the Kafka endpoints in `vector/vector.yaml` (and any other services that reference `kafka:9092`) to point to your Kafka cluster.
+
+## Run with Docker Compose
+
+From this directory:
+
+```bash
+# Start (build + run)
+docker compose up -d --build
+
+# Stop
+docker compose down
+
+# Clean reset (removes volumes)
+docker compose down -v
+```
+
+### Useful endpoints
+
+- **Grafana**: `http://localhost:3080`
+- **Vector API**: `http://localhost:8686`
+- **VictoriaMetrics UI/API**: `http://localhost:8428`
+- **Kafka (host access)**: `localhost:29093`
+- **Redpanda Console (Kafka UI)**: `http://localhost:8090`

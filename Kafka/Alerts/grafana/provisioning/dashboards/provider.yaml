@@ -1,0 +1,16 @@
+apiVersion: 1
+
+# Grafana dashboard provisioning
+# This provider tells Grafana to auto-load dashboards from JSON files on disk.
+# The dashboards themselves are mounted into /var/lib/grafana/dashboards via docker-compose.
+providers:
+  - name: Alerts
+    orgId: 1
+    # Empty folder means dashboards show up at the root (not inside a named folder).
+    folder: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      # Grafana scans this path for *.json dashboards at startup and periodically afterwards.
+      path: /var/lib/grafana/dashboards
