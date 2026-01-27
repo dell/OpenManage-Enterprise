@@ -39,6 +39,8 @@ Kafka → Vector → VictoriaMetrics → Grafana
 
 ## Notes
 
+- **Troubleshooting**: For operational issues and diagnostics, see the [Kafka Troubleshooting Guide](../troubleshooting-guide.md#telemetry-pipeline).
+
 - **Sample Producer**: A containerized Python producer ([producer.py](./producer/app/producer.py)) generates sample telemetry for demonstration. In production, OME publishes telemetry directly to Kafka—disable or remove the `ome_telemetry_producer` service in [docker-compose.yml](docker-compose.yml).
 
 - **Existing Kafka Cluster**: To integrate with an existing Kafka deployment, remove the `kafka` and `redpanda` services and update `kafka:9092` references in [vector.yaml](vector/vector.yaml) to point to your cluster.
