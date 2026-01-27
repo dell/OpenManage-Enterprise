@@ -20,6 +20,10 @@ This repository provides reference implementations for visualizing OME data sent
 
 Each solution is self-contained with its own `docker-compose.yml`. See the respective README for setup instructions.
 
+## Troubleshooting
+
+For comprehensive troubleshooting, diagnostics, and operational guidance, see the [Kafka Troubleshooting Guide](./troubleshooting-guide.md).
+
 ## Authors
 
 - Mohiadeen Ameer
