@@ -25,6 +25,69 @@
       "datasource": "VictoriaLogs",
       "fieldConfig": {
         "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#6ED0E0", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 0 },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["distinctCount"], "fields": "/^system_identifier$/", "values": false },
+        "textMode": "value"
+      },
+      "targets": [{ "datasource": "VictoriaLogs", "editorMode": "code", "expr": "system_identifier:$system_id | limit 10000", "queryType": "instant", "refId": "A" }],
+      "title": "Systems",
+      "transformations": [{ "id": "extractFields", "options": { "source": "labels" } }],
+      "type": "stat"
+    },
+    {
+      "datasource": "VictoriaLogs",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "max": 100,
+          "min": 0
+        },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": ".*severity=\"4\".*" }, "properties": [{ "id": "color", "value": { "fixedColor": "#6ED0E0", "mode": "fixed" } }, { "id": "displayName", "value": "4" }] },
+          { "matcher": { "id": "byRegexp", "options": ".*severity=\"6\".*" }, "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }, { "id": "displayName", "value": "6" }] },
+          { "matcher": { "id": "byRegexp", "options": ".*severity=\"8\".*" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF9830", "mode": "fixed" } }, { "id": "displayName", "value": "8" }] },
+          { "matcher": { "id": "byRegexp", "options": ".*severity=\"10\".*" }, "properties": [{ "id": "color", "value": { "fixedColor": "#F2495C", "mode": "fixed" } }, { "id": "displayName", "value": "10" }] }
+        ]
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 0 },
+      "id": 10,
+      "options": {
+        "displayMode": "basic",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "targets": [{ "datasource": "VictoriaLogs", "editorMode": "code", "expr": "system_identifier:$system_id $severity $acknowledged | stats by (severity) count(*) as count", "queryType": "stats", "refId": "A" }],
+      "title": "By Severity",
+      "transformations": [
+        { "id": "rowsToFields", "options": { "mappings": [{ "fieldName": "severity", "handlerKey": "field.name" }, { "fieldName": "count", "handlerKey": "field.value" }] } }
+      ],
+      "type": "bargauge"
+    },
+    {
+      "datasource": "VictoriaLogs",
+      "fieldConfig": {
+        "defaults": {
           "custom": {
             "align": "auto",
             "cellOptions": {
@@ -87,7 +150,7 @@
         "h": 20,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "id": 1,
       "options": {

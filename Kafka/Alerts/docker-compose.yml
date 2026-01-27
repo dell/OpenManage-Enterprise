@@ -57,8 +57,6 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    ports:
-      - 29092:29092     # Host access (external listener): localhost:29092 -> kafka:29092 (containers use kafka:9092 internally)
     healthcheck:
       test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/9092'"]
       interval: 5s
