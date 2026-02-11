@@ -35,10 +35,15 @@ Kafka → Vector → VictoriaLogs → Grafana
 | VictoriaLogs | http://localhost:9428 |
 | Redpanda Console | http://localhost:8080 |
 | Vector API | http://localhost:8687 |
-| Kafka (host) | localhost:29092 |
 
 ## Notes
+
+- **Troubleshooting**: For operational issues and diagnostics, see the [Kafka Troubleshooting Guide](../troubleshooting-guide.md#alerts-pipeline).
 
 - **Sample Producer**: A containerized Python producer ([producer.py](./producer/app/producer.py)) generates sample alerts for demonstration. In production, OME publishes alerts directly to Kafka—disable or remove the `ome_alerts_producer` service in [docker-compose.yml](docker-compose.yml).
 
 - **Existing Kafka Cluster**: To integrate with an existing Kafka deployment, remove the `kafka` and `redpanda` services and update `kafka:9092` references in [vector.yaml](vector/vector.yaml) to point to your cluster.
+
+- **Redpanda Console**: Provides a lightweight Kafka UI so you can browse topics and payloads without installing additional tooling.
+
+- **Grafana Credentials**: Default login is `admin` / `admin`.
