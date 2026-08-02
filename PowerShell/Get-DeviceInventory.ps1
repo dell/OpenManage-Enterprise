@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
@@ -75,30 +77,7 @@ param(
   [String] $DeviceInfo
 )
 
-function Set-CertPolicy() {
-  ## Trust all certs - for sample usage only
-  Try {
-    add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  }
-  catch {
-    Write-Error "Unable to add type for cert policy"
-  }
-}
-
 Try {
-  Set-CertPolicy
   $FilterMap = @{'Name' = 'DeviceName'; 'Id' = 'Id'; 'SvcTag' = 'DeviceServiceTag' }
   $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
   $InventoryTypeMap = @{"cpus" = "serverProcessors"; "os" = "serverOperatingSystems"; "disks" = "serverArrayDisks"; "controllers" = "serverRaidControllers"; "memory" = "serverMemoryDevices" }
@@ -117,12 +96,12 @@ Try {
   else {
     $DevUrl = "$($BaseUrl) '$($DeviceInfo)'"
   }
-  $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+  $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
   if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
     ## Successfully created a session - extract the auth token from the response
     ## header and update our headers for subsequent requests
     $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
-    $DevResp = Invoke-WebRequest -Uri $DevUrl -Headers $Headers -Method Get -ContentType $Type
+    $DevResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DevUrl -Headers $Headers -Method Get -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
       $DevInfo = $DevResp.Content | ConvertFrom-Json
       if ($DevInfo.'@odata.count' -gt 0) {
@@ -131,7 +110,7 @@ Try {
         if ($InventoryType) {
           $InventoryUrl = "https://$($IpAddress)/api/DeviceService/Devices($($DeviceId))/InventoryDetails('$($InventoryTypeMap[$InventoryType])')"
         }
-        $InventoryResp = Invoke-WebRequest -Uri $InventoryUrl -Headers $Headers -Method Get -ContentType $Type
+        $InventoryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $InventoryUrl -Headers $Headers -Method Get -ContentType $Type
         if ($InventoryResp.StatusCode -eq 200) {
           $InventoryInfo = $InventoryResp.Content | ConvertFrom-Json
           $InventoryDetails = $InventoryInfo | ConvertTo-Json -Depth 6

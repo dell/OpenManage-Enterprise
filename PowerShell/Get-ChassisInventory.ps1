@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
@@ -51,34 +53,12 @@ param(
 )
 
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-    using System.Net;
-    using System.Security.Cryptography.X509Certificates;
-    public class TrustAllCertsPolicy : ICertificatePolicy {
-        public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem) {
-            return true;
-        }
-    }
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 function Get-ManagedDeviceCount($IpAddress, $Headers, $Type) {
     Try {
         $Count = 0
         $CountUrl = "https://$($IpAddress)/api/DeviceService/Devices" + "?`$count=true&`$top=0"
         Write-Host "Determining number of managed devices ..."
-        $CountResp = Invoke-WebRequest -Uri $CountUrl -Method Get -Headers $Headers -ContentType $Type
+        $CountResp = Invoke-WebRequest -SkipCertificateCheck -Uri $CountUrl -Method Get -Headers $Headers -ContentType $Type
         if ( $CountResp.StatusCode -eq 200) {
             $CountInfo = $CountResp.Content | ConvertFrom-Json
             $Count = $CountInfo.'@odata.count'
@@ -180,7 +160,7 @@ function Get-ServerMacAddress ($DeviceInfo, $IpAddress, $Headers, $Type) {
         $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
         $DeviceInventoryUrl = $DeviceUrl + "($($DeviceId))/InventoryDetails('serverNetworkInterfaces')"
         Try {
-            $DeviceInventoryResp = Invoke-WebRequest -Uri $DeviceInventoryUrl -Method Get -Headers $Headers -ContentType $Type
+            $DeviceInventoryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DeviceInventoryUrl -Method Get -Headers $Headers -ContentType $Type
         }
         catch {
             $err = $_.Exception
@@ -245,7 +225,7 @@ function Get-DeviceInventory($IpAddress, $Headers, $Type) {
         if ($DeviceCount -gt 0) {
             $AllDeviceUrl = $DeviceUrl + "?`$skip=0&`$top=$($DeviceCount)"
             Write-Host "Enumerating all device info ..."
-            $AllDeviceResp = Invoke-WebRequest -Uri $AllDeviceUrl -Method Get -Headers $Headers -ContentType $Type
+            $AllDeviceResp = Invoke-WebRequest -SkipCertificateCheck -Uri $AllDeviceUrl -Method Get -Headers $Headers -ContentType $Type
             if ($AllDeviceResp.StatusCode -eq 200) {
                 $AllDeviceInfo = $AllDeviceResp.Content | ConvertFrom-Json
                 Write-Host "Iterating through devices and correlating data ..."
@@ -364,14 +344,13 @@ function Get-DeviceInventory($IpAddress, $Headers, $Type) {
 }
 
 Try {
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $Type = "application/json"
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         Get-DeviceInventory $IpAddress $Headers $Type

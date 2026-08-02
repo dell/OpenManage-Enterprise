@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Vittalareddy Nanjareddy <vittalareddy_nanjare@Dell.com>
 
@@ -45,28 +47,6 @@ param(
     [pscredential] $Credentials
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 
 function Retire-Lead($IpAddress, $Headers) {
     $BackupLead = $null
@@ -106,7 +86,7 @@ function Retire-Lead($IpAddress, $Headers) {
     }' | ConvertFrom-Json
 
     $Body = $Payload | ConvertTo-Json -Depth 6
-    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+    $Response = Invoke-WebRequest -SkipCertificateCheck -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
     if ($Response.StatusCode -eq 200) {
         $RetireLeadResp = $Response | ConvertFrom-Json
         $JobId = $RetireLeadResp.'JobId'
@@ -135,7 +115,7 @@ function Assign-BackupLead($IpAddress, $Headers) {
         $TargetTempHash."Id" = $MemberId
         $TargetArray += $TargetTempHash
         $Body = ConvertTo-Json $TargetArray
-        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
+        $Response = Invoke-WebRequest -SkipCertificateCheck -Uri $URL -Headers $Headers -ContentType $Type -Method POST -Body $Body 
         if ($Response.StatusCode -eq 200) {
             $BackupLeadData = $Response | ConvertFrom-Json
             $JobId = $BackupLeadData.'JobId'
@@ -155,7 +135,7 @@ function Get-Domains($IpAddress, $Headers) {
     $Lead = $null
     $BackupLead = $null
     $URL = "https://$($IpAddress)/api/ManagementDomainService/Domains"
-    $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -ContentType $Type -Method GET
+    $Response = Invoke-WebRequest -SkipCertificateCheck -Uri $URL -Headers $Headers -ContentType $Type -Method GET
     if ($Response.StatusCode -eq 200) {
         $DomainResp = $Response.Content | ConvertFrom-Json
         if ($DomainResp."value".Length -gt 0) {
@@ -224,7 +204,7 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -237,12 +217,12 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -264,7 +244,6 @@ function Wait-OnJobStatus($IpAddress, $Headers, $Type, $JobId) {
 
 ## Script that does the work
 Try {
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $Type = "application/json"
     $UserName = $Credentials.username
@@ -273,13 +252,13 @@ Try {
     $Headers = @{}
 
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         Write-Host "Successfully created session with $($IpAddress)"
         ## Sending in non-existent targets throws an exception with a "bad request"
         ## error. Doing some pre-req error checking as a result to validate input
-        ## This is a Powershell quirk on Invoke-WebRequest failing with an error
+        ## This is a Powershell quirk on Invoke-WebRequest -SkipCertificateCheck failing with an error
         # Create mcm group
         $JobId = 0
         $JobId = Retire-Lead $IpAddress $Headers

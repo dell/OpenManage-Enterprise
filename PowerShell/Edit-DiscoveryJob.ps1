@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
@@ -61,27 +63,6 @@ param(
     [parameter(ParameterSetName = 'Discover_Ip')]
     [String[]]$IpArray
 )
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
 
 function Get-DiscoverConfigPayload() {
     $DiscoveryConfigDetails = '{
@@ -154,7 +135,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
     Write-Host "Polling job status"
     $SLEEP_INTERVAL = 3
     Start-Sleep -Seconds $SLEEP_INTERVAL
-    $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
+    $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Method Get -Headers $Headers -ContentType $Type
     if ($JobResp.StatusCode -eq 200) {
         $JobInfo = $JobResp.Content | ConvertFrom-Json
         $JobList = $JobInfo.value
@@ -164,7 +145,7 @@ function Get-JobStatus($IpAddress, $Headers, $Type, $JobName) {
                 $NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
             }
             while ($NextLinkUrl) {
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $JobList += $NextLinkData.'value'
@@ -208,7 +189,7 @@ function Update-Config-Payload($IpAddress, $DeviceUserName, $DevicePassword, $Jo
     $DiscoveryConfigModels = @()
     $CredentialsList = @()
     $DiscoveryConfigUrl = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups"
-    $DiscoveryResp = Invoke-WebRequest -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
+    $DiscoveryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DiscoveryConfigUrl -Method Get -Headers $Headers -ContentType $Type
     $Payload = Get-DiscoverConfigPayload
     $ConfigGrpId = $null
     $DiscoveryConfigTargets = @()
@@ -256,7 +237,7 @@ function Update-Config-Payload($IpAddress, $DeviceUserName, $DevicePassword, $Jo
             $ModifyConfigGrpURL = "https://$($IpAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups($($ConfigGrpId))"
             Write-Host "URL = $($ModifyConfigGrpURL)"
             $Body = $Payload | ConvertTo-Json -Depth 6
-            $Response = Invoke-WebRequest -Uri $ModifyConfigGrpURL -Headers $Headers -ContentType $Type -Method PUT -Body $Body
+            $Response = Invoke-WebRequest -SkipCertificateCheck -Uri $ModifyConfigGrpURL -Headers $Headers -ContentType $Type -Method PUT -Body $Body
             if ($Response.StatusCode -eq 200) {
                 Write-Host "Successfully modified the discovery config group"
                 Get-JobStatus $IpAddress $Headers $Type $JobNamePattern
@@ -276,7 +257,6 @@ function Update-Config-Payload($IpAddress, $DeviceUserName, $DevicePassword, $Jo
 
 
 Try {
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $DiscoverUrl = "https://$($IPAddress)/api/DiscoveryConfigService/DiscoveryConfigGroups"
     $Type = "application/json"
@@ -285,7 +265,7 @@ Try {
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{ }
     $ipAddressList = Test-IpAddress $IpArray
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         Update-Config-Payload $IpAddress $DeviceUserName $DevicePassword $JobNamePattern $ipAddressList

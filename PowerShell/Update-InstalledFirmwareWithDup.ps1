@@ -1,4 +1,6 @@
-﻿<#
+﻿#Requires -Version 7
+
+<#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
 Copyright (c) 2022 Dell EMC Corporation
@@ -71,32 +73,10 @@ param(
     [System.UInt32]$DeviceId
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 function Get-GroupList($IpAddress, $Headers, $Type) {
     $GroupList = @()
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GrpResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
+    $GrpResp = Invoke-WebRequest -SkipCertificateCheck -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
     if ($GrpResp.StatusCode -eq 200) {
         $GroupInfo = $GrpResp.Content | ConvertFrom-Json
         $GroupInfo.'value' |  Sort-Object Id | ForEach-Object { $GroupList += , $_.Id }
@@ -109,7 +89,7 @@ function Get-DeviceList($IpAddress, $Headers, $Type) {
     $BaseUri = "https://$($IpAddress)"
     $DeviceList = @()
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
-    $DevResp = Invoke-WebRequest -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DeviceUrl -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         $DevInfo.'value' |  Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
@@ -118,7 +98,7 @@ function Get-DeviceList($IpAddress, $Headers, $Type) {
             $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
         }
         while ($NextLinkUrl) {
-            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+            $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
             if ($NextLinkResponse.StatusCode -eq 200) {
                 $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                 $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceList += , $_.Id }
@@ -141,7 +121,7 @@ function Push-DupToOME($IpAddress, $Headers, $DupFile) {
     $FileToken = $null
     $UploadActionUri = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.UploadFile"
     Write-Host "Uploading $($DupFile) to $($IpAddress). This action may take some time to complete."
-    $UploadResponse = Invoke-WebRequest -Uri $UploadActionUri -Method Post -InFile $DupFile -ContentType "application/octet-stream" -Headers $Headers
+    $UploadResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $UploadActionUri -Method Post -InFile $DupFile -ContentType "application/octet-stream" -Headers $Headers
     if ($UploadResponse.StatusCode -eq 200) {
         ## Successfully uploaded the DUP file . Get the file token
         ## returned by OME on upload of the DUP file
@@ -225,7 +205,7 @@ function Get-ApplicableComponents($IpAddress, $Headers, $Type, $DupReportPayload
 
     $DupReportUrl = "https://$($IpAddress)/api/UpdateService/Actions/UpdateService.GetSingleDupReport"
     try {
-        $DupResponse = Invoke-WebRequest -Uri $DupReportUrl -Headers $Headers -ContentType $Type -Body $DupReportPayload -Method Post -ErrorAction SilentlyContinue       
+        $DupResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $DupReportUrl -Headers $Headers -ContentType $Type -Body $DupReportPayload -Method Post -ErrorAction SilentlyContinue       
         if ($DupResponse.StatusCode -eq 200) {
             $DupResponseInfo = $DupResponse.Content | ConvertFrom-Json
             if ($DupResponse.Length -gt 0) {
@@ -310,7 +290,7 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId) {
     do {        
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = $JobData.LastRunStatus.Id
@@ -323,12 +303,12 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId) {
             elseif ($FailedJobStatuses -contains $JobStatus) {
                 Write-Warning "Update job failed .... "
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -350,7 +330,6 @@ function Wait-OnUpdateJobs($IpAddress, $Headers, $Type, $JobId) {
 
 ## Script that does the work
 Try {
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $Type = "application/json"
     $UserName = $Credentials.username
@@ -359,14 +338,14 @@ Try {
     $Headers = @{}
 
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         Write-Host "Successfully created session with $($IpAddress)`nParsing $($DupFile)"
         
         ## Sending in non-existent targets throws an exception with a "bad request"
         ## error. Doing some pre-req error checking as a result to validate input
-        ## This is a Powershell quirk on Invoke-WebRequest failing with an error
+        ## This is a Powershell quirk on Invoke-WebRequest -SkipCertificateCheck failing with an error
         if ($GroupId) {
             $GroupList = Get-GroupList $IpAddress $Headers $Type
             if ($GroupList -contains $GroupId) {}
@@ -398,7 +377,7 @@ Try {
                     Write-Host $DupUpdatePayload."Targets".Length
                     $JobBody = $DupUpdatePayload | ConvertTo-Json -Depth 6
                     $JobSvcUrl = "https://$($IpAddress)/api/JobService/Jobs"
-                    $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Method Post -Body $JobBody -Headers $Headers -ContentType $Type
+                    $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Method Post -Body $JobBody -Headers $Headers -ContentType $Type
                     if ($JobResp.StatusCode -eq 201) {
                         $JobInfo = $JobResp.Content | ConvertFrom-Json
                         $JobId = $JobInfo.Id

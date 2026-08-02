@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 
@@ -89,29 +91,6 @@ param(
     [string] $InFile
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-
-}
-
 $SessionAuthToken = @{}
 
 function Get-Session($IpAddress, $Credentials) {
@@ -121,7 +100,7 @@ function Get-Session($IpAddress, $Credentials) {
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $SessResponseData = $SessResponse.Content | ConvertFrom-Json
         $SessionAuthToken = @{
@@ -135,14 +114,14 @@ function Get-Session($IpAddress, $Credentials) {
 function Remove-Session($IpAddress, $Headers, $Id) {
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
     $Type = "application/json"
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
 }
 
 function Get-Networks($BaseUri, $Headers) {
     # Display Networks
     $Type = "application/json"
     $NetworkUrl = $BaseUri + "/api/NetworkConfigurationService/Networks"
-    $NetworkResp = Invoke-WebRequest -Uri $NetworkUrl -Method Get -Headers $Headers -ContentType $Type
+    $NetworkResp = Invoke-WebRequest -SkipCertificateCheck -Uri $NetworkUrl -Method Get -Headers $Headers -ContentType $Type
     if ($NetworkResp.StatusCode -eq 200) {
         $NetworkRespData = $NetworkResp.Content | ConvertFrom-Json
         $NetworkRespData = $NetworkRespData.'value'
@@ -155,7 +134,7 @@ function Get-NetworkTypes($BaseUri, $Headers) {
     # Display Network Types
     $Type = "application/json"
     $NetworkTypeUrl = $BaseUri + "/api/NetworkConfigurationService/NetworkTypes"
-    $NetworkTypeResp = Invoke-WebRequest -Uri $NetworkTypeUrl -Method Get -Headers $Headers -ContentType $Type
+    $NetworkTypeResp = Invoke-WebRequest -SkipCertificateCheck -Uri $NetworkTypeUrl -Method Get -Headers $Headers -ContentType $Type
     if ($NetworkTypeResp.StatusCode -eq 200) {
         $NetworkTypeRespData = $NetworkTypeResp.Content | ConvertFrom-Json
         $NetworkTypeRespData = $NetworkTypeRespData.'value'
@@ -177,7 +156,6 @@ function Export-ExampleCSV() {
 }
 
 Try {
-    Set-CertPolicy
     $BaseUri = "https://$($IpAddress)"
     $Type = "application/json"
     $Headers = @{}
@@ -219,7 +197,7 @@ Try {
                 # Create Network
                 Try {
                     $CreateNetworkUrl = $BaseUri + "/api/NetworkConfigurationService/Networks"
-                    $CreateResp = Invoke-WebRequest -Uri $CreateNetworkUrl -Me Post -H $Headers -Con $Type -Body $PayloadJson
+                    $CreateResp = Invoke-WebRequest -SkipCertificateCheck -Uri $CreateNetworkUrl -Me Post -H $Headers -Con $Type -Body $PayloadJson
                     if ($CreateResp.StatusCode -eq 201) {
                         Write-Host "New Network created $($_)"
                     }

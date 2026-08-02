@@ -1,4 +1,6 @@
-﻿<#
+﻿#Requires -Version 7
+
+<#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
 Copyright (c) 2022 Dell EMC Corporation
@@ -90,28 +92,6 @@ $MAX_RETRIES = 20
 $SLEEP_INTERVAL = 30
 
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 
 function Get-TemplatePayload($SourceId, $Component) {
     $template_payload = '{
@@ -181,7 +161,7 @@ function Get-TemplateStatus($IpAddress, $Headers, $Type, $TemplateId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $TemplateResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Get -Headers $Headers -ContentType $Type
+        $TemplateResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $TemplateUrl -Method Get -Headers $Headers -ContentType $Type
         if ($TemplateResponse.StatusCode -eq 200) {
             $TemplateInfo = $TemplateResponse.Content | ConvertFrom-Json
             $Status = [string]$TemplateInfo.value[0].Status
@@ -211,7 +191,7 @@ function New-IdentityPool($IpAddress, $Headers, $Type) {
     $IdentityPoolId = $null
     $IdentityPoolPayload = Get-IdentityPoolPayload | ConvertFrom-Json
     $IdentityPoolPayload = $IdentityPoolPayload | ConvertTo-Json -Depth 6
-    $IdentityResponse = Invoke-WebRequest -Uri $IdentityUrl -Method Post -Body $IdentityPoolPayload  -ContentType $Type -Headers $Headers
+    $IdentityResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $IdentityUrl -Method Post -Body $IdentityPoolPayload  -ContentType $Type -Headers $Headers
     if ( $IdentityResponse.StatusCode -eq 201) {
         $IdentityInfo = $IdentityResponse.Content | ConvertFrom-Json
         $IsSuccessful = $IdentityInfo.IsSuccessful
@@ -239,7 +219,7 @@ function Set-IdentitiesToTarget ($IpAddress, $Type, $Headers, $IdentityId, $Temp
     $payload.TemplateId = $TemplateId
     $payload.IdentityPoolId = $IdentityId
     $AssignIdentityPayload = $payload | ConvertTo-Json -Depth 6
-    $AssignIdentityResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $AssignIdentityPayload -ContentType $Type -Headers $Headers
+    $AssignIdentityResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $TemplateUrl -Method Post -Body $AssignIdentityPayload -ContentType $Type -Headers $Headers
     return $AssignIdentityResponse
 }
 
@@ -256,7 +236,7 @@ function Set-Configuration($IpAddress, $Type, $Headers, $TemplateId, $IdList) {
     $payload.TargetIds = $null
     $payload.TargetIds = @($IdList)
     $DeployTemplatePayload = $payload | ConvertTo-Json -Depth 6
-    $DeployResponse = Invoke-WebRequest -Uri $TemplateDeployUrl -Method Post -Body $DeployTemplatePayload -ContentType $Type -Headers $Headers
+    $DeployResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $TemplateDeployUrl -Method Post -Body $DeployTemplatePayload -ContentType $Type -Headers $Headers
     return $DeployResponse
 }
 
@@ -268,7 +248,7 @@ function Get-DeployTemplateStatus($IpAddress, $Type, $Headers, $JobId) {
     do {
         $Ctr++
         Start-Sleep -Seconds $SLEEP_INTERVAL
-        $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+        $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
         if ($JobResp.StatusCode -eq 200) {
             $JobData = $JobResp.Content | ConvertFrom-Json
             $JobStatus = [string]$JobData.LastRunStatus.Id
@@ -287,12 +267,12 @@ function Get-DeployTemplateStatus($IpAddress, $Type, $Headers, $JobId) {
                     Write-Warning " Failed to deploy template.... "
                 }
                 $JobExecUrl = "$($JobSvcUrl)/ExecutionHistories"
-                $ExecResp = Invoke-WebRequest -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
+                $ExecResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobExecUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($ExecResp.StatusCode -eq 200) {
                     $ExecRespInfo = $ExecResp.Content | ConvertFrom-Json
                     $HistoryId = $ExecRespInfo.value[0].Id
                     $ExecHistoryUrl = "$($JobExecUrl)($($HistoryId))/ExecutionHistoryDetails"
-                    $HistoryResp = Invoke-WebRequest -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
+                    $HistoryResp = Invoke-WebRequest -SkipCertificateCheck -Uri $ExecHistoryUrl -Method Get -Headers $Headers -ContentType $Type
                     if ($HistoryResp.StatusCode -eq 200) {
                         Write-Host ($HistoryResp.Content | ConvertFrom-Json | ConvertTo-Json -Depth 4)
                     }
@@ -323,7 +303,7 @@ function Get-AssignedIdentities($IpAddress, $Type, $Headers, $TemplateId, $Targe
     $payload.TemplateId = $TemplateId
     $payload.BaseEntityId = $TargetId
     $AssignedIdentitiesPayload = $payload | ConvertTo-Json -Depth 6
-    $AssignedIdentitiesResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $AssignedIdentitiesPayload -ContentType $Type -Headers $Headers
+    $AssignedIdentitiesResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $TemplateUrl -Method Post -Body $AssignedIdentitiesPayload -ContentType $Type -Headers $Headers
     if ( $AssignedIdentitiesResponse.StatusCode -eq 200) {
         $AssignIdentitiesInfo = $AssignedIdentitiesResponse.Content | ConvertFrom-Json
         $AssignIdentitiesInfo = $AssignIdentitiesInfo | ConvertTo-Json -Depth 6
@@ -339,7 +319,7 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type, $Url) {
     $DeviceIdList = @()
     $NextLinkUrl = $null
     $BaseUri = "https://$($IpAddress)"
-    $DevResp = Invoke-WebRequest -Uri $Url -Method Get -Headers $Headers -ContentType $Type
+    $DevResp = Invoke-WebRequest -SkipCertificateCheck -Uri $Url -Method Get -Headers $Headers -ContentType $Type
     if ($DevResp.StatusCode -eq 200) {
         $DevInfo = $DevResp.Content | ConvertFrom-Json
         if ($DevInfo.'@odata.count' -gt 0 ) {
@@ -348,7 +328,7 @@ function Get-DeviceIdList($IpAddress, $Headers, $Type, $Url) {
                 $NextLinkUrl = $BaseUri + $DevInfo.'@odata.nextLink'
             }
             while ($NextLinkUrl) {
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $NextLinkData.'value' | Sort-Object Id | ForEach-Object { $DeviceIdList += , $_.Id }
@@ -375,7 +355,7 @@ function New-Template($IpAddress, $Headers, $Type, $SourceId, $Component ) {
     $TemplatePayload = Get-TemplatePayload $SourceId $Component
     $TemplatePayload = $TemplatePayload | ConvertTo-Json -Depth 6
     $TemplateId = $null
-    $TemplateResponse = Invoke-WebRequest -Uri $TemplateUrl -Method Post -Body $TemplatePayload -ContentType $Type -Headers $Headers
+    $TemplateResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $TemplateUrl -Method Post -Body $TemplatePayload -ContentType $Type -Headers $Headers
     Write-Host "Creating Template..."
     if ($TemplateResponse.StatusCode -eq 201) {
         $TemplateId = $TemplateResponse.Content | ConvertFrom-Json
@@ -394,7 +374,7 @@ function New-Template($IpAddress, $Headers, $Type, $SourceId, $Component ) {
 function Get-GroupIdList ($IpAddress, $Headers, $Type) {
     $GroupIdList = @()
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups"
-    $GroupResp = Invoke-WebRequest -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
+    $GroupResp = Invoke-WebRequest -SkipCertificateCheck -Uri $GroupUrl -Method Get -Headers $Headers -ContentType $Type
     if ($GroupResp.StatusCode -eq 200) {
         $GroupInfo = $GroupResp.Content | ConvertFrom-Json
         if ($GroupInfo.'@odata.count' -gt 0 ) {
@@ -405,7 +385,6 @@ function Get-GroupIdList ($IpAddress, $Headers, $Type) {
 }
 
 Try {
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $DeviceUrl = "https://$($IpAddress)/api/DeviceService/Devices"
     $GroupUrl = "https://$($IpAddress)/api/GroupService/Groups($($GroupId))/Devices"
@@ -415,7 +394,7 @@ Try {
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
     $IdList = @()
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests

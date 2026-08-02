@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
 Copyright (c) 2018 Dell EMC Corporation
@@ -49,32 +51,9 @@ param(
     [pscredential] $Credentials
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 Try {
     Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
 
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $BaseUri = "https://$($IpAddress)"
     $DeviceCountUrl = $BaseUri + "/api/DeviceService/Devices"
@@ -85,14 +64,14 @@ Try {
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
     $Headers = @{}
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         ## Successfully created a session - extract the auth token from the response
         ## header and update our headers for subsequent requests
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         $DeviceData = @()
         $Total = @()
-        $DevCountResp = Invoke-WebRequest -Uri $DeviceCountUrl -Method Get -Headers $Headers -ContentType $Type
+        $DevCountResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DeviceCountUrl -Method Get -Headers $Headers -ContentType $Type
         if ($DevCountResp.StatusCode -eq 200) {
             $DeviceCountData = $DevCountResp.Content | ConvertFrom-Json
             $DeviceData += $DeviceCountData.'value'
@@ -100,7 +79,7 @@ Try {
             $toskip = 50
 
             $NextLinkUrl = $DeviceCountUrl + "?`$skip=$($toskip)&`$top=$($Total)"
-            $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+            $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
             if ($NextLinkResponse.StatusCode -eq 200) {
                 $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                 $DeviceData += $NextLinkData.'value'  
