@@ -1,4 +1,6 @@
-﻿<#
+﻿#Requires -Version 7
+
+<#
 _author_ = Trevor Squillario <Trevor.Squillario@Dell.com>
 
 Copyright (c) 2022 Dell EMC Corporation
@@ -66,28 +68,6 @@ param(
     [String] $OutFile
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
-
 $SessionAuthToken = @{}
 
 function Get-Session($IpAddress, $Credentials) {
@@ -97,7 +77,7 @@ function Get-Session($IpAddress, $Credentials) {
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $SessResponseData = $SessResponse.Content | ConvertFrom-Json
         $SessionAuthToken = @{
@@ -111,11 +91,10 @@ function Get-Session($IpAddress, $Credentials) {
 function Remove-Session($IpAddress, $Headers, $Id) {
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
     $Type = "application/json"
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
 }
 
 Try {
-    Set-CertPolicy
     $BaseUri = "https://$($IpAddress)"
     $NextLinkUrl = $null
     $Type = "application/json"
@@ -129,7 +108,7 @@ Try {
         
         # Display Identity Pools
         $IdentityPoolUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools"
-        $IdentityPoolResp = Invoke-WebRequest -Uri $IdentityPoolUrl -Method Get -Headers $Headers -ContentType $Type
+        $IdentityPoolResp = Invoke-WebRequest -SkipCertificateCheck -Uri $IdentityPoolUrl -Method Get -Headers $Headers -ContentType $Type
         if ($IdentityPoolResp.StatusCode -eq 200) {
             $IdentityPoolRespData = $IdentityPoolResp.Content | ConvertFrom-Json
             $IdentityPoolRespData = $IdentityPoolRespData.'value'
@@ -142,7 +121,7 @@ Try {
 
         # Get Identity Pool Usage Sets
         $IdentityPoolUsageSetUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets"
-        $IdentityPoolUsageSetResp = Invoke-WebRequest -Uri $IdentityPoolUsageSetUrl -Method Get -Headers $Headers -ContentType $Type
+        $IdentityPoolUsageSetResp = Invoke-WebRequest -SkipCertificateCheck -Uri $IdentityPoolUsageSetUrl -Method Get -Headers $Headers -ContentType $Type
         if ($IdentityPoolUsageSetResp.StatusCode -eq 200) {
             $IdentityPoolUsageSetRespData = $IdentityPoolUsageSetResp.Content | ConvertFrom-Json
             $IdentityPoolUsageSetRespData = $IdentityPoolUsageSetRespData.'value'
@@ -154,7 +133,7 @@ Try {
                 $IdentitySetName = $IdentitySet.Name
 
                 $IdentityPoolUsageDetailUrl = $BaseUri + "/api/IdentityPoolService/IdentityPools($($Id))/UsageIdentitySets($($IdentitySetId))/Details"
-                $IdentityPoolUsageDetailResp = Invoke-WebRequest -Uri $IdentityPoolUsageDetailUrl -Method Get -Headers $Headers -ContentType $Type
+                $IdentityPoolUsageDetailResp = Invoke-WebRequest -SkipCertificateCheck -Uri $IdentityPoolUsageDetailUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($IdentityPoolUsageDetailResp.StatusCode -eq 200) {
                     $IdentityPoolUsageDetailData = $IdentityPoolUsageDetailResp.Content | ConvertFrom-Json
                     # Loop through Details appending to object array
@@ -176,7 +155,7 @@ Try {
                     }
                     # Loop through pages until end
                     while ($NextLinkUrl) {
-                        $IdentityPoolUsageDetailNextLinkResp = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                        $IdentityPoolUsageDetailNextLinkResp = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                         if ($IdentityPoolUsageDetailNextLinkResp.StatusCode -eq 200) {
                             $IdentityPoolUsageDetailNextLinkData = $IdentityPoolUsageDetailNextLinkResp.Content | ConvertFrom-Json
                             # Loop through Details appending to object array

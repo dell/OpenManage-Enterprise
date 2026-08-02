@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Raajeev Kalyanaraman <raajeev.kalyanaraman@Dell.com>
 
@@ -157,30 +159,6 @@ function fShowMenu([System.String]$sMenuTitle, [System.Collections.IDictionary]$
     }
 }
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    ## customers are expected to use strict cert validation
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-
-}
-
 function Get-Session($IpAddress, $Credentials) {
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $Type = "application/json"
@@ -188,7 +166,7 @@ function Get-Session($IpAddress, $Credentials) {
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{"UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
 
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         Write-Host "Successful authentication with $($IpAddress)"
         $SessResponseData = $SessResponse.Content | ConvertFrom-Json
@@ -203,7 +181,7 @@ function Get-Session($IpAddress, $Credentials) {
 function Remove-Session($IpAddress, $Headers, $Id) {
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions('$($Id)')"
     $Type = "application/json"
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Delete -Headers $Headers -ContentType $Type
     Write-Host "Deleted authentication token ..."
 }
 
@@ -212,7 +190,7 @@ function Get-Networks($BaseUri, $Headers) {
     $Type = "application/json"
     $NetworkUrl = $BaseUri + "/api/NetworkService/Fabrics"
     Write-Host "Enumerating fabrics ..."
-    $NetworkResp = Invoke-WebRequest -Uri $NetworkUrl -Method Get -Headers $Headers -ContentType $Type
+    $NetworkResp = Invoke-WebRequest -SkipCertificateCheck -Uri $NetworkUrl -Method Get -Headers $Headers -ContentType $Type
     $FabricData = @()
     $FabricLookup = @{}
     $NextLinkUrl = $null
@@ -226,7 +204,7 @@ function Get-Networks($BaseUri, $Headers) {
                 $NextLinkUrl = $BaseUri + $NetworkRespData.'@odata.nextLink'
             }
             while ($NextLinkUrl) {
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $FabricData += $NextLinkData.'value'
@@ -261,7 +239,7 @@ function Set-ScaleVlanProfileProperty($BaseUri, $Headers, $selection, $FabricDat
     $Type = "application/json"
     Write-Host "Enumerating Fabric Design ...."
     $DesignURL = $BaseUri + "/api/NetworkService/Fabrics" + "('" + "$($selection)" + "')/FabricDesign"
-    $DesignResp = Invoke-WebRequest -Uri $DesignURL -Method Get -H $Headers -Con $Type
+    $DesignResp = Invoke-WebRequest -SkipCertificateCheck -Uri $DesignURL -Method Get -H $Headers -Con $Type
     if ($DesignResp.StatusCode -eq 200) {
         $DesignRespData = $DesignResp.Content | ConvertFrom-Json
         $foo = @{"Name" = $DesignRespData.Name }
@@ -269,7 +247,7 @@ function Set-ScaleVlanProfileProperty($BaseUri, $Headers, $selection, $FabricDat
         $PayloadInfo = $FabricData | Select-Object Name, Id, Description, ScaleVlanProfile, FabricDesignMapping, OverrideLLDPConfiguration, FabricDesign | ConvertTo-Json -Depth 4 | ForEach-Object { [System.Text.RegularExpressions.Regex]::Unescape($_) }
         Write-Host "Modifying ScaleVLANProfile property ....."
         $ActionURL = $BaseUri + "/api/NetworkService/Fabrics" + "('" + "$($selection)" + "')"    
-        $ReplaceResp = Invoke-WebRequest -Uri $ActionURL -Me Put -H $Headers -Con $Type -Body $PayloadInfo
+        $ReplaceResp = Invoke-WebRequest -SkipCertificateCheck -Uri $ActionURL -Me Put -H $Headers -Con $Type -Body $PayloadInfo
         if ($ReplaceResp.StatusCode -eq 201 -or $ReplaceResp.StatusCode -eq 200) {
             Write-Host "Successfully modified ScaleVlanProfile property ...."
         }
@@ -284,7 +262,6 @@ function Set-ScaleVlanProfileProperty($BaseUri, $Headers, $selection, $FabricDat
 }
 
 Try {
-    Set-CertPolicy
     $IpAddress = $OmemIPAddr
     $BaseUri = "https://$($IpAddress)"
     $Type = "application/json"

@@ -1,3 +1,5 @@
+#Requires -Version 7
+
 <#
 _author_ = Ashish Singh <ashish_singh11@Dell.com>
 
@@ -42,32 +44,11 @@ param(
 
 )
 
-function Set-CertPolicy() {
-    ## Trust all certs - for sample usage only
-    Try {
-        add-type @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    catch {
-        Write-Error "Unable to add type for cert policy"
-    }
-}
 function Get-JobId($Headers) {
     $Jobname = 'Default Inventory Task'
     $JobId = -1
     $JobUrl = "https://$($IpAddress)/api/JobService/Jobs"
-    $JobResponse = Invoke-WebRequest -Uri $JobUrl -Headers $Headers -Method Get
+    $JobResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $JobUrl -Headers $Headers -Method Get
     if ($JobResponse.StatusCode -eq 200) {
         Write-Host "Job fetched"
         $JobInfo = $JobResponse.Content | ConvertFrom-Json
@@ -79,7 +60,7 @@ function Get-JobId($Headers) {
                 $NextLinkUrl = $BaseUri + $JobInfo.'@odata.nextLink'
             }
             while ($NextLinkUrl) {
-                $NextLinkResponse = Invoke-WebRequest -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
+                $NextLinkResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $NextLinkUrl -Method Get -Headers $Headers -ContentType $Type
                 if ($NextLinkResponse.StatusCode -eq 200) {
                     $NextLinkData = $NextLinkResponse.Content | ConvertFrom-Json
                     $JobList += $NextLinkData.'value'
@@ -121,13 +102,13 @@ function Get-JobStatus($JobId) {
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         do {
             $Ctr++
         
-            $JobResp = Invoke-WebRequest -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
+            $JobResp = Invoke-WebRequest -SkipCertificateCheck -Uri $JobSvcUrl -Headers $Headers -ContentType $Type -Method Get
             $jobresp.Content
             if ($JobResp.StatusCode -eq 200) {
                 $JobData = $JobResp.Content | ConvertFrom-Json
@@ -144,7 +125,6 @@ function Get-JobStatus($JobId) {
 Try {
     Write-Host 'The Power Manager scripts were originally internal Dell scripts we then published externally. If you see this message and are using one of these scripts it would be very helpful if you open an issue on GitHub at https://github.com/dell/OpenManage-Enterprise/issues and tell us you are using the script. We have not dedicated any resources to optimizing them but are happy to do so if we know the community is using them. Likewise if you find a bug in one of these scripts feel free to open an issue and we will investigate.'
 
-    Set-CertPolicy
     $SessionUrl = "https://$($IpAddress)/api/SessionService/Sessions"
     $RunJobUrl = "https://$($IpAddress)/api/JobService/Actions/JobService.RunJobs"
     $Type = "application/json"
@@ -152,14 +132,14 @@ Try {
     $UserName = $Credentials.username
     $Password = $Credentials.GetNetworkCredential().password
     $UserDetails = @{ "UserName" = $UserName; "Password" = $Password; "SessionType" = "API" } | ConvertTo-Json
-    $SessResponse = Invoke-WebRequest -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
+    $SessResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $SessionUrl -Method Post -Body $UserDetails -ContentType $Type
     if ($SessResponse.StatusCode -eq 200 -or $SessResponse.StatusCode -eq 201) {
         $Headers."X-Auth-Token" = $SessResponse.Headers["X-Auth-Token"]
         $InventoryJobId = Get-JobId($Headers)
         $jpl = '[' + $InventoryJobId + ']'
         $JobCreationpayload = @{ "JobIds" = $($jpl) } | ConvertTo-Json
         $JobCreationpayload = $JobCreationpayload.Replace("`"[", "[").Replace("]`"", "]")
-        $RunInventoryResponse = Invoke-WebRequest -Uri $RunJobUrl -Method Post  -Body $JobCreationpayload -Headers $Headers -ContentType $Type
+        $RunInventoryResponse = Invoke-WebRequest -SkipCertificateCheck -Uri $RunJobUrl -Method Post  -Body $JobCreationpayload -Headers $Headers -ContentType $Type
         if ( $RunInventoryResponse.StatusCode -eq 204) {
             Write-Host "Performing Inventory ..."
             <#Start-Sleep Seconds 10#>
